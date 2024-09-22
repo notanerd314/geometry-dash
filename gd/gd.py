@@ -1,5 +1,5 @@
-import gd._helpers as misc
-from .objects import *
+from ._helpers import *
+from .objects.level import *
 
 _secret = "Wmfd2893gb7"
 
@@ -12,12 +12,10 @@ class GeometryDash:
         Downloads a specific level from the Geometry Dash servers using the provided ID.
 
         Parameters:
-            id (int): The ID of the level to download (required).
-            version (int): The version of the level to download, defaults to 22.
-
-        Raises:
-            ValueError: If the ID is not a positive integer or version is less than 10.
+            id (int, required): The ID of the level to download (required).
+            version (int, optional): The version of the level to download, defaults to 2.2.
         """
+
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")
         if id <= 0:
@@ -26,7 +24,7 @@ class GeometryDash:
             raise ValueError("Invalid version, the first version is 1.0 (10).")
 
         try:
-            response = await misc.post(
+            response = await post(
                 url="http://www.boomlings.com/database/downloadGJLevel22.php", 
                 data={"levelID": id, "secret": self.secret}
             )

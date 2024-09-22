@@ -16,7 +16,7 @@ __version__ = '1.0.0'
 from collections import namedtuple
 
 from .gd import *
-from .objects import *
+from .objects.level import *
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
