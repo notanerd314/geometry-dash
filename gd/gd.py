@@ -1,4 +1,4 @@
-from ._helpers import *
+from .ext import *
 from .objects.level import *
 
 _secret = "Wmfd2893gb7"
