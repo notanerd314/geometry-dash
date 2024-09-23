@@ -1,2 +1,3 @@
-gd/__pycache__/
-gd/objects/__pycache__
+__pycache__/
+*.pyc
+*.pyo
