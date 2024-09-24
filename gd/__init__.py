@@ -8,15 +8,15 @@ Some features were removed due to raised concerns about hacking.
 """
 
 __title__ = 'geometrydash'
-__author__ = 'janu8ry'
+__author__ = 'notanerd'
 __license__ = 'GPL-3.0'
-__copyright__ = 'Copyright 2021 janu8ry'
+__copyright__ = 'Copyright 2021 notanerd'
 __version__ = '1.0.0'
 
 from collections import namedtuple
 
 from .gd import *
-from .objects.level import *
+from .objects import *
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
