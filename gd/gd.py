@@ -51,3 +51,15 @@ class GeometryDash:
             return level
         except Exception as e:
             raise RuntimeError(f"Failed to get daily level: {e}")
+
+    async def search_level(self, query: str):
+        search_data: str = await post(
+            url="http://www.boomlings.com/database/getGJLevels21.php", 
+            data={"secret": self.secret, "str": query, "type": 0}
+        )
+        
+        search_data = parse_search_results(search_data)
+        for search in search_data:
+            search_data[search_data.index(search)] = SearchedLevel(search)
+
+        return search_data
