@@ -82,10 +82,12 @@ def parse_level(text: str) -> dict:
 
         parsed[key] = value
 
-    parsed['4'] = decrypt(parsed['4'], 'base64_decompress')
+    parsed['4'] = decrypt(parsed['4'], 'base64_decompress') if '4' in parsed.keys() else None
     parsed['3'] = decrypt(parsed['3'])
 
-    if parsed['27'] == "0":
+    if '27' not in parsed.keys():
+        parsed['27'] = None
+    elif parsed['27'] == "0":
         parsed['27'] = False
     elif parsed['27'] == "Aw==":
         parsed['27'] = True

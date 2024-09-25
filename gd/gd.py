@@ -1,5 +1,6 @@
 from .ext import *
 from .objects.level import *
+from datetime import timedelta
 
 _secret = "Wmfd2893gb7"
 
@@ -13,7 +14,6 @@ class GeometryDash:
 
         Parameters:
             id (int, required): The ID of the level to download.
-            version (int, optional): The version of the level to download, defaults to 2.2.
         """
 
         if not isinstance(id, int):
@@ -30,11 +30,12 @@ class GeometryDash:
         except Exception as e:
             raise RuntimeError(f"Failed to download level: {e}")
 
-    async def get_daily_level(self) -> Level:
+    async def get_daily_level(self) -> Tuple[Level, timedelta]:
         """
         Downloads the daily level from the Geometry Dash servers with the time left for it.
 
-        The information for the time left (in seconds) in a daily is in `Level.EXTRAS` with the key `"timeLeft"`
+        The method returns a tuple of the level object and the time left in timedelta. Like this:
+        `(Level(), timedelta)`
 
         Parameters:
             No parameters are specificied.
@@ -44,6 +45,37 @@ class GeometryDash:
             response = await post(
                 url="http://www.boomlings.com/database/getGJDailyLevel.php",
                 data={"secret": self.secret}
-            ).split("|")
+            )
+
+            response = response.split("|")
+
+            level = await self.download_level(int(response[0]))
+
+            return level, timedelta(seconds=int(response[1]))
         except Exception as e:
             raise RuntimeError(f"Failed to get daily level: {e}")
+        
+    async def get_weekly_level(self) -> Tuple[Level, timedelta]:
+        """
+        Downloads the weekly level from the Geometry Dash servers with the time left for it.
+
+        The method returns a tuple of the level object and the time left in timedelta. Like this:
+        `(Level(), timedelta)`
+
+        Parameters:
+            No parameters are specificied.
+        """
+
+        try:
+            response = await post(
+                url="http://www.boomlings.com/database/getGJDailyLevel.php",
+                data={"secret": self.secret, "weekly": 1}
+            )
+
+            response = response.split("|")
+
+            level = await self.download_level(int(response[0]))
+
+            return level, timedelta(seconds=int(response[1]))
+        except Exception as e:
+            raise RuntimeError(f"Failed to get weekly level: {e}")

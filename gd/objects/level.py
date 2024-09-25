@@ -12,7 +12,7 @@ class Level:
     - raw_str - *(required)* The response from the server, not decrypted yet.
     - extras - *(optional)* Additional data to be included in the level, may include several extra information.
     """
-    def __init__(self, raw_str: str, extras: Dict[str, Any]):
+    def __init__(self, raw_str: str):
         if not isinstance(raw_str, str):
             raise ValueError("Level string must be a str!")
             
@@ -38,7 +38,7 @@ class Level:
         self.COINS: int = self.parsed.get("37", 0)
         self.SONG_LIST: list[int] = self.parsed.get("52", "").split(",")
         self.SFX_LIST: list[int] = self.parsed.get("53", "").split(",")
-        self.DAILY_ID: int = self.parsed.get("41", -1)
+        self.DAILY_ID: int = self.parsed.get("41", None)
         self.COPIED_LEVEL_ID: int = self.parsed.get("30", None)
 
         # Booleans
@@ -65,8 +65,6 @@ class Level:
             self.DIFFICULTY: LevelRating = Difficulty.AUTO
         else:
             self.DIFFICULTY: LevelRating = Difficulty(self.parsed.get("9") / 10)
-
-        self.EXTRAS: dict = extras
 
         #! SECRETS!
         self.LEVEL_PASSWORD = self.parsed.get("27") if not isinstance(self.parsed.get("27"), bool) else None
