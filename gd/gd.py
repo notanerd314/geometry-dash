@@ -18,8 +18,6 @@ class GeometryDash:
 
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")
-        if id <= 0:
-            raise ValueError("ID must be greater than 0.")
 
         try:
             response = await post(
@@ -30,52 +28,26 @@ class GeometryDash:
         except Exception as e:
             raise RuntimeError(f"Failed to download level: {e}")
 
-    async def get_daily_level(self) -> Tuple[Level, timedelta]:
+    async def get_daily_level(self, weekly: bool = False, get_time_left: bool = False) -> Level | Tuple[Level, timedelta]:
         """
-        Downloads the daily level from the Geometry Dash servers with the time left for it.
-
-        The method returns a tuple of the level object and the time left in timedelta. Like this:
-        `(Level(), timedelta)`
+        Downloads the daily/weekly level from the Geometry Dash servers with the time left for it.
 
         Parameters:
-            No parameters are specificied.
+            weekly (int, optional): Put `True` to get the weekly level, otherwise daily.
+            get_time_left (bool, optional): If `True`, the method will also return the time left in timedelta inside a tuple with the `Level` object. Defaults to `False`.
         """
 
         try:
-            response = await post(
-                url="http://www.boomlings.com/database/getGJDailyLevel.php",
-                data={"secret": self.secret}
-            )
-
-            response = response.split("|")
-
-            level = await self.download_level(int(response[0]))
-
-            return level, timedelta(seconds=int(response[1]))
+            level = await self.download_level(-2 if weekly else -1)
+            
+            if get_time_left:
+                daily_data: str = await post(
+                    url="http://www.boomlings.com/database/getGJDailyLevel.php", 
+                    data={"secret": self.secret, "weekly": "1" if weekly else "0"}
+                )
+                daily_data = daily_data.split("|")
+                return level, timedelta(seconds=int(daily_data[1]))
+            
+            return level
         except Exception as e:
             raise RuntimeError(f"Failed to get daily level: {e}")
-        
-    async def get_weekly_level(self) -> Tuple[Level, timedelta]:
-        """
-        Downloads the weekly level from the Geometry Dash servers with the time left for it.
-
-        The method returns a tuple of the level object and the time left in timedelta. Like this:
-        `(Level(), timedelta)`
-
-        Parameters:
-            No parameters are specificied.
-        """
-
-        try:
-            response = await post(
-                url="http://www.boomlings.com/database/getGJDailyLevel.php",
-                data={"secret": self.secret, "weekly": 1}
-            )
-
-            response = response.split("|")
-
-            level = await self.download_level(int(response[0]))
-
-            return level, timedelta(seconds=int(response[1]))
-        except Exception as e:
-            raise RuntimeError(f"Failed to get weekly level: {e}")

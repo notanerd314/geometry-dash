@@ -36,8 +36,13 @@ class Level:
         self.REQUESTED_STARS: int = self.parsed.get('39', None)
         self.STARS: int = self.parsed.get("18", None)
         self.COINS: int = self.parsed.get("37", 0)
-        self.SONG_LIST: list[int] = self.parsed.get("52", "").split(",")
-        self.SFX_LIST: list[int] = self.parsed.get("53", "").split(",")
+
+        try: self.SONG_LIST: list[int] = self.parsed.get("52", "").split(",") 
+        except AttributeError: self.SONG_LIST: int = self.parsed.get("52", None)
+
+        try: self.SFX_LIST: list[int] = self.parsed.get("53", "").split(",")
+        except AttributeError: self.SFX_LIST: int = self.parsed.get("53", None)
+
         self.DAILY_ID: int = self.parsed.get("41", None)
         self.COPIED_LEVEL_ID: int = self.parsed.get("30", None)
 
