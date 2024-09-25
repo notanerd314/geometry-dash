@@ -18,7 +18,7 @@ class Level:
             
         self.raw = raw_str
         try:
-            self.parsed = parse_level(self.raw)
+            self.parsed = parse_level_data(self.raw)
         except Exception as e:
             raise RuntimeError(f"Failed to parse level string: {e}. Maybe you made a mistake?")
         
@@ -84,7 +84,7 @@ class Song:
 
     def __init__(self, raw_str: str) -> None:
         self.raw = raw_str
-        self.parsed = parse_song(self.raw)
+        self.parsed = parse_song_data(self.raw)
 
         self.NEWGROUNDS_ID: int = self.parsed.get('1', None)
         self.NAME: str = self.parsed.get('2', None)

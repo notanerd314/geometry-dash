@@ -20,7 +20,7 @@ class GeometryDash:
             raise ValueError("ID must be an int.")
 
         try:
-            response = await post(
+            response = await send_post_request(
                 url="http://www.boomlings.com/database/downloadGJLevel22.php", 
                 data={"levelID": id, "secret": self.secret}
             )
@@ -41,7 +41,7 @@ class GeometryDash:
             level = await self.download_level(-2 if weekly else -1)
             
             if get_time_left:
-                daily_data: str = await post(
+                daily_data: str = await send_post_request(
                     url="http://www.boomlings.com/database/getGJDailyLevel.php", 
                     data={"secret": self.secret, "weekly": "1" if weekly else "0"}
                 )
@@ -53,7 +53,7 @@ class GeometryDash:
             raise RuntimeError(f"Failed to get daily level: {e}")
 
     async def search_level(self, query: str):
-        search_data: str = await post(
+        search_data: str = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php", 
             data={"secret": self.secret, "str": query, "type": 0}
         )
