@@ -93,17 +93,21 @@ class DownloadedLevel:
         if is_newgrounds_song(self.custom_song_id):
             response = await send_post_request(
                 url="http://boomlings.com/database/getGJSongInfo.php",
-                data={'secret': self.secret, "songID": id}
+                data={'secret': self.secret, "songID": self.custom_song_id}  # Corrected 'id' to 'self.custom_song_id'
             )
             self.custom_song_data = response
         else:
             response = await send_get_request(
                 url="https://geometrydashfiles.b-cdn.net/music/musiclibrary_02.dat",
             )
-            music_library_encoded = response.content
-            music_library = MusicLibrary(decrypt_data(music_library_encoded, "base64_decompress"))
-            self.custom_song_data = music_library.songs[str(self.custom_song_id)]
-        return self.custom_song_data
+            if response.status_code == 200:  # Check if the request was successful
+                music_library_encoded = response.content
+                music_library = MusicLibrary(decrypt_data(music_library_encoded, "base64_decompress"))
+                self.custom_song_data = music_library.songs.get(str(self.custom_song_id))  # Use .get() for safety
+            else:
+                raise RuntimeError(f"Failed to load music library, status code: {response.status_code}")
+        
+        return self.custom_song_dataa
         
 
 class SearchedLevel(DownloadedLevel):
