@@ -1,7 +1,9 @@
 import gd
 from gd.objects import *
 import asyncio
+from loguru import logger
 
+@logger.catch
 async def main():
     geometrydash = gd.GeometryDash("Wmfd2893gb7")
     
@@ -17,8 +19,7 @@ async def main():
     # print(level.RATING)
     # print(level.DAILY_ID)
 
-    response = await geometrydash.download_level(110507681)
-    song = await response.load_song_data()
-    print(song.__dict__)
+    response = await geometrydash.search_level("cradles")
+    print(response[0].__dict__)
 
 asyncio.run(main())

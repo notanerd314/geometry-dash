@@ -1,76 +1,115 @@
 from urllib.parse import unquote
 from typing import Dict, Optional, List
-from ..ext import *
 from datetime import timedelta
+from ..ext import *
+from dataclasses import dataclass, field
 
+@dataclass
+class MusicLibraryArtist:
+    id: int
+    name: str
+    website: Optional[str] = None
+    youtube_channel_id: Optional[str] = None
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'MusicLibraryArtist':
+        parsed = raw_str.strip().split(",")
+        return MusicLibraryArtist(
+            id=int(parsed[0]),
+            name=parsed[1],
+            website=parsed[2] if parsed[2].strip() else None,
+            youtube_channel_id=parsed[3] if parsed[3].strip() else None
+        )
+
+@dataclass
+class MusicLibrarySong:
+    id: int
+    name: str
+    artist: Optional[MusicLibraryArtist]
+    file_size_bytes: float
+    duration_seconds: timedelta
+    is_ncs: bool
+
+    @staticmethod
+    def from_raw(raw_str: str, artists: Dict[int, MusicLibraryArtist]) -> 'MusicLibrarySong':
+        parsed = raw_str.strip().split(",")
+        artist_id = int(parsed[2]) if parsed[2].strip() else None
+        return MusicLibrarySong(
+            id=int(parsed[0]),
+            name=parsed[1],
+            artist=artists.get(artist_id),
+            file_size_bytes=float(parsed[3]),
+            duration_seconds=timedelta(seconds=int(parsed[4])),
+            is_ncs=parsed[6] == '1'
+        )
+
+@dataclass
+class MusicLibraryTag:
+    id: int
+    name: str
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'MusicLibraryTag':
+        parsed = raw_str.strip().split(",")
+        return MusicLibraryTag(
+            id=int(parsed[0]),
+            name=parsed[1]
+        )
+
+@dataclass
 class MusicLibrary:
-    class Artist:
-        def __init__(self, raw_str: str):
-            self.raw = raw_str.strip()  # Trim whitespace
-            self.parsed = self.raw.split(",")
-            
-            self.id = int(self.parsed[0])
-            self.name = self.parsed[1]
-            self.website = self.parsed[2] if self.parsed[2].strip() else None
-            self.youtube_channel_id = self.parsed[3] if self.parsed[3].strip() else None
+    version: int
+    artists: Dict[int, MusicLibraryArtist] = field(default_factory=dict)
+    songs: Dict[int, MusicLibrarySong] = field(default_factory=dict)
+    tags: Dict[int, MusicLibraryTag] = field(default_factory=dict)
 
-    class Song:
-        def __init__(self, raw_str: str, library_instance: 'MusicLibrary'):
-            self.raw = raw_str.strip()  # Trim whitespace
-            self.parsed = self.raw.split(",")
-            self.id: int = int(self.parsed[0])
-            self.name: str = self.parsed[1]
+    @staticmethod
+    def from_raw(raw_str: str) -> 'MusicLibrary':
+        parsed = raw_str.strip().split("|")
+        version = int(parsed[0])
 
-            # Safely access the artist
-            artist_id = self.parsed[2].strip() if self.parsed[2] != " NOEP)" else None
-            self.artist: MusicLibrary.Artist = library_instance.artists.get(artist_id) if artist_id else None
-            
-            self.file_size_bytes: float = float(self.parsed[3])
-            self.duration_seconds: timedelta = timedelta(seconds=int(self.parsed[4]))
-            self.is_ncs: bool = self.parsed[6] == '1'  # More concise boolean expression
-    
-    class Tag:
-        def __init__(self, raw_str: str):
-            self.raw = raw_str.strip()  # Trim whitespace
-            self.parsed = self.raw.split(",")
-            
-            self.id: int = int(self.parsed[0])
-            self.name: str = self.parsed[1]
+        artists = {
+            int(artist.split(",")[0]): MusicLibraryArtist.from_raw(artist)
+            for artist in parsed[1].split(";") if artist.strip()
+        }
 
-    def __init__(self, raw_str: str):
-        self.raw = raw_str.strip()  # Trim whitespace
-        self.parsed = self.raw.split("|")
+        songs = {
+            int(song.split(",")[0]): MusicLibrarySong.from_raw(song, artists)
+            for song in parsed[2].split(";") if song.strip()
+        }
 
-        self.version: int = int(self.parsed[0])
-        self.artists: Dict[str, self.Artist] = {}
-        for artist in self.parsed[1].split(";"):
-            if artist.strip():
-                self.artists[artist.split(",")[0]] = self.Artist(artist)
+        tags = {
+            int(tag.split(",")[0]): MusicLibraryTag.from_raw(tag)
+            for tag in parsed[3].split(";") if tag.strip()
+        }
 
-        self.songs: Dict[str, self.Song] = {}
-        for song in self.parsed[2].split(";"):
-            if song.strip():
-                self.songs[song.split(",")[0]] = self.Song(song, self)
+        return MusicLibrary(version=version, artists=artists, songs=songs, tags=tags)
 
-        self.tags_list: Dict[str, self.Tag] = {}
-        for tag in self.parsed[3].split(";"):
-            if tag.strip():
-                self.tags_list[tag.split(",")[1]] = self.Tag(tag)
+@dataclass
+class LevelSong:
+    id: int
+    name: str
+    artist_id: Optional[int]
+    artist_name: Optional[str]
+    artist_verified: Optional[bool]
+    song_size_mb: float
+    youtube_link: Optional[str]
+    song_link: Optional[str]
+    is_ncs: Optional[bool]
+    is_library_song: Optional[bool]
 
-
-class NewgroundsSong:
-    """Class representation of a Newgrounds song."""
-    
-    def __init__(self, raw_str: str) -> None:
-        self.raw = raw_str.strip()  # Trim whitespace
-        self.parsed = parse_song_data(self.raw)
-
-        self.newgrounds_id: Optional[int] = self.parsed.get('1')
-        self.name: Optional[str] = self.parsed.get('2')
-        self.artist_id: Optional[int] = self.parsed.get('3')
-        self.artist_name: Optional[str] = self.parsed.get('4')
-        self.artist_verified: bool = bool(self.parsed.get('8') == 1)
-
-        self.song_size_mb: float = float(self.parsed.get('5', 0.0))
-        self.youtube_link: Optional[str] = f"https://youtu.be/watch?v={self.parsed.get('7')}" if self.parsed.get("7") else None
-        self.newgrounds_link: Optional[str] = unquote(self.parsed.get("10", '')) if self.parsed.get("10") else None
+    @staticmethod
+    def from_raw(raw_str: str) -> 'LevelSong':
+        parsed = parse_song_data(raw_str.strip())
+        return LevelSong(
+            id=int(parsed.get('1')),
+            name=parsed.get('2'),
+            artist_id=parsed.get('3'),
+            artist_name=parsed.get('4'),
+            artist_verified=parsed.get('8') == '1',
+            song_size_mb=float(parsed.get('5', 0.0)),
+            youtube_link=f"https://youtu.be/watch?v={parsed.get('6')}" if parsed.get("6") else None,
+            song_link=unquote(parsed.get("10", '')) if parsed.get("10") else None,
+            is_ncs=parsed.get('11') == "1",
+            is_library_song=int(parsed.get('1')) >= 10000000
+        )

@@ -20,7 +20,7 @@ class GeometryDash:
                 url="http://www.boomlings.com/database/downloadGJLevel22.php", 
                 data={"levelID": id, "secret": self.secret}
             )
-            return DownloadedLevel(response)
+            return DownloadedLevel.from_raw(response)
         except RuntimeError as e:
             raise RuntimeError(f"Failed to download level: {e}")
 
@@ -49,7 +49,7 @@ class GeometryDash:
         )
         
         parsed_results = parse_search_results(search_data)
-        return [SearchedLevel(result) for result in parsed_results]
+        return [SearchedLevel.from_raw(result) for result in parsed_results]
 
     async def get_music_library(self) -> MusicLibrary:
         """Gets the current music library in RobTop's servers."""
@@ -58,19 +58,12 @@ class GeometryDash:
         )
         music_library_encoded = response.content
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
-        return MusicLibrary(music_library)
+        return MusicLibrary.from_raw(music_library)
 
-    async def get_song_data(self, id: int) -> Union[NewgroundsSong, MusicLibrary.Song]:
+    async def get_song_data(self, id: int) -> Union[LevelSong, MusicLibrarySong]:
         """Gets song data by ID, either from Newgrounds or the music library."""
-        if is_newgrounds_song(id):
-            response = await send_post_request(
-                url="http://boomlings.com/database/getGJSongInfo.php",
-                data={'secret': self.secret, "songID": id}
-            )
-            return NewgroundsSong(response)
-        else:
-            music_library = await self.get_music_library()
-            try:
-                return music_library.songs[str(id)]
-            except KeyError:
-                raise RuntimeError(f"Cannot find song in the music library with id {id}")
+        response = await send_post_request(
+            url="http://boomlings.com/database/getGJSongInfo.php",
+            data={'secret': self.secret, "songID": id}
+        )
+        return LevelSong.from_raw(response)
