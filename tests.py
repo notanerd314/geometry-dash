@@ -17,7 +17,8 @@ async def main():
     # print(level.RATING)
     # print(level.DAILY_ID)
 
-    response = await geometrydash.search_level("bloodbath")
-    print(response)
+    response = await geometrydash.download_level(110507681)
+    song = await response.load_song_data()
+    print(song.__dict__)
 
 asyncio.run(main())

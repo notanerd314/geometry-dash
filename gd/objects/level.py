@@ -1,111 +1,134 @@
 from ..ext import *
 from .enums import *
-from typing import *
-from urllib.parse import unquote
+from typing import List, Optional
+from .song import *
 
-# Level
 
-class Level:
+class DownloadedLevel:
     """
-    **A class representation of a Geometry Dash level.**
+    A class representation of a Geometry Dash level.
 
-    **Parameters:**
-    - raw_str - *(required)* The response from the server, not decrypted yet.
+    Parameters:
+    - raw_str (str): The response from the server, not decrypted yet.
+    - searched_level_data (dict, optional): Data for the song object and the creator's name.
     """
-    def __init__(self, raw_str: str):
+
+    def __init__(self, raw_str: str, searched_level_data: dict = None) -> None:
         if not isinstance(raw_str, str):
             raise ValueError("Level string must be a str!")
-            
+
         self.raw = raw_str
         try:
             self.parsed = parse_level_data(self.raw)
         except Exception as e:
-            raise RuntimeError(f"Failed to parse level string: {e}. Maybe you made a mistake?")
-        
+            raise RuntimeError(f"Failed to parse level string: {e}. Please check the input format.")
+
         # Level Properties
-        self.ID: int = self.parsed.get("1", None)
-        self.NAME: str = self.parsed.get("2", None)
-        self.DESCRIPTION: str = self.parsed.get("3", None)
-        self.LEVEL_DATA: str = self.parsed.get("4", None)
-        self.VERSION: int = self.parsed.get("5", None)
-        self.CREATOR_ID: int = self.parsed.get("6", None)
-        self.DOWNLOADS: int = self.parsed.get("10", 0)
-        self.LIKES: int = self.parsed.get("14")
-        self.COPYABLE: bool = True if self.parsed.get("27") else False
-        self.LENGTH: Length = Length(self.parsed.get("15"))
-        self.REQUESTED_STARS: int = self.parsed.get('39', None)
-        self.STARS: int = self.parsed.get("18", None)
-        self.COINS: int = self.parsed.get("37", 0)
+        self.id: Optional[int] = self.parsed.get("1")
+        self.name: Optional[str] = self.parsed.get("2")
+        self.description: Optional[str] = self.parsed.get("3")
+        self.level_data: Optional[str] = self.parsed.get("4")
+        self.version: Optional[int] = self.parsed.get("5")
+        self.creator_id: Optional[int] = self.parsed.get("6")
+        self.downloads: int = self.parsed.get("10", 0)
+        self.likes: Optional[int] = self.parsed.get("14")
+        self.copyable: bool = bool(self.parsed.get("27"))
+        self.length: Length = Length(self.parsed.get("15"))
+        self.requested_stars: Optional[int] = self.parsed.get("39")
+        self.stars: Optional[int] = self.parsed.get("18")
+        self.coins: int = self.parsed.get("37", 0)
+        
+        self.custom_song_id: int = self.parsed.get("35", None)
+        self.song_list_ids: List[int] = self._parse_comma_separated_int_list("52")
+        self.sfx_list_ids: List[int] = self._parse_comma_separated_int_list("53")
 
-        try: self.SONG_LIST: list[int] = self.parsed.get("52", "").split(",") 
-        except AttributeError: self.SONG_LIST: int = self.parsed.get("52", None)
+        self.daily_id: int = self.parsed.get("41", -1)
+        self.copied_level_id: Optional[int] = self.parsed.get("30")
 
-        try: self.SFX_LIST: list[int] = self.parsed.get("53", "").split(",")
-        except AttributeError: self.SFX_LIST: int = self.parsed.get("53", None)
+        # Boolean flags
+        self.low_detail_mode: bool = bool(self.parsed.get("40"))
+        self.two_player_mode: bool = bool(self.parsed.get("31"))
+        self.verified_coins: bool = bool(self.parsed.get("38"))
+        self.in_gauntlet: bool = bool(self.parsed.get("44"))
+        self.daily: bool = 0 <= self.daily_id <= 100000
+        self.weekly: bool = self.daily_id >= 100000
 
-        self.DAILY_ID: int = self.parsed.get("41", -1)
-        self.COPIED_LEVEL_ID: int = self.parsed.get("30", None)
-
-        # Booleans
-        self.LOW_DETAIL_MODE: bool = True if self.parsed.get("40", None) else False
-        self.TWO_PLAYER: bool = True if self.parsed.get("31", None) else False
-        self.VERIFIED_COINS: bool = True if self.parsed.get("38", None) else False
-        self.IN_GUANTLET: bool = True if self.parsed.get("44", None) else False
-        self.DAILY: bool = True if 0 <= self.DAILY_ID <= 100000 else False
-        self.WEEKLY: bool = True if self.DAILY_ID >= 100000 else False
-
-        if self.parsed.get("42", 0) >= 1:
-            self.RATING: LevelRating = LevelRating(self.parsed.get("42"))
-        elif self.parsed.get("19", 0) >= 1:
-            self.RATING: LevelRating = LevelRating.FEATURED
-        elif self.STARS != 0:
-            self.RATING: LevelRating = LevelRating.RATED
-        else:
-            self.RATING: LevelRating = LevelRating.NO_RATE
+        # Rating
+        self.rating: LevelRating = self._determine_rating()
 
         # Difficulty
+        self.difficulty: Difficulty = self._determine_difficulty()
+
+        # Level Password
+        self.level_password: Optional[str] = None if isinstance(self.parsed.get("27"), bool) else self.parsed.get("27")
+
+    def _parse_comma_separated_int_list(self, key: str) -> List[int]:
+        """Helper method to parse a comma-separated list of integers."""
+        try:
+            return [int(x) for x in self.parsed.get(key, "").split(",") if x.isdigit()]
+        except AttributeError:
+            return []
+
+    def _determine_rating(self) -> LevelRating:
+        """Determines the level rating."""
+        if self.parsed.get("42", 0) >= 1:
+            return LevelRating(self.parsed.get("42"))
+        elif self.parsed.get("19", 0) >= 1:
+            return LevelRating.FEATURED
+        elif self.stars != 0:
+            return LevelRating.RATED
+        return LevelRating.NO_RATE
+
+    def _determine_difficulty(self) -> Difficulty:
+        """Determines the level difficulty."""
         if self.parsed.get("17"):
-            self.DIFFICULTY: LevelRating = Difficulty(6 + self.parsed.get("43") / 10)
+            return Difficulty(6 + self.parsed.get("43", 0) / 10)
         elif self.parsed.get("25"):
-            self.DIFFICULTY: LevelRating = Difficulty.AUTO
+            return Difficulty.AUTO
+        return Difficulty(self.parsed.get("9", 0) / 10)
+
+
+    async def load_song_data(self) -> Union[NewgroundsSong, MusicLibrary.Song]:
+        """Loads the song data for this level."""
+        if is_newgrounds_song(self.custom_song_id):
+            response = await send_post_request(
+                url="http://boomlings.com/database/getGJSongInfo.php",
+                data={'secret': self.secret, "songID": id}
+            )
+            self.custom_song_data = response
         else:
-            self.DIFFICULTY: LevelRating = Difficulty(self.parsed.get("9") / 10)
+            response = await send_get_request(
+                url="https://geometrydashfiles.b-cdn.net/music/musiclibrary_02.dat",
+            )
+            music_library_encoded = response.content
+            music_library = MusicLibrary(decrypt_data(music_library_encoded, "base64_decompress"))
+            self.custom_song_data = music_library.songs[str(self.custom_song_id)]
+        return self.custom_song_data
+        
 
-        #! SECRETS!
-        self.LEVEL_PASSWORD = self.parsed.get("27") if not isinstance(self.parsed.get("27"), bool) else None
-
-class Song:
+class SearchedLevel(DownloadedLevel):
     """
-    The class representation of a Newgroundssong.
+    The class representation of a level search result.
 
     Parameters:
-        - raw_str - *(required)* The song string object from the servers.
-    """
-
-    def __init__(self, raw_str: str) -> None:
-        self.raw = raw_str
-        self.parsed = parse_song_data(self.raw)
-
-        self.NEWGROUNDS_ID: int = self.parsed.get('1', None)
-        self.NAME: str = self.parsed.get('2', None)
-        self.ARTIST_ID: int = self.parsed.get('3', None)
-        self.ARTIST_NAME: str = self.parsed.get('4', None)
-        self.ARTIST_VERIFIED: bool = True if self.parsed.get('8', None) == 1 else False
-
-        self.SONG_SIZE_MB: float = float(self.parsed.get('5', 0.0))
-        self.YOUTUBE_LINK: str = f"https://youtu.be/watch?v={self.parsed["7"]}" if self.parsed.get("7", None) is not None else None
-        self.NEWGROUNDS_LINK: str = unquote(self.parsed["10"]) if self.parsed.get("10", None) else None
-
-class SearchedLevel(Level):
-    """
-    The class representation of the level search result.
-
-    Parameters:
-        - raw_str - *(required)* The response from the server.
+    - parsed_str (dict): The parsed response data from the server.
     """
 
     def __init__(self, parsed_str: dict):
         super().__init__(parsed_str["level"])
 
-        self.CREATOR_NAME = parsed_str["creator"]["playerName"]
-        self.SONG_DATA = Song(parsed_str["song"])
+        self.creator_name: Optional[str] = parsed_str["creator"]["playerName"]
+        self.song_data: NewgroundsSong = NewgroundsSong(parsed_str["song"])
+
+    async def download_level(self) -> Union[DownloadedLevel, None]:
+        """
+        Downloads the level using the current level ID of the class.
+        """
+        try:
+            response = await send_post_request(
+                url="http://www.boomlings.com/database/downloadGJLevel22.php",
+                data={"levelID": self.id, "secret": self.secret}
+            )
+            return DownloadedLevel(raw_str=response, searched_level_data=self.song_data)
+        except Exception as e:
+            raise RuntimeError(f"Could not download level, {e}")

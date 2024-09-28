@@ -23,6 +23,14 @@ async def send_post_request(**kwargs) -> str:
         else:
             raise ResponseError(f"Unable to fetch data, got {response.status_code}.")
 
+async def send_get_request(**kwargs) -> httpx.Response:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(**kwargs)
+        if response.status_code == 200:
+            return response
+        else:
+            raise ResponseError(f"Unable to fetch data, got {response.status_code}")
+
 # Function to add padding to base64 encoded data
 def add_padding(data: str) -> str:
     """Add padding to the input data to make its length a multiple of 4."""
@@ -38,8 +46,8 @@ def xor_decrypt(input_bytes: bytes, key: str) -> str:
 def decrypt_data(encrypted: Union[str, bytes], decrypt_type: str = "base64") -> str:
     """Decrypt the input data using the specified decrypt type."""
     if decrypt_type == "base64_decompress":
-        padded_data = add_padding(encrypted)
-        decoded_data = base64.urlsafe_b64decode(padded_data)
+        # padded_data = add_padding(encrypted)
+        decoded_data = base64.urlsafe_b64decode(encrypted)
         decompressed_data = zlib.decompress(decoded_data, 15 | 32)
         return decompressed_data.decode()
     elif decrypt_type == "xor":
@@ -159,3 +167,6 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
                 current_level['song'] = song
 
     return parsed_levels
+
+def is_newgrounds_song(id: int) -> bool:
+    return not id >= 10000000
