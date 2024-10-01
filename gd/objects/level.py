@@ -34,6 +34,7 @@ class DownloadedLevel:
     rating: 'LevelRating'
     difficulty: 'Difficulty'
     level_password: Optional[str]
+    official_song: Optional[OfficialSong]
 
     @staticmethod
     def from_raw(raw_str: str) -> 'DownloadedLevel':
@@ -69,7 +70,8 @@ class DownloadedLevel:
             weekly=parsed.get("41", -1) >= 100000,
             rating=DownloadedLevel._determine_rating(parsed),
             difficulty=DownloadedLevel._determine_difficulty(parsed),
-            level_password=None if isinstance(parsed.get("27"), bool) else parsed.get("27")
+            level_password=None if isinstance(parsed.get("27"), bool) else parsed.get("27"),
+            official_song=OfficialSong(parsed.get("12")) if parsed.get("12") else None
         )
 
     @staticmethod

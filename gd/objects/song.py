@@ -3,6 +3,7 @@ from typing import Dict, Optional, List
 from datetime import timedelta
 from ..ext import *
 from dataclasses import dataclass, field
+from enum import Enum
 
 @dataclass
 class MusicLibraryArtist:
@@ -106,10 +107,46 @@ class LevelSong:
             name=parsed.get('2'),
             artist_id=parsed.get('3'),
             artist_name=parsed.get('4'),
-            artist_verified=parsed.get('8') == '1',
+            artist_verified=parsed.get('8') == 1,
             song_size_mb=float(parsed.get('5', 0.0)),
             youtube_link=f"https://youtu.be/watch?v={parsed.get('6')}" if parsed.get("6") else None,
             song_link=unquote(parsed.get("10", '')) if parsed.get("10") else None,
-            is_ncs=parsed.get('11') == "1",
+            is_ncs=parsed.get('11') == 1,
             is_library_song=int(parsed.get('1')) >= 10000000
         )
+
+class OfficialSong(Enum):
+    STAY_INSIDE_ME = LevelSong(id=-1, name="Stay Inside Me", artist_name="OcularNebula")
+    STEREO_MADNESS = LevelSong(id=0, name="Stereo Madness", artist_name="ForeverBound")
+    BACK_ON_TRACK = LevelSong(id=1, name="Back On Track", artist_name="DJVI")
+    POLARGEIST = LevelSong(id=2, name="Polargeist", author_name="Step")
+    DRY_OUT = LevelSong(id=3, name="Dry Out", artist_name="DJVI")
+    BASE_AFTER_BASE = LevelSong(id=4, name="Base after Base", artist_name="DJVI")
+    CANT_LET_GO = LevelSong(id=5, name="Cant Let Go", artist_name="DJVI")
+    JUMPER = LevelSong(id=6, name="Jumper", artist_name="Waterflame")
+    TIME_MACHINE = LevelSong(id=7, name="Time Machine", artist_name="Waterflame")
+    CYCLES = LevelSong(id=8, name="Cycles", artist_name="DJVI")
+    XSTEP = LevelSong(id=9, name="xStep", artist_name="DJVI")
+    CLUTTERFUNK = LevelSong(id=10, name="Clutterfunk", artist_name="Waterflame")
+    THEORY_OF_EVERYTHING = LevelSong(id=11, name="Theory of Everything", artist_name="DJ-Nate")
+    ELECTROMAN_ADVENTURES = LevelSong(id=12, name="Electroman Advantures", artist_name="Waterflame")
+    CLUBSTEP = LevelSong(id=13, name="Clubstep", artist_name="DJ-Nate")
+    ELECTRODYNAMIX = LevelSong(id=14, name="Electrodynamix", artist_name="DJ-Nate")
+    HEXAGON_FORCE = LevelSong(id=15, name="Hexagon Force", artist_name="Waterflame")
+    BLAST_PROCESSING = LevelSong(id=16, name="Blast Processing", artist_name="Waterflame")
+    THEORY_OF_EVERYTHING_2 = LevelSong(id=17, name="Theory of Everything 2", artist_name="DJ-Nate")
+    GEOMETRICAL_DOMINATOR = LevelSong(id=18, name="Geometrical Dominator", artist_name="Waterflame")
+    DEADLOCKED = LevelSong(id=19, name="Deadlocked", artist_name="F-777")
+    FINGERDASH = LevelSong(id=20, name="Fingerdash", artist_name="MDK")
+    DASH = LevelSong(id=21, name="Dash", artist_name="MDK")
+    EXPLORERS = LevelSong(id=22, name="Explorers", artist_name="Hinkik")
+    
+    @classmethod
+    def from_id(cls, id: int) -> type[Enum]:
+        for song in cls:
+            if song.value.id == id:
+                return song
+        raise ValueError("Song not found!")
+        
+
+
