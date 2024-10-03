@@ -6,6 +6,47 @@ from dataclasses import dataclass, field
 
 @dataclass
 class DownloadedLevel:
+    """
+    A class representing a downloaded level in Geometry Dash.
+    
+    ### Attributes:
+        - `raw_str` (str): The raw string containing level data.
+        - `id` (Optional[int]): The unique ID of the level.
+        - `name` (Optional[str]): The name of the level.
+        - `description` (Optional[str]): A description of the level.
+        - `level_data` (Optional[str]): The data representing the level structure.
+        - `version` (Optional[int]): The version of the level.
+        - `creator_id` (Optional[int]): The ID of the level creator.
+        - `downloads` (int): The number of times the level has been downloaded.
+        - `likes` (Optional[int]): The number of likes the level has received.
+        - `copyable` (bool): Whether the level is copyable or not.
+        - `length` ('Length'): The length of the level.
+        - `requested_stars` (Optional[int]): The number of stars the creator has requested for the level.
+        - `stars` (Optional[int]): The number of stars the level has been awarded.
+        - `coins` (int): The number of coins in the level.
+        - `custom_song_id` (Optional[int]): The ID of the custom song used in the level.
+        - `song_list_ids` (List[int]): The list of song IDs used in the level.
+        - `sfx_list_ids` (List[int]): The list of sound effect IDs used in the level.
+        - `daily_id` (int): The ID of the daily challenge the level is part of.
+        - `copied_level_id` (Optional[int]): The ID of the level from which this level was copied.
+        - `low_detail_mode` (bool): Whether the level has a low-detail mode.
+        - `two_player_mode` (bool): Whether the level supports two-player mode.
+        - `verified_coins` (bool): Whether the coins in the level have been verified.
+        - `in_gauntlet` (bool): Whether the level is part of a gauntlet challenge.
+        - `daily` (bool): Whether the level is a daily challenge.
+        - `weekly` (bool): Whether the level is a weekly challenge.
+        - `rating` ('LevelRating'): The rating of the level.
+        - `difficulty` ('Difficulty'): The difficulty level of the level.
+        - `level_password` (Optional[str]): The password for editing the level, if applicable.
+        - `official_song` (Optional[OfficialSong]): The official song used in the level, if applicable.
+    
+    ### Methods:
+        - `from_raw`: Parses a raw level string into a `DownloadedLevel` object.
+        - `_parse_comma_separated_int_list`: Helper method to parse comma-separated integers from a string.
+        - `_determine_rating`: Determines the rating of the level based on parsed data.
+        - `_determine_difficulty`: Determines the difficulty of the level based on parsed data.
+    """
+    
     raw_str: str
     id: Optional[int]
     name: Optional[str]
@@ -38,6 +79,16 @@ class DownloadedLevel:
 
     @staticmethod
     def from_raw(raw_str: str) -> 'DownloadedLevel':
+        """
+        Converts a raw level string into a DownloadedLevel object.
+        
+        Args:
+            raw_str (str): The raw string representing the level data.
+            
+        Returns:
+            DownloadedLevel: A `DownloadedLevel` instance created from the parsed data.
+        """
+
         if not isinstance(raw_str, str):
             raise ValueError("Level string must be a str!")
 
@@ -76,7 +127,15 @@ class DownloadedLevel:
 
     @staticmethod
     def _parse_comma_separated_int_list(key: str) -> List[int]:
-        """Helper method to parse a comma-separated list of integers."""
+        """
+        Helper method to parse a comma-separated list of integers.
+        
+        Args:
+            key (str): A string containing integers separated by commas.
+            
+        Returns:
+            List[int]: A list of parsed integers.
+        """
         try:
             return [int(x) for x in key.split(",") if x.isdigit()]
         except AttributeError:
@@ -84,7 +143,16 @@ class DownloadedLevel:
 
     @staticmethod
     def _determine_rating(parsed) -> LevelRating:
-        """Determines the level rating."""
+        """
+        Determines the level's rating based on parsed data.
+        
+        Args:
+            parsed (dict): The parsed level data.
+            
+        Returns:
+            LevelRating: The rating of the level.
+        """
+
         if parsed.get("42", 0) >= 1:
             return LevelRating(parsed.get("42"))
         elif parsed.get("19", 0) >= 1:
@@ -96,7 +164,16 @@ class DownloadedLevel:
 
     @staticmethod
     def _determine_difficulty(parsed) -> Difficulty:
-        """Determines the level difficulty."""
+        """
+        Determines the level's difficulty based on parsed data.
+        
+        Args:
+            parsed (dict): The parsed level data.
+            
+        Returns:
+            Difficulty: The difficulty of the level.
+        """
+
         if parsed.get("17"):
             return Difficulty(6 + parsed.get("43", 0) / 10)
         elif parsed.get("25"):
@@ -107,11 +184,32 @@ class DownloadedLevel:
 
 @dataclass
 class SearchedLevel(DownloadedLevel):
+    """
+    A class representing a level searched in Geometry Dash.
+    
+    ### Attributes:
+        - `creator_name` (Optional[str]): The name of the level's creator.
+        - `song_data` ('LevelSong'): Data about the song used in the level.
+    
+    ### Methods:
+        - `from_raw`: Creates a `SearchedLevel` object from raw level data.
+    """
+
     creator_name: Optional[str]
     song_data: 'LevelSong'
 
     @staticmethod
     def from_raw(parsed_str: dict) -> 'SearchedLevel':
+        """
+        Converts parsed level data into a SearchedLevel object.
+        
+        Args:
+            parsed_str (dict): A dictionary containing parsed level data.
+            
+        Returns:
+            SearchedLevel: A `SearchedLevel` instance created from the parsed data.
+        """
+
         instance = DownloadedLevel.from_raw(parsed_str['level'])
         creator_name = parsed_str["creator"]["playerName"]
         song_data = LevelSong.from_raw(parsed_str["song"])

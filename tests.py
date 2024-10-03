@@ -2,6 +2,7 @@ import gd
 from gd.objects import *
 import asyncio
 from loguru import logger
+from json import dumps
 
 @logger.catch
 async def main():
@@ -19,7 +20,7 @@ async def main():
     # print(level.RATING)
     # print(level.DAILY_ID)
 
-    response = await geometrydash.search_level("cradles")
-    print(response[0].__dict__)
+    response = await geometrydash.download_level(128)
+    print(response.__dict__)
 
 asyncio.run(main())

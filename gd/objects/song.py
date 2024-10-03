@@ -116,37 +116,31 @@ class LevelSong:
         )
 
 class OfficialSong(Enum):
-    STAY_INSIDE_ME = LevelSong(id=-1, name="Stay Inside Me", artist_name="OcularNebula")
-    STEREO_MADNESS = LevelSong(id=0, name="Stereo Madness", artist_name="ForeverBound")
-    BACK_ON_TRACK = LevelSong(id=1, name="Back On Track", artist_name="DJVI")
-    POLARGEIST = LevelSong(id=2, name="Polargeist", author_name="Step")
-    DRY_OUT = LevelSong(id=3, name="Dry Out", artist_name="DJVI")
-    BASE_AFTER_BASE = LevelSong(id=4, name="Base after Base", artist_name="DJVI")
-    CANT_LET_GO = LevelSong(id=5, name="Cant Let Go", artist_name="DJVI")
-    JUMPER = LevelSong(id=6, name="Jumper", artist_name="Waterflame")
-    TIME_MACHINE = LevelSong(id=7, name="Time Machine", artist_name="Waterflame")
-    CYCLES = LevelSong(id=8, name="Cycles", artist_name="DJVI")
-    XSTEP = LevelSong(id=9, name="xStep", artist_name="DJVI")
-    CLUTTERFUNK = LevelSong(id=10, name="Clutterfunk", artist_name="Waterflame")
-    THEORY_OF_EVERYTHING = LevelSong(id=11, name="Theory of Everything", artist_name="DJ-Nate")
-    ELECTROMAN_ADVENTURES = LevelSong(id=12, name="Electroman Advantures", artist_name="Waterflame")
-    CLUBSTEP = LevelSong(id=13, name="Clubstep", artist_name="DJ-Nate")
-    ELECTRODYNAMIX = LevelSong(id=14, name="Electrodynamix", artist_name="DJ-Nate")
-    HEXAGON_FORCE = LevelSong(id=15, name="Hexagon Force", artist_name="Waterflame")
-    BLAST_PROCESSING = LevelSong(id=16, name="Blast Processing", artist_name="Waterflame")
-    THEORY_OF_EVERYTHING_2 = LevelSong(id=17, name="Theory of Everything 2", artist_name="DJ-Nate")
-    GEOMETRICAL_DOMINATOR = LevelSong(id=18, name="Geometrical Dominator", artist_name="Waterflame")
-    DEADLOCKED = LevelSong(id=19, name="Deadlocked", artist_name="F-777")
-    FINGERDASH = LevelSong(id=20, name="Fingerdash", artist_name="MDK")
-    DASH = LevelSong(id=21, name="Dash", artist_name="MDK")
-    EXPLORERS = LevelSong(id=22, name="Explorers", artist_name="Hinkik")
-    
-    @classmethod
-    def from_id(cls, id: int) -> type[Enum]:
-        for song in cls:
-            if song.value.id == id:
-                return song
-        raise ValueError("Song not found!")
+    STAY_INSIDE_ME = -1
+    STEREO_MADNESS = 0
+    BACK_ON_TRACK = 1
+    POLARGEIST = 2
+    DRY_OUT = 3
+    BASE_AFTER_BASE = 4
+    CANT_LET_GO = 5
+    JUMPER = 6
+    TIME_MACHINE = 7
+    CYCLES = 8
+    XSTEP = 9
+    CLUTTERFUNK = 10
+    THEORY_OF_EVERYTHING = 11
+    ELECTROMAN_ADVENTURES = 12
+    CLUBSTEP = 13
+    ELECTRODYNAMIX = 14
+    HEXAGON_FORCE = 15
+    BLAST_PROCESSING = 16
+    THEORY_OF_EVERYTHING_2 = 17
+    GEOMETRICAL_DOMINATOR = 18
+    DEADLOCKED = 19
+    FINGERDASH = 20
+    DASH = 21
+    EXPLORERS = 22
+
         
 
 

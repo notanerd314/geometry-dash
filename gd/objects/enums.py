@@ -4,17 +4,21 @@ from enum import Enum
 
 class Difficulty(Enum):
     """
-    A **Enum** class representing the difficulties in Geometry Dash.
+    An **Enum** class representing the different difficulty levels in Geometry Dash.
 
     ### Difficulties:
-        `NA` (0): No difficulty
-        `EASY` (1): Easy
-        `NORMAL` (2): Normal
-        `HARD` (3): Hard
-        `HARDER` (4): Harder
-        `INSANE` (5): Insane
-        `EASY_DEMON` to `EXTREME_DEMON` (6.3 - 6.6): Demon Difficulties
-        `AUTO` (7): Auto, plays itself.
+        - `NA` (0): No difficulty assigned.
+        - `EASY` (1): Easy level.
+        - `NORMAL` (2): Normal level.
+        - `HARD` (3): Hard level.
+        - `HARDER` (4): Harder level.
+        - `INSANE` (5): Insane level.
+        - `EASY_DEMON` (6.3): Easy Demon difficulty.
+        - `MEDIUM_DEMON` (6.4): Medium Demon difficulty.
+        - `HARD_DEMON` (6.0): Hard Demon difficulty.
+        - `INSANE_DEMON` (6.5): Insane Demon difficulty.
+        - `EXTREME_DEMON` (6.6): Extreme Demon difficulty.
+        - `AUTO` (7): Automatic level that plays itself.
     """
 
     NA = 0
@@ -30,18 +34,20 @@ class Difficulty(Enum):
     EXTREME_DEMON = 6.6
     AUTO = 7
 
+
 class Length(Enum):
     """
-    A class respresenting a level length from Tiny to XL.
+    An **Enum** class representing the length of a Geometry Dash level.
 
     ### Lengths:
-        TINY (0): Very short length
-        SHORT (1): Short length
-        MEDIUM (2): Medium length
-        LONG (3): Long length
-        XL (4): Very long length
-        PLATFORMER (5): Platformer level
+        - `TINY` (0): Very short level.
+        - `SHORT` (1): Short level.
+        - `MEDIUM` (2): Medium length.
+        - `LONG` (3): Long level.
+        - `XL` (4): Extra long level.
+        - `PLATFORMER` (5): Platformer level type.
     """
+    
     TINY = 0
     SHORT = 1
     MEDIUM = 2
@@ -49,13 +55,83 @@ class Length(Enum):
     XL = 4
     PLATFORMER = 5
 
+
 class LevelRating(Enum):
     """
-    A class respresenting the rating of the level.
+    An **Enum** class representing the rating of a Geometry Dash level.
+
+    ### Ratings:
+        - `NO_RATE` (-2): No rating given.
+        - `RATED` (-1): Rated level.
+        - `FEATURED` (0): Featured level.
+        - `EPIC` (1): Epic-rated level.
+        - `MYTHIC` (2): Mythic-rated level.
+        - `LEGENDARY` (3): Legendary-rated level.
     """
+    
     NO_RATE = -2
     RATED = -1
     FEATURED = 0
     EPIC = 1
     MYTHIC = 2
     LEGENDARY = 3
+
+
+class ModLevel(Enum):
+    """
+    An **Enum** class representing the moderator status of a Geometry Dash level.
+
+    ### Moderator Levels:
+        - `NONE` (0): No moderator status.
+        - `MOD` (1): Moderated level.
+        - `ELDER_MOD` (2): Elder moderator level.
+        - `RUBRUB` (3): Robtop itself.
+    """
+    
+    NONE = 0
+    MOD = 1
+    ELDER_MOD = 2
+    RUBRUB = 3
+
+
+class Gamemode(Enum):
+    """
+    An **Enum** class representing the different game modes in Geometry Dash.
+
+    ### Gamemodes:
+        - `CUBE` (1): Cube mode.
+        - `SHIP` (2): Ship mode.
+        - `BALL` (3): Ball mode.
+        - `UFO` (4): UFO mode.
+        - `WAVE` (5): Wave mode.
+        - `ROBOT` (6): Robot mode.
+        - `SPIDER` (7): Spider mode.
+        - `SWING` (8): Swingcopter mode.
+        - `JETPACK` (9): Jetpack mode.
+    """
+    
+    CUBE = 1
+    SHIP = 2
+    BALL = 3
+    UFO = 4
+    WAVE = 5
+    ROBOT = 6
+    SPIDER = 7
+    SWING = 8
+    JETPACK = 9
+
+
+class ColorType(Enum):
+    """
+    An **Enum** class representing color types in Geometry Dash.
+
+    ### Color Types:
+        - `primary` (1): Primary color.
+        - `secondary` (2): Secondary color.
+        - `glow` (3): Glow effect.
+    """
+    
+    primary = 1
+    secondary = 2
+    glow = 3
+
