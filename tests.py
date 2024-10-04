@@ -20,7 +20,7 @@ async def main():
     # print(level.RATING)
     # print(level.DAILY_ID)
 
-    response = await geometrydash.download_level(128)
+    response = await geometrydash.get_user_profile(9276649)
     print(response.__dict__)
 
 asyncio.run(main())

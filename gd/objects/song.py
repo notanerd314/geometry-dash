@@ -5,6 +5,8 @@ from ..ext import *
 from dataclasses import dataclass, field
 from enum import Enum
 
+# Music Library
+
 @dataclass
 class MusicLibraryArtist:
     id: int
@@ -85,6 +87,115 @@ class MusicLibrary:
         }
 
         return MusicLibrary(version=version, artists=artists, songs=songs, tags=tags)
+
+# SFX Library
+
+@dataclass
+class SFXLibrary:
+    version: int
+    folders: List['SFXLibraryFolder']
+    creators: List['SFXLibraryCreator']
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'SFXLibrary':
+        parsed = raw_str.strip().split("|")
+        parsed_sfx = parsed[0].split(";")
+        parsed_creators = parsed[1].split(";")
+
+        # Extract the version name from folder with id 1
+        folders = []
+        for folder_str in parsed_sfx:
+            try:
+                is_folder = folder_str.strip().split(",")[2] == "1"
+            except IndexError:
+                is_folder = False
+
+            if is_folder:
+                folder = SFXLibraryFolder.from_raw(folder_str)
+                if folder.id == 1:
+                    version_name = folder.name  # Folder with id 1 contains the version name
+                else:
+                    folders.append(folder)
+
+        # Inject SFX into the appropriate folders
+        for raw_sfx in parsed_sfx:
+            try:
+                is_not_folder = raw_sfx.strip().split(",")[2] != "1"
+            except IndexError:
+                is_not_folder = False
+
+            if is_not_folder:
+                parsed_sfx_obj = SFX.from_raw(raw_sfx)
+                sfx_folder_id = parsed_sfx_obj.parent_folder_id
+
+                for folder in folders:
+                    if folder.id == sfx_folder_id:
+                        folder.inject_song(raw_sfx)
+                        break
+
+        creators = [SFXLibraryCreator.from_raw(creator) for creator in parsed_creators if creator != ""]
+
+        return SFXLibrary(version=int(version_name), folders=folders, creators=creators)
+
+
+@dataclass
+class SFXLibraryCreator:
+    name: str
+    url: str
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'SFXLibraryCreator':
+        parsed = raw_str.strip().split(",")
+        return SFXLibraryCreator(
+            name=parsed[0],
+            url=unquote(parsed[1])
+        )
+
+@dataclass
+class SFX:
+    id: int
+    name: str
+    parent_folder_id: str
+    file_size: float
+    url: str
+    duration: timedelta
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'SFX':
+        parsed = raw_str.strip().split(",")
+        return SFX(
+            id=int(parsed[0]),
+            name=parsed[1],
+            parent_folder_id=int(parsed[3]),
+            file_size=float(parsed[4]),
+            url=f"https://geometrydashfiles.b-cdn.net/sfx/s{parsed[0]}.ogg",
+            duration=timedelta(seconds=int(parsed[5])//100)
+        )
+
+@dataclass
+class SFXLibraryFolder:
+    id: int
+    name: str
+    sfx: List[SFX] = field(default_factory=list)  # Initialize sfx list
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'SFXLibraryFolder':
+        parsed = raw_str.strip().split(",")
+        return SFXLibraryFolder(
+            id=int(parsed[0]),
+            name=parsed[1],
+        )
+    
+    def inject_song(self, raw_str_song: str) -> None:
+        injected_sfx: SFX = SFX.from_raw(raw_str_song)
+
+        if injected_sfx.parent_folder_id != self.id:  # Compare folder names
+            raise ValueError(f"Cannot inject an sfx that belongs to a different folder ({injected_sfx.parent_folder.name}).")
+        
+        self.sfx.append(injected_sfx)
+
+
+# Level song
 
 @dataclass
 class LevelSong:

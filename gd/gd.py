@@ -1,6 +1,7 @@
 from .ext import *
 from .objects.level import *
 from .objects.song import *
+from .objects.users import *
 from datetime import timedelta
 from typing import Union, Tuple
 
@@ -59,11 +60,31 @@ class GeometryDash:
         music_library_encoded = response.content
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
         return MusicLibrary.from_raw(music_library)
+    
+    async def get_sfx_library(self) -> SFXLibrary:
+        """Gets the current SFX library in RobTop's servers"""
+        response = await send_get_request(
+            url="https://geometrydashfiles.b-cdn.net/sfx/sfxlibrary.dat",
+        )
+        music_library_encoded = response.content
+        music_library = decrypt_data(music_library_encoded, "base64_decompress")
+        return SFXLibrary.from_raw(music_library)
 
     async def get_song_data(self, id: int) -> Union[LevelSong, MusicLibrarySong]:
         """Gets song data by ID, either from Newgrounds or the music library."""
         response = await send_post_request(
-            url="http://boomlings.com/database/getGJSongInfo.php",
+            url="http://www.boomlings.com/database/getGJSongInfo.php",
             data={'secret': self.secret, "songID": id}
         )
         return LevelSong.from_raw(response)
+
+    async def get_user_profile(self, id: int) -> UserProfile:
+        """Get user profile by name or id. Use `int` if you want to fetch the profile by ID."""
+        if isinstance(id, int):
+            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
+            data = {'secret': self.secret, "targetAccountID": id}
+        else:
+            raise ValueError("ID must be int")
+
+        response = await send_post_request(url=url, data=data)
+        return UserProfile.from_raw(response)
