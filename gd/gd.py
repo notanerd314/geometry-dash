@@ -78,13 +78,21 @@ class GeometryDash:
         )
         return LevelSong.from_raw(response)
 
-    async def get_user_profile(self, id: int) -> UserProfile:
-        """Get user profile by name or id. Use `int` if you want to fetch the profile by ID."""
-        if isinstance(id, int):
+    async def get_user_profile(self, account_id: int) -> UserProfile:
+        """Get user profile by account ID."""
+        if isinstance(account_id, int):
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {'secret': self.secret, "targetAccountID": id}
+            data = {'secret': self.secret, "targetAccountID": account_id}
         else:
             raise ValueError("ID must be int")
 
         response = await send_post_request(url=url, data=data)
+        return UserProfile.from_raw(response)
+
+    async def search_user(self, username: str) -> UserProfile:
+        """Search for a user by their username. Note that this doesn't return the full information."""
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJUsers20.php",
+            data={'secret': self.secret, "str": username}
+        )
         return UserProfile.from_raw(response)

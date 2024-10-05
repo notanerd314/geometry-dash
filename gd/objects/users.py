@@ -12,7 +12,7 @@ class UserProfile:
     moons: Optional[int]
     demons: Optional[int]
     diamonds: Optional[int]
-    leaderboard_rank: Optional[int]
+    rank: Optional[int]
     creator_points: Optional[int]
     secret_coins: Optional[int]
     user_coins: Optional[int]
@@ -39,7 +39,7 @@ class UserProfile:
             moons=parsed.get('52', 0),
             demons=parsed.get('4', 0),
             diamonds=parsed.get('46'),
-            leaderboard_rank=parsed.get('6'),
+            rank=parsed.get('30'),
             creator_points=parsed.get('8', 0),
             secret_coins=parsed.get('13', 0),
             user_coins=parsed.get('17', 0),

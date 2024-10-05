@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum, Enum
 
 # Enum
 
@@ -35,7 +35,7 @@ class Difficulty(Enum):
     AUTO = 7
 
 
-class Length(Enum):
+class Length(IntEnum):
     """
     An **Enum** class representing the length of a Geometry Dash level.
 
@@ -77,21 +77,19 @@ class LevelRating(Enum):
     LEGENDARY = 3
 
 
-class ModLevel(Enum):
+class ModLevel(IntEnum):
     """
     An **Enum** class representing the moderator status of a Geometry Dash level.
 
     ### Moderator Levels:
         - `NONE` (0): No moderator status.
-        - `MOD` (1): Moderated level.
-        - `ELDER_MOD` (2): Elder moderator level.
-        - `RUBRUB` (3): Robtop itself.
+        - `MOD` (1): Moderator.
+        - `ELDER_MOD` (2): Elder moderator.
     """
     
     NONE = 0
     MOD = 1
     ELDER_MOD = 2
-    RUBRUB = 3
 
 
 class Gamemode(Enum):
