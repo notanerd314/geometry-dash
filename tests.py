@@ -6,7 +6,7 @@ from json import dumps
 
 @logger.catch
 async def main():
-    geometrydash = gd.GeometryDash("Wmfd2893gb7")
+    geometrydash = gd.GeometryDash()
     
     # response = await geometrydash.get_daily_level(weekly=True, get_time_left=True)
     
@@ -20,7 +20,8 @@ async def main():
     # print(level.RATING)
     # print(level.DAILY_ID)
 
-    response = await geometrydash.get_user_profile(9276649)
-    print(response.__dict__)
+    response = await geometrydash.get_level_comments(60805571)
+    for comment in response:
+        print(comment.__dict__)
 
 asyncio.run(main())

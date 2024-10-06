@@ -2,14 +2,15 @@ from .ext import *
 from .objects.level import *
 from .objects.song import *
 from .objects.users import *
+from .objects.comments import *
 from datetime import timedelta
 from typing import Union, Tuple
 
 _secret = "Wmfd2893gb7"
 
 class GeometryDash:
-    def __init__(self, secret: str = _secret) -> None:
-        self.secret = secret
+    def __init__(self) -> None:
+        self.secret = _secret
 
     async def download_level(self, id: int) -> DownloadedLevel:
         """Downloads a specific level from the Geometry Dash servers using the provided ID."""
@@ -96,3 +97,11 @@ class GeometryDash:
             data={'secret': self.secret, "str": username}
         )
         return UserProfile.from_raw(response)
+    
+    async def get_level_comments(self, level_id: int, page: int = 0) -> List[LevelComment]:
+        """Get level comments by level ID."""
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJComments21.php",
+            data={'secret': self.secret, "levelID": level_id, "page": page}
+        )
+        return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
