@@ -11,7 +11,7 @@ class GeometryDash:
     def __init__(self, secret: str = _secret) -> None:
         self.secret = secret
 
-    async def download_level(self, id: int, ng_song_data: bool = False) -> DownloadedLevel:
+    async def download_level(self, id: int) -> DownloadedLevel:
         """Downloads a specific level from the Geometry Dash servers using the provided ID."""
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")

@@ -20,7 +20,7 @@ class MusicLibraryArtist:
         return MusicLibraryArtist(
             id=int(parsed[0]),
             name=parsed[1],
-            website=parsed[2] if parsed[2].strip() else None,
+            website=unquote(parsed[2]) if parsed[2].strip() else None,
             youtube_channel_id=parsed[3] if parsed[3].strip() else None
         )
 
@@ -29,42 +29,39 @@ class MusicLibrarySong:
     id: int
     name: str
     artist: Optional[MusicLibraryArtist]
+    tags: set[str]
     file_size_bytes: float
     duration_seconds: timedelta
     is_ncs: bool
 
     @staticmethod
-    def from_raw(raw_str: str, artists: Dict[int, MusicLibraryArtist]) -> 'MusicLibrarySong':
+    def from_raw(raw_str: str, artists_list: Dict[int, MusicLibraryArtist] = None, tags_list: Dict[int, str] = None) -> 'MusicLibrarySong':
         parsed = raw_str.strip().split(",")
-        artist_id = int(parsed[2]) if parsed[2].strip() else None
+        try:
+            artist_id = int(parsed[2]) if parsed[2].strip() else None
+        except ValueError:
+            artist_id = None
+
+        raw_song_tag_list = [tag for tag in parsed[5].split(".") if tag]
+        song_tag_list = {tags_list.get(int(tag)) for tag in raw_song_tag_list}
+
         return MusicLibrarySong(
             id=int(parsed[0]),
             name=parsed[1],
-            artist=artists.get(artist_id),
+            artist=artists_list.get(artist_id),
+            tags=song_tag_list,
             file_size_bytes=float(parsed[3]),
             duration_seconds=timedelta(seconds=int(parsed[4])),
             is_ncs=parsed[6] == '1'
         )
 
-@dataclass
-class MusicLibraryTag:
-    id: int
-    name: str
-
-    @staticmethod
-    def from_raw(raw_str: str) -> 'MusicLibraryTag':
-        parsed = raw_str.strip().split(",")
-        return MusicLibraryTag(
-            id=int(parsed[0]),
-            name=parsed[1]
-        )
 
 @dataclass
 class MusicLibrary:
     version: int
     artists: Dict[int, MusicLibraryArtist] = field(default_factory=dict)
     songs: Dict[int, MusicLibrarySong] = field(default_factory=dict)
-    tags: Dict[int, MusicLibraryTag] = field(default_factory=dict)
+    tags: Dict[int, str] = field(default_factory=dict)
 
     @staticmethod
     def from_raw(raw_str: str) -> 'MusicLibrary':
@@ -76,17 +73,68 @@ class MusicLibrary:
             for artist in parsed[1].split(";") if artist.strip()
         }
 
-        songs = {
-            int(song.split(",")[0]): MusicLibrarySong.from_raw(song, artists)
-            for song in parsed[2].split(";") if song.strip()
-        }
-
         tags = {
-            int(tag.split(",")[0]): MusicLibraryTag.from_raw(tag)
+            int(tag.split(",")[0]): tag.split(",")[1].strip()
             for tag in parsed[3].split(";") if tag.strip()
         }
 
+        songs = {
+            int(song.split(",")[0]): MusicLibrarySong.from_raw(song, artists, tags)
+            for song in parsed[2].split(";") if song.strip()
+        }
+
         return MusicLibrary(version=version, artists=artists, songs=songs, tags=tags)
+    
+    def filter_song_by_tags(self, tags: set[str]) -> List[MusicLibrarySong]:
+        """Get all songs with the tags specified."""
+        songs = []
+        tags = {tag.lower() for tag in tags}
+
+        for tag in tags:
+            if tag not in [tag.lower() for tag in self.tags.values()]:
+                raise ValueError(f"The tag {tag} doesn't exist in the music library!")
+        
+        for song in self.songs.values():
+            song_tag = {tag.lower() for tag in song.tags}
+            if tags.issubset(song_tag) and song_tag:
+                songs.append(song)
+        return songs
+
+    def get_song_by_name(self, name: str) -> MusicLibrarySong | None:
+        """Get song by it's name."""
+        for song in self.songs.values():
+            if song.name.lower() == name.lower():
+                return song
+        return None
+
+    def get_song_by_id(self, id: int) -> MusicLibrarySong | None:
+        """Get song by it's ID."""
+        for song in self.songs.values():
+            if id == song.id:
+                return song
+        return None
+    
+    def search_songs(self, query: str) -> list[MusicLibrarySong]:
+        """Search songs by name."""
+        query = query.rstrip()
+        songs = []
+
+        for song in self.songs.values():
+            if query.lower() in song.name.lower():
+                songs.append(song)
+        return songs
+    
+    def filter_song_by_artist(self, artist: str) -> list[MusicLibrarySong]:
+        """Get song by the name of the artist."""
+        songs = []
+
+        for song in self.songs.values():
+            try:
+                if song.artist.name.lower() == artist.lower():
+                    songs.append(song)
+            except AttributeError:
+                pass
+        return songs
 
 # SFX Library
 
@@ -130,12 +178,18 @@ class SFXLibrary:
 
                 for folder in folders:
                     if folder.id == sfx_folder_id:
-                        folder.inject_song(raw_sfx)
+                        folder.inject_sfx(raw_sfx)
                         break
 
         creators = [SFXLibraryCreator.from_raw(creator) for creator in parsed_creators if creator != ""]
 
         return SFXLibrary(version=int(version_name), folders=folders, creators=creators)
+
+    def get_folder_by_name(self, name: str):
+        for folder in self.folders:
+            if folder.name == name:
+                return folder
+        return None
 
 
 @dataclass
@@ -186,13 +240,28 @@ class SFXLibraryFolder:
             name=parsed[1],
         )
     
-    def inject_song(self, raw_str_song: str) -> None:
+    def inject_sfx(self, raw_str_song: str) -> None:
+        """Helper function to add a sound effect to the folder."""
         injected_sfx: SFX = SFX.from_raw(raw_str_song)
 
         if injected_sfx.parent_folder_id != self.id:  # Compare folder names
             raise ValueError(f"Cannot inject an sfx that belongs to a different folder ({injected_sfx.parent_folder.name}).")
         
         self.sfx.append(injected_sfx)
+
+    def get_song_by_name(self, name: str) -> SFX:
+        """Find a sound effect by name."""
+        for sfx in self.sfx:
+            if sfx.name == name:
+                return sfx
+        return None
+    
+    def get_song_by_id(self, id: int) -> SFX | None:
+        """Find a sound effect by id."""
+        for sfx in self.sfx:
+            if sfx.id == id:
+                return sfx
+        return None
 
 
 # Level song

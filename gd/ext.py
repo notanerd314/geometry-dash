@@ -8,9 +8,6 @@ from typing import List, Dict, Union
 class ResponseError(Exception):
     pass
 
-class InvalidSecret(Exception):
-    pass
-
 # Helper function to send an asynchronous POST request
 async def send_post_request(**kwargs) -> str:
     """Send an asynchronous POST request and handle response."""
@@ -18,7 +15,7 @@ async def send_post_request(**kwargs) -> str:
         response = await client.post(**kwargs, headers={"User-Agent": ""})
         if response.status_code == 200:
             if response.text == "-1":
-                raise InvalidSecret('Invalid secret! Hint: The secret is Wmfd2893gb7.')
+                raise ResponseError("The request has failed and returned a stupid '-1'!")
             return response.text
         else:
             raise ResponseError(f"Unable to fetch data, got {response.status_code}.")
