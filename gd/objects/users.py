@@ -1,13 +1,17 @@
 from ..ext import *
 from .enums import *
 from .icons import *
+from .comments import *
 from typing import List, Optional, Union
 from dataclasses import dataclass
+
+_secret = "Wmfd2893gb7"
 
 @dataclass
 class UserProfile:
     name: str
-    id: int
+    player_id: int
+    account_id: int
     stars: Optional[int]
     moons: Optional[int]
     demons: Optional[int]
@@ -29,12 +33,12 @@ class UserProfile:
     twitch: Optional[str]
 
     @staticmethod
-    def from_raw(raw_str: str):
+    def from_raw(raw_str: str) -> 'UserProfile':
         parsed = parse_key_value_pairs(raw_str)
-        print(parsed)
         return UserProfile(
             name=parsed.get('1', None),
-            id=parsed.get('2', 0),
+            player_id=parsed.get('2', 0),
+            account_id=parsed.get('16', 0),
             stars=parsed.get('3', 0),
             moons=parsed.get('52', 0),
             demons=parsed.get('4', 0),
@@ -55,3 +59,28 @@ class UserProfile:
             twitter_or_x=parsed.get('44'),
             twitch=parsed.get('45')
         )
+
+    async def load_posts(self, page: int = 0) -> List[ProfilePost] | None:
+        """Get user's posts by Account ID"""
+        account_id = self.account_id
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJAccountComments20.php",
+            data={'secret': _secret, "accountID": account_id, "page": page}
+        )
+
+        if response:
+            posts_list = []
+            parsed_res = response.split("|")
+            for post in parsed_res:
+                posts_list.append(ProfilePost.from_raw(post, account_id))
+            return posts_list
+        
+    async def reload(self) -> 'UserProfile':
+        """Get user profile by account ID."""
+        account_id = self.account_id
+        if isinstance(account_id, int):
+            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
+            data = {'secret': _secret, "targetAccountID": account_id}
+
+        response = await send_post_request(url=url, data=data)
+        return UserProfile.from_raw(response)

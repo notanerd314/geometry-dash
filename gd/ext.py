@@ -60,6 +60,7 @@ def decrypt_data(encrypted: Union[str, bytes], decrypt_type: str = "base64") -> 
 def parse_key_value_pairs(text: str, separator: str = ":") -> Dict[str, Union[str, int]]:
     """Parse key-value pairs from a colon-separated string."""
     pairs = {}
+    text = text.split("#")[0]
     items = text.split(separator)
     for index in range(0, len(items), 2):
         key = items[index]

@@ -91,7 +91,7 @@ class GeometryDash:
         return UserProfile.from_raw(response)
 
     async def search_user(self, username: str) -> UserProfile:
-        """Search for a user by their username. Note that this doesn't return the full information."""
+        """Search for a user by their username. Note: this doesn't return the full information."""
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJUsers20.php",
             data={'secret': self.secret, "str": username}
@@ -105,3 +105,17 @@ class GeometryDash:
             data={'secret': self.secret, "levelID": level_id, "page": page}
         )
         return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
+    
+    async def get_user_posts(self, account_id: int, page: int = 0) -> List[ProfilePost] | None:
+        """Get user's posts by Account ID"""
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJAccountComments20.php",
+            data={'secret': self.secret, "accountID": account_id, "page": page}
+        )
+
+        if response:
+            posts_list = []
+            parsed_res = response.split("|")
+            for post in parsed_res:
+                posts_list.append(ProfilePost.from_raw(post, account_id))
+            return posts_list

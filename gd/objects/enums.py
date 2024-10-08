@@ -1,4 +1,4 @@
-from enum import IntEnum, Enum
+from enum import IntEnum, StrEnum, Enum, auto
 
 # Enum
 
@@ -108,15 +108,15 @@ class Gamemode(Enum):
         - `JETPACK` (9): Jetpack mode.
     """
     
-    CUBE = 1
-    SHIP = 2
-    BALL = 3
-    UFO = 4
-    WAVE = 5
-    ROBOT = 6
-    SPIDER = 7
-    SWING = 8
-    JETPACK = 9
+    CUBE = 0
+    SHIP = 1
+    BALL = 2
+    UFO = 3
+    WAVE = 4
+    ROBOT = 5
+    SPIDER = 6
+    SWING = 7
+    JETPACK = 8
 
 
 class ColorType(Enum):
