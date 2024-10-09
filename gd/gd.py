@@ -119,3 +119,11 @@ class GeometryDash:
             for post in parsed_res:
                 posts_list.append(ProfilePost.from_raw(post, account_id))
             return posts_list
+        
+    async def get_user_comments_history(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> List[LevelComment]:
+        """Get user's comments history."""
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJCommentHistory.php",
+            data={'secret': self.secret, "userID": player_id, "page": page, "mode": int(display_most_liked)}
+        )
+        return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]

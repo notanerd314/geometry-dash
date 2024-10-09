@@ -34,6 +34,12 @@ class UserProfile:
 
     @staticmethod
     def from_raw(raw_str: str) -> 'UserProfile':
+        """
+        Parse the string data from the servers and returns an UserProfile instance.
+
+        Parameters:
+            rawex       (str):  The string data to parse                            tyu t   yv                                               
+        """
         parsed = parse_key_value_pairs(raw_str)
         return UserProfile(
             name=parsed.get('1', None),
@@ -75,8 +81,17 @@ class UserProfile:
                 posts_list.append(ProfilePost.from_raw(post, account_id))
             return posts_list
         
+    async def load_comments_history(self, page: int = 0, display_most_liked: bool = False):
+        """Get user's comments history, note that the author information won't be displayed."""
+        player_id = self.player_id
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJCommentHistory.php",
+            data={'secret': self.secret, "playerID": player_id, "page": page, "mode": int(display_most_liked)}
+        )
+        return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
+        
     async def reload(self) -> 'UserProfile':
-        """Get user profile by account ID."""
+        """Reload user profile by account ID and returns the UserProfile instance."""
         account_id = self.account_id
         if isinstance(account_id, int):
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"

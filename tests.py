@@ -20,8 +20,9 @@ async def main():
     # print(level.RATING)
     # print(level.DAILY_ID)
 
-    response = await geometrydash.get_level_comments(60805571)
+    response = await geometrydash.get_user_comments_history(3935672, display_most_liked=True)
     for comment in response:
+        print()
         print(comment.__dict__)
 
 asyncio.run(main())
