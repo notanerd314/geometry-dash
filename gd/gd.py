@@ -1,16 +1,15 @@
-from .ext import *
-from .objects.level import *
-from .objects.song import *
-from .objects.users import *
-from .objects.comments import *
+from .helpers import *
+from .models.level import *
+from .models.song import *
+from .models.users import *
 from datetime import timedelta
 from typing import Union, Tuple
 
 _secret = "Wmfd2893gb7"
 
-class GeometryDash:
+class Client:
     def __init__(self) -> None:
-        self.secret = _secret
+        pass
 
     async def download_level(self, id: int) -> DownloadedLevel:
         """Downloads a specific level from the Geometry Dash servers using the provided ID."""
@@ -20,21 +19,21 @@ class GeometryDash:
         try:
             response = await send_post_request(
                 url="http://www.boomlings.com/database/downloadGJLevel22.php", 
-                data={"levelID": id, "secret": self.secret}
+                data={"levelID": id, "secret": _secret}
             )
             return DownloadedLevel.from_raw(response)
         except RuntimeError as e:
             raise RuntimeError(f"Failed to download level: {e}")
 
-    async def get_daily_level(self, weekly: bool = False, get_time_left: bool = False) -> Union[DownloadedLevel, Tuple[DownloadedLevel, timedelta]]:
-        """Downloads the daily or weekly level from the Geometry Dash servers."""
+    async def download_daily_level(self, weekly: bool = False, get_time_left: bool = False) -> Union[DownloadedLevel, Tuple[DownloadedLevel, timedelta]]:
+        """Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally."""
         try:
             level = await self.download_level(-2 if weekly else -1)
             
             if get_time_left:
                 daily_data: str = await send_post_request(
                     url="http://www.boomlings.com/database/getGJDailyLevel.php", 
-                    data={"secret": self.secret, "weekly": "1" if weekly else "0"}
+                    data={"secret": _secret, "weekly": "1" if weekly else "0"}
                 )
                 daily_data = daily_data.split("|")
                 return level, timedelta(seconds=int(daily_data[1]))
@@ -47,7 +46,7 @@ class GeometryDash:
         """Searches for levels matching the given query string."""
         search_data: str = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php", 
-            data={"secret": self.secret, "str": query, "type": 0}
+            data={"secret": _secret, "str": query, "type": 0}
         )
         
         parsed_results = parse_search_results(search_data)
@@ -75,7 +74,7 @@ class GeometryDash:
         """Gets song data by ID, either from Newgrounds or the music library."""
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
-            data={'secret': self.secret, "songID": id}
+            data={'secret': _secret, "songID": id}
         )
         return LevelSong.from_raw(response)
 
@@ -83,7 +82,7 @@ class GeometryDash:
         """Get user profile by account ID."""
         if isinstance(account_id, int):
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {'secret': self.secret, "targetAccountID": account_id}
+            data = {'secret': _secret, "targetAccountID": account_id}
         else:
             raise ValueError("ID must be int")
 
@@ -91,10 +90,10 @@ class GeometryDash:
         return UserProfile.from_raw(response)
 
     async def search_user(self, username: str) -> UserProfile:
-        """Search for a user by their username. Note: this doesn't return the full information."""
+        """Search for a user by their username. Note: this doesn't return the full information, use `UserProfile.reload()` to get the full profile."""
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJUsers20.php",
-            data={'secret': self.secret, "str": username}
+            data={'secret': _secret, "str": username}
         )
         return UserProfile.from_raw(response)
     
@@ -102,7 +101,7 @@ class GeometryDash:
         """Get level comments by level ID."""
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJComments21.php",
-            data={'secret': self.secret, "levelID": level_id, "page": page}
+            data={'secret': _secret, "levelID": level_id, "page": page}
         )
         return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
     
@@ -110,7 +109,7 @@ class GeometryDash:
         """Get user's posts by Account ID"""
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
-            data={'secret': self.secret, "accountID": account_id, "page": page}
+            data={'secret': _secret, "accountID": account_id, "page": page}
         )
 
         if response:
@@ -124,6 +123,6 @@ class GeometryDash:
         """Get user's comments history."""
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
-            data={'secret': self.secret, "userID": player_id, "page": page, "mode": int(display_most_liked)}
+            data={'secret': _secret, "userID": player_id, "page": page, "mode": int(display_most_liked)}
         )
         return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]

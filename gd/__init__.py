@@ -1,22 +1,21 @@
 """
-**Geometry Dash API Wrapper**
+# Geometry Dash API Wrapper
 
-A wrapper for the Geometry Dash API.
+A wrapper for the Geometry Dash (and Pointercrate also!)
 
-Some features were removed due to raised concerns about hacking.
-
+Start using the wrapper by `gd.Client()`
 """
 
-__title__ = 'geometrydash'
+__title__ = 'gdapi'
 __author__ = 'notanerd'
 __license__ = 'GPL-3.0'
-__copyright__ = 'Copyright 2021 notanerd'
+__copyright__ = 'Copyright 2024 notanerd'
 __version__ = '1.0.0'
 
 from collections import namedtuple
 
 from .gd import *
-from .objects import *
+from .models import *
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 

@@ -1,11 +1,32 @@
-from ..ext import *
+from ..helpers import *
 from .enums import *
 from .icons import *
-from .comments import *
+from .level import LevelComment
 from typing import List, Optional, Union
 from dataclasses import dataclass
 
 _secret = "Wmfd2893gb7"
+
+@dataclass
+class ProfilePost:
+    content: str
+    likes: int
+    message_id: int
+    posted_ago: str
+    author_account_id: int
+
+    @staticmethod
+    def from_raw(raw_str: str, account_id: int) -> 'ProfilePost':
+        parsed = raw_str.split(":")
+        comment_value = parse_key_value_pairs(parsed[0], '~')
+
+        return ProfilePost(
+            content=decrypt_data(comment_value.get("2", "")),
+            likes=int(comment_value.get("4", 0)),
+            message_id=int(comment_value.get("6", 0)),
+            posted_ago=comment_value.get("9", None),
+            author_account_id=account_id
+        )
 
 @dataclass
 class UserProfile:
