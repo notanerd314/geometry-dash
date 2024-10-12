@@ -1,9 +1,15 @@
+"""
+## .models.level
+
+A module containing all the classes and methods related to levels in Geometry Dash.
+"""
+
 from ..helpers import *
 from .enums import *
 from .icons import *
 from typing import List, Optional, Union
 from .song import *
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 @dataclass
 class DownloadedLevel:
@@ -99,9 +105,10 @@ class DownloadedLevel:
     @staticmethod
     def from_raw(raw_str: str) -> 'DownloadedLevel':
         """
-        Converts a raw level string into a DownloadedLevel object.
+        A staticmethod that converts a raw level string into a DownloadedLevel object.
         
         :param raw_str: The raw string returned from the server.
+        :type raw_str: str
         :return: A DownloadedLevel object created from the parsed data.
         """
 
@@ -201,17 +208,16 @@ class DownloadedLevel:
 @dataclass
 class SearchedLevel(DownloadedLevel):
     """
-    A class representing a level searched in Geometry Dash.
+    A class representing a level searched in Geometry Dash. It's a child class from DownloadedLevel.
+
+    Note that some of the attributes that belong to DownloadedLevel were not present in SearchedLevel
     
     Attributes
     ----------
-    `creator_name` : Optional[str]
+    creator_name : Optional[str]
         The creator name of the level.
-    `song_data` : LevelSong
+    song_data : LevelSong
         The song object of the level.
-    
-    ### Methods:
-        - `from_raw`: Creates a `SearchedLevel` object from raw level data.
     """
 
     creator_name: Optional[str]
@@ -220,9 +226,10 @@ class SearchedLevel(DownloadedLevel):
     @staticmethod
     def from_dict(parsed_str: dict) -> 'SearchedLevel':
         """
-        Converts parsed dict level data into a SearchedLevel object.
+        A staticmethod that converts parsed dict level data into a SearchedLevel object.
         
         :param parsed_str: The parsed str returned.
+        :type parsed_str: dict
         :return: A SearchedLevel object created from the parsed data.
         """
 
@@ -269,11 +276,46 @@ class SearchedLevel(DownloadedLevel):
 class LevelComment:
     """
     A class representing a comment in a level.
+
+    Attributes
+    ----------
+    level_id : int
+        The ID of the level the comment belongs to.
+    content : str
+        The content of the comment.
+    likes : int
+        The current likes count for the comment.
+    comment_id : int
+        The ID of the comment.
+    is_spam : bool
+        If the comment is spam.
+    posted_ago : str
+        The time the comment was posted in a human-readable format. Eg: `"5 months"`
+    precentage : int
+        The perecentage of the comment.
+    mod_level : ModLevel
+        The mod level of the author.
+    author_player_id : int
+        The ID of the author's player.
+    author_account_id : int
+        The ID of the author's account.
+    author_name : str
+        The name of the author.
+    author_primary_color : Color
+        The primary color of the author.
+    author_secondary_color : Color
+        The secondary color of the author.
+    author_has_glow : bool
+        If the author has a glow effect.
+    author_icon : Icon
+        The icon of the author.
+    author_icon_display_gamemode : Gamemode
+        The gamemode the author chooses to display in their comment.
     """
     level_id: int
     content: str
     likes: int
-    message_id: int
+    comment_id: int
     is_spam: bool
     posted_ago: str
     precentage: int
@@ -290,6 +332,14 @@ class LevelComment:
 
     @staticmethod
     def from_raw(raw_str: str) -> 'LevelComment':
+        """
+        A staticmethod that parses the raw string and returns a LevelComment object.
+
+        :param raw_str: Raw data returned from the servers.
+        :type raw_str: str
+        :return: A LevelComment object created from the raw data.
+        """
+
         parsed = raw_str.split(":")
         user_value = parse_key_value_pairs(parsed[1], "~")
         comment_value = parse_key_value_pairs(parsed[0], '~')

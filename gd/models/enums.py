@@ -1,4 +1,10 @@
-from enum import IntEnum, StrEnum, Enum, auto
+"""
+# .models.enums
+
+A module containing all enumerations of various things.
+"""
+
+from enum import IntEnum, Enum
 
 # Enum
 

@@ -1,3 +1,9 @@
+"""
+## .models.icons
+
+The module containing all the classes and methods related to customization and icons.
+"""
+
 from dataclasses import dataclass
 from .enums import *
 
@@ -6,10 +12,12 @@ class Icon:
     """
     A **dataclass** representing the icon of a specific gamemode and ID.
 
-    :param id: The ID of the icon.
-    :type id: int
-    :param gamemode: The gamemode type of the icon.
-    :type gamemode: Gamemode
+    Attributes
+    ----------
+    id : int
+        The ID of the icon
+    gamemode : Gamemode
+        The gamemode of the icon
     """
     id: int
     gamemode: Gamemode
@@ -19,10 +27,12 @@ class Color:
     """
     A **dataclass** representing color ID of a specific part of the Icon.
 
-    :param id: The ID of the color.
-    :type id: int
-    :param part: The part of the color.
-    :type part: ColorType
+    Attributes
+    ----------
+    id : int
+        The ID of the color
+    part : ColorType
+        The part of the color
     """
     id: int
     part: ColorType

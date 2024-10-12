@@ -8,11 +8,22 @@ from typing import Union, Tuple
 _secret = "Wmfd2893gb7"
 
 class Client:
+    """
+    Client for interacting with the Geometry Dash servers.
+
+    It contains all methods to interact with the Geometry Dash API.
+    """
     def __init__(self) -> None:
         pass
 
     async def download_level(self, id: int) -> DownloadedLevel:
-        """Downloads a specific level from the Geometry Dash servers using the provided ID."""
+        """
+        Downloads a specific level from the Geometry Dash servers using the provided ID.
+        
+        :param id: The ID of the level.
+        :type id: int
+        :return: A `DownloadedLevel` instance containing the downloaded level data.
+        """
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")
 
@@ -25,15 +36,25 @@ class Client:
         except RuntimeError as e:
             raise RuntimeError(f"Failed to download level: {e}")
 
-    async def download_daily_level(self, weekly: bool = False, get_time_left: bool = False) -> Union[DownloadedLevel, Tuple[DownloadedLevel, timedelta]]:
-        """Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally."""
+    async def download_daily_level(self, return_weekly: bool = False, get_time_left: bool = False) -> Union[DownloadedLevel, Tuple[DownloadedLevel, timedelta]]:
+        """
+        Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally.
+
+        :param return_weekly: Whether to return the weekly or daily level. Defaults to False for daily.
+        :type return_weekly: bool
+        :param get_time_left: Whether to return the time left for the level. Defaults to False.
+        :type get_time_left: bool
+        :return: A `DownloadedLevel` instance containing the downloaded level data.
+
+            If `get_time_left` is set to True then returns a tuple containing the `DownloadedLevel` and the time left for the level.
+        """
         try:
-            level = await self.download_level(-2 if weekly else -1)
+            level = await self.download_level(-2 if return_weekly else -1)
             
             if get_time_left:
                 daily_data: str = await send_post_request(
                     url="http://www.boomlings.com/database/getGJDailyLevel.php", 
-                    data={"secret": _secret, "weekly": "1" if weekly else "0"}
+                    data={"secret": _secret, "weekly": "1" if return_weekly else "0"}
                 )
                 daily_data = daily_data.split("|")
                 return level, timedelta(seconds=int(daily_data[1]))
@@ -43,7 +64,15 @@ class Client:
             raise RuntimeError(f"Failed to get daily level: {e}")
 
     async def search_level(self, query: str) -> List[SearchedLevel]:
-        """Searches for levels matching the given query string."""
+        """
+        Searches for levels matching the given query string.
+
+        Filters will be added in the next version.
+
+        :param query: The query for the search.
+        :type query: str
+        :return: A list of `SearchedLevel` instances.
+        """
         search_data: str = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php", 
             data={"secret": _secret, "str": query, "type": 0}
@@ -53,7 +82,11 @@ class Client:
         return [SearchedLevel.from_raw(result) for result in parsed_results]
 
     async def get_music_library(self) -> MusicLibrary:
-        """Gets the current music library in RobTop's servers."""
+        """
+        Gets the current music library in RobTop's servers.
+
+        :return: A `MusicLibrary` instance containing all the music library data.
+        """
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/music/musiclibrary_02.dat",
         )
@@ -62,7 +95,11 @@ class Client:
         return MusicLibrary.from_raw(music_library)
     
     async def get_sfx_library(self) -> SFXLibrary:
-        """Gets the current SFX library in RobTop's servers"""
+        """
+        Gets the current SFX library in RobTop's servers.
+
+        :return: A `SFXLibrary` instance containing all the SFX library data.
+        """
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/sfx/sfxlibrary.dat",
         )
@@ -70,8 +107,14 @@ class Client:
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
         return SFXLibrary.from_raw(music_library)
 
-    async def get_song_data(self, id: int) -> Union[LevelSong, MusicLibrarySong]:
-        """Gets song data by ID, either from Newgrounds or the music library."""
+    async def get_song_data(self, id: int) -> LevelSong:
+        """
+        Gets song data by ID, either from Newgrounds or the music library.
+
+        :param id: The ID of the song. (Use ID larger than 10000000 to get the song from the library.)
+        :type id: int
+        :return: A `LevelSong` instance containing the song data.
+        """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
             data={'secret': _secret, "songID": id}
@@ -79,7 +122,13 @@ class Client:
         return LevelSong.from_raw(response)
 
     async def get_user_profile(self, account_id: int) -> UserProfile:
-        """Get user profile by account ID."""
+        """
+        Get an user profile by account ID.
+
+        :param account_id: The account ID to retrieve the profile.
+        :type account_id: int
+        :return: A `UserProfile` instance containing the user's profile data.
+        """
         if isinstance(account_id, int):
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
             data = {'secret': _secret, "targetAccountID": account_id}
@@ -90,7 +139,15 @@ class Client:
         return UserProfile.from_raw(response)
 
     async def search_user(self, username: str) -> UserProfile:
-        """Search for a user by their username. Note: this doesn't return the full information, use `UserProfile.reload()` to get the full profile."""
+        """
+        Search for an user by their username. 
+        
+        **Note:** This method doesn't return the full information, use `UserProfile.reload()` to get the full profile after retrieving.
+
+        :param username: The username to search for.
+        :type username: str
+        :return: A `UserProfile` instance containing the user's profile data.
+        """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJUsers20.php",
             data={'secret': _secret, "str": username}
@@ -98,7 +155,15 @@ class Client:
         return UserProfile.from_raw(response)
     
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[LevelComment]:
-        """Get level comments by level ID."""
+        """
+        Get level's comments by level ID.
+
+        :param level_id: The ID of the level.
+        :type level_id: int
+        :param page: The page number for pagination. Defaults to 0.
+        :type page: int
+        :return: A list of `LevelComment` instances.
+        """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJComments21.php",
             data={'secret': _secret, "levelID": level_id, "page": page}
@@ -106,7 +171,15 @@ class Client:
         return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
     
     async def get_user_posts(self, account_id: int, page: int = 0) -> List[ProfilePost] | None:
-        """Get user's posts by Account ID"""
+        """
+        Get an user's posts by Account ID
+
+        :param account_id: The account ID to retrieve the posts.
+        :type account_id: int
+        :param page: The page number for pagination. Defaults to 0.
+        :type page: int
+        :return: A list of `ProfilePost` instances or None if there are no posts.
+        """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
             data={'secret': _secret, "accountID": account_id, "page": page}
@@ -120,7 +193,17 @@ class Client:
             return posts_list
         
     async def get_user_comments_history(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> List[LevelComment]:
-        """Get user's comments history."""
+        """
+        Get an user's comments history.
+        
+        :param player_id: The player ID to retrieve the comments history.
+        :type player_id: int
+        :param page: The page number for pagination. Defaults to 0.
+        :type page: int
+        :param display_most_liked: Whether to display the most liked comments. Defaults to False.
+        :type display_most_liked: bool
+        :return: A list of `LevelComment` instances.
+        """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={'secret': _secret, "userID": player_id, "page": page, "mode": int(display_most_liked)}

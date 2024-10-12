@@ -1,3 +1,11 @@
+"""
+# .helpers
+
+A module containing all helper functions.
+
+You don't need to use this module when using the package.
+"""
+
 import httpx
 import json
 import base64

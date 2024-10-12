@@ -1,0 +1,6 @@
+exclude requirements.txt
+exclude .gitignore
+exclude setup.py
+
+prune .vscode/
+prune **/__pycache__
