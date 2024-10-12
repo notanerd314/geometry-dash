@@ -10,36 +10,54 @@ class DownloadedLevel:
     """
     A class representing a downloaded level in Geometry Dash.
     
-    ### Attributes:
-        - `raw_str` (str): The raw string containing level data.
-        - `id` (Optional[int]): The unique ID of the level.
-        - `name` (Optional[str]): The name of the level.
-        - `description` (Optional[str]): A description of the level.
-        - `level_data` (Optional[str]): The data representing the level structure.
-        - `version` (Optional[int]): The version of the level.
-        - `creator_id` (Optional[int]): The ID of the level creator.
-        - `downloads` (int): The number of times the level has been downloaded.
-        - `likes` (Optional[int]): The number of likes the level has received.
-        - `copyable` (bool): Whether the level is copyable or not.
-        - `length` ('Length'): The length of the level.
-        - `requested_stars` (Optional[int]): The number of stars the creator has requested for the level.
-        - `stars` (Optional[int]): The number of stars the level has been awarded.
-        - `coins` (int): The number of coins in the level.
-        - `custom_song_id` (Optional[int]): The ID of the custom song used in the level.
-        - `song_list_ids` (List[int]): The list of song IDs used in the level.
-        - `sfx_list_ids` (List[int]): The list of sound effect IDs used in the level.
-        - `daily_id` (int): The ID of the daily challenge the level is part of.
-        - `copied_level_id` (Optional[int]): The ID of the level from which this level was copied.
-        - `low_detail_mode` (bool): Whether the level has a low-detail mode.
-        - `two_player_mode` (bool): Whether the level supports two-player mode.
-        - `verified_coins` (bool): Whether the coins in the level have been verified.
-        - `in_gauntlet` (bool): Whether the level is part of a gauntlet challenge.
-        - `daily` (bool): Whether the level is a daily challenge.
-        - `weekly` (bool): Whether the level is a weekly challenge.
-        - `rating` ('LevelRating'): The rating of the level.
-        - `difficulty` ('Difficulty'): The difficulty level of the level.
-        - `level_password` (Optional[str]): The password for editing the level, if applicable.
-        - `official_song` (Optional[OfficialSong]): The official song used in the level, if applicable.
+    Attributes:
+    ----------
+    raw_str : str
+        The original unparsed data from the servers.
+    id : int
+        The ID of the level.
+    name : str
+        The name of the level.
+    description : str
+        The description of the level.
+    level_data : str
+        The level's data.
+    version : int
+        The level's version.
+    creator_id : int
+        The ID of the creator of the level.
+    downloads : int
+        The download count of the level.
+    likes : int
+        The like count of the level.
+    copyable : bool
+        Whether the level can be copied or not.
+    length : Length
+        The length of the level. (Not the exact length)
+    requested_stars : Optional[int]
+        The level rating requested by the creator.
+    stars : Optional[int]
+        The star count for the level.
+    coins : int
+        The coins count for the level.
+    custom_song_id : Union[int, None]
+        The id for the custom song used for the level.
+    song_list_ids : List[int]
+        The list of the song IDs used in the level.
+    sfx_list_ids : List[int]
+        The list of the song IDs used in the level.
+    is_daily : bool
+        If the level was a daily level.
+    is_weekly : bool
+        If the level was a weekly level.
+    rating : LevelRating
+        The rating of the level. (None, Featured, Epic, etc.)
+    difficulty : Difficulty
+        The difficulty of the level.
+    level_password: Union[int, None]
+        The password for the level to copy.
+    official_song: Union[OfficialSong, None]
+        The official song used in the level. Returns None if the level uses a custom song.
     
     ### Methods:
         - `from_raw`: Parses a raw level string into a `DownloadedLevel` object.
@@ -62,7 +80,7 @@ class DownloadedLevel:
     requested_stars: Optional[int]
     stars: Optional[int]
     coins: int
-    custom_song_id: Optional[int]
+    custom_song_id: Union[int, None]
     song_list_ids: List[int]
     sfx_list_ids: List[int]
     daily_id: int
@@ -71,8 +89,8 @@ class DownloadedLevel:
     two_player_mode: bool
     verified_coins: bool
     in_gauntlet: bool
-    daily: bool
-    weekly: bool
+    is_daily: bool
+    is_weekly: bool
     rating: 'LevelRating'
     difficulty: 'Difficulty'
     level_password: Optional[str]
@@ -83,11 +101,8 @@ class DownloadedLevel:
         """
         Converts a raw level string into a DownloadedLevel object.
         
-        Args:
-            raw_str (str): The raw string representing the level data.
-            
-        Returns:
-            DownloadedLevel: A `DownloadedLevel` instance created from the parsed data.
+        :param raw_str: The raw string returned from the server.
+        :return: A DownloadedLevel object created from the parsed data.
         """
 
         if not isinstance(raw_str, str):
@@ -118,8 +133,8 @@ class DownloadedLevel:
             two_player_mode=bool(parsed.get("31")),
             verified_coins=bool(parsed.get("38")),
             in_gauntlet=bool(parsed.get("44")),
-            daily=0 <= parsed.get("41", -1) <= 100000,
-            weekly=parsed.get("41", -1) >= 100000,
+            is_daily=0 <= parsed.get("41", -1) <= 100000,
+            is_weekly=parsed.get("41", -1) >= 100000,
             rating=DownloadedLevel._determine_rating(parsed),
             difficulty=DownloadedLevel._determine_difficulty(parsed),
             level_password=None if isinstance(parsed.get("27"), bool) else parsed.get("27"),
@@ -188,9 +203,12 @@ class SearchedLevel(DownloadedLevel):
     """
     A class representing a level searched in Geometry Dash.
     
-    ### Attributes:
-        - `creator_name` (Optional[str]): The name of the level's creator.
-        - `song_data` ('LevelSong'): Data about the song used in the level.
+    Attributes
+    ----------
+    `creator_name` : Optional[str]
+        The creator name of the level.
+    `song_data` : LevelSong
+        The song object of the level.
     
     ### Methods:
         - `from_raw`: Creates a `SearchedLevel` object from raw level data.
@@ -200,15 +218,12 @@ class SearchedLevel(DownloadedLevel):
     song_data: 'LevelSong'
 
     @staticmethod
-    def from_raw(parsed_str: dict) -> 'SearchedLevel':
+    def from_dict(parsed_str: dict) -> 'SearchedLevel':
         """
-        Converts parsed level data into a SearchedLevel object.
+        Converts parsed dict level data into a SearchedLevel object.
         
-        Args:
-            parsed_str (dict): A dictionary containing parsed level data.
-            
-        Returns:
-            SearchedLevel: A `SearchedLevel` instance created from the parsed data.
+        :param parsed_str: The parsed str returned.
+        :return: A SearchedLevel object created from the parsed data.
         """
 
         instance = DownloadedLevel.from_raw(parsed_str['level'])
@@ -234,8 +249,8 @@ class SearchedLevel(DownloadedLevel):
             two_player_mode=instance.two_player_mode,
             verified_coins=instance.verified_coins,
             in_gauntlet=instance.in_gauntlet,
-            daily=instance.daily,
-            weekly=instance.weekly,
+            is_daily=instance.daily,
+            is_weekly=instance.weekly,
             rating=instance.rating,
             difficulty=instance.difficulty,
             creator_name=creator_name,
@@ -252,6 +267,9 @@ class SearchedLevel(DownloadedLevel):
 
 @dataclass
 class LevelComment:
+    """
+    A class representing a comment in a level.
+    """
     level_id: int
     content: str
     likes: int
