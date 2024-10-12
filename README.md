@@ -29,7 +29,6 @@ $ python -m pip install gdapi
 
 The package requires the following dependencies:
 - httpx
-- zlib
 
 #
 **Documentation** will be available soon after the package is officially released.
