@@ -1,4 +1,6 @@
 # GDAPI
+### **THIS PACKAGE IS NOT DONE**
+
 An object-oriented and asyncronious wrapper for **Geometry Dash** and **Pointercrate**.
 
 ```py
@@ -23,7 +25,7 @@ Install GDAPI via PyPI:
 ```bash
 $ python -m pip install gdapi
 ```
-**GDAPI** supports version 3.8 or greater offically.
+**GDAPI** supports version 3.8 or greater officially.
 
 The package requires the following dependencies:
 - httpx
