@@ -83,6 +83,7 @@ class MusicLibrarySong:
     file_size_bytes: float
     duration_seconds: timedelta
     is_ncs: bool
+    link: str
 
     @staticmethod
     def from_raw(raw_str: str, artists_list: Dict[int, MusicLibraryArtist] = {}, tags_list: Dict[int, str] = None) -> 'MusicLibrarySong':
@@ -112,8 +113,30 @@ class MusicLibrarySong:
             tags=song_tag_list,
             file_size_bytes=float(parsed[3]),
             duration_seconds=timedelta(seconds=int(parsed[4])),
-            is_ncs=parsed[6] == '1'
+            is_ncs=parsed[6] == '1',
+            link=parsed[8]
         )
+    
+    async def download_song(self, name_file: str = None, path: str = None) -> None:
+        if not name_file:
+            name_file = f"{self.id}.mp3"
+        
+        if not name_file.endswith(".mp3"):
+            raise ValueError("name_file must end with .mp3!")
+
+        # Set the path to the current working directory if not specified
+        if path is None:
+            path = os.getcwd()
+
+        # Ensure the directory exists
+        os.makedirs(path, exist_ok=True)
+
+        try:
+            response = await send_get_request(url=self.song_link)
+            with open(os.path.join(path, name_file), "wb") as file:
+                file.write(response.content)
+        except Exception as e:
+            raise DownloadingSongError(f"Error downloading song: {e}")
 
 
 @dataclass
@@ -564,8 +587,6 @@ class LevelSong:
             is_ncs=parsed.get('11') == 1,
             is_library_song=int(parsed.get('1')) >= 10000000
         )
-
-    import os
 
     async def download_song(self, name_file: str = None, path: str = None) -> None:
         if not name_file:

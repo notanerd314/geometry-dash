@@ -107,7 +107,7 @@ class Client:
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
         return SFXLibrary.from_raw(music_library)
 
-    async def get_song_data(self, id: int) -> LevelSong:
+    async def get_song(self, id: int) -> LevelSong:
         """
         Gets song data by ID, either from Newgrounds or the music library.
 
@@ -210,7 +210,7 @@ class Client:
         )
         return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
 
-    async def get_map_packs_list(self, page: int = 0) -> List[MapPack]:
+    async def get_map_packs(self, page: int = 0) -> List[MapPack]:
         """
         Get the full list of map packs available (in a specific page).
 
