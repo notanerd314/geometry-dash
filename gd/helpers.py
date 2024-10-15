@@ -16,6 +16,9 @@ from .models.enums import Difficulty, DemonDifficulty
 class ResponseError(Exception):
     pass
 
+class DownloadingSongError(Exception):
+    pass
+
 # Helper function to send an asynchronous POST request
 async def send_post_request(**kwargs) -> str:
     """Send an asynchronous POST request and handle response."""
@@ -30,7 +33,7 @@ async def send_post_request(**kwargs) -> str:
 
 async def send_get_request(**kwargs) -> httpx.Response:
     async with httpx.AsyncClient() as client:
-        response = await client.get(**kwargs)
+        response = await client.get(**kwargs, timeout=60)
         if response.status_code == 200:
             return response
         else:

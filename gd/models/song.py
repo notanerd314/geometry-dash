@@ -9,6 +9,7 @@ from datetime import timedelta
 from ..helpers import *
 from dataclasses import dataclass, field
 from enum import Enum
+import os
 
 # Music Library
 
@@ -564,6 +565,31 @@ class LevelSong:
             is_library_song=int(parsed.get('1')) >= 10000000
         )
 
+    import os
+
+    async def download_song(self, name_file: str = None, path: str = None) -> None:
+        if not name_file:
+            name_file = f"{self.id}.mp3"
+        
+        if not name_file.endswith(".mp3"):
+            raise ValueError("name_file must end with .mp3!")
+
+        # Set the path to the current working directory if not specified
+        if path is None:
+            path = os.getcwd()
+
+        # Ensure the directory exists
+        os.makedirs(path, exist_ok=True)
+
+        try:
+            response = await send_get_request(url=self.song_link)
+            with open(os.path.join(path, name_file), "wb") as file:
+                file.write(response.content)
+        except Exception as e:
+            raise DownloadingSongError(f"Error downloading song: {e}")
+
+
+
 class OfficialSong(Enum):
     """
     An **Enum** class representing official songs in the game.
@@ -591,7 +617,6 @@ class OfficialSong(Enum):
     DEADLOCKED = 19
     FINGERDASH = 20
     DASH = 21
-    EXPLORERS = 22
 
         
 
