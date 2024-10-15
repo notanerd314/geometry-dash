@@ -7,38 +7,33 @@ A module containing all enumerations of various things.
 from enum import IntEnum, Enum
 
 # Enum
-
 class Difficulty(Enum):
     """
-    An **Enum** class representing the different difficulty levels in Geometry Dash.
-
-    - `NA` (0): No difficulty assigned.
-    - `EASY` (1): Easy level.
-    - `NORMAL` (2): Normal level.
-    - `HARD` (3): Hard level.
-    - `HARDER` (4): Harder level.
-    - `INSANE` (5): Insane level.
-    - `EASY_DEMON` (6.3): Easy Demon difficulty.
-    - `MEDIUM_DEMON` (6.4): Medium Demon difficulty.
-    - `HARD_DEMON` (6.0): Hard Demon difficulty.
-    - `INSANE_DEMON` (6.5): Insane Demon difficulty.
-    - `EXTREME_DEMON` (6.6): Extreme Demon difficulty.
-    - `AUTO` (7): Automatic level that plays itself.
+    Enum representing the non-demon difficulty levels in Geometry Dash.
     """
-
     NA = 0
     EASY = 1
     NORMAL = 2
     HARD = 3
     HARDER = 4
     INSANE = 5
-    EASY_DEMON = 6.3
-    MEDIUM_DEMON = 6.4
-    HARD_DEMON = 6.0
-    INSANE_DEMON = 6.5
-    EXTREME_DEMON = 6.6
+    DEMON = 6
     AUTO = 7
 
+class DemonDifficulty(Enum):
+    """
+    Enum representing the demon difficulty levels in Geometry Dash.
+    - EASY_DEMON (3): Easy Demon difficulty.
+    - MEDIUM_DEMON (4): Medium Demon difficulty.
+    - HARD_DEMON (0): Hard Demon difficulty.
+    - INSANE_DEMON (5): Insane Demon difficulty.
+    - EXTREME_DEMON (6): Extreme Demon difficulty.
+    """
+    HARD_DEMON = 0
+    EASY_DEMON = 3
+    MEDIUM_DEMON = 4
+    INSANE_DEMON = 5
+    EXTREME_DEMON = 6
 
 class Length(IntEnum):
     """

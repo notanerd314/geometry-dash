@@ -4,6 +4,7 @@ from .models.song import *
 from .models.users import *
 from datetime import timedelta
 from typing import Union, Tuple
+from asyncio import run
 
 _secret = "Wmfd2893gb7"
 
@@ -63,7 +64,7 @@ class Client:
         except RuntimeError as e:
             raise RuntimeError(f"Failed to get daily level: {e}")
 
-    async def search_level(self, query: str) -> List[SearchedLevel]:
+    async def search_level(self, query: str, type: int = 0) -> List[SearchedLevel]:
         """
         Searches for levels matching the given query string.
 
@@ -75,11 +76,10 @@ class Client:
         """
         search_data: str = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php", 
-            data={"secret": _secret, "str": query, "type": 0}
+            data={"secret": _secret, "str": query, "type": type}
         )
-        
         parsed_results = parse_search_results(search_data)
-        return [SearchedLevel.from_raw(result) for result in parsed_results]
+        return [SearchedLevel.from_dict(result) for result in parsed_results]
 
     async def get_music_library(self) -> MusicLibrary:
         """
@@ -209,3 +209,17 @@ class Client:
             data={'secret': _secret, "userID": player_id, "page": page, "mode": int(display_most_liked)}
         )
         return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
+
+    async def get_map_packs_list(self, page: int = 0) -> List[MapPack]:
+        """
+        Get the full list of map packs available (in a specific page).
+
+        :return: A list of `MapPack` instances.
+        """
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJMapPacks21.php",
+            data={'secret': _secret, 'page': page}
+        )
+        
+        map_packs = response.split('#')[0].split("|")
+        return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]

@@ -317,7 +317,7 @@ class SFXLibrary:
 
         return SFXLibrary(version=int(version_name), folders=folders, creators=creators)
 
-    def get_folder_by_name(self, name: str) -> 'SFXLibraryFolder' | None:
+    def get_folder_by_name(self, name: str) -> Union['SFXLibraryFolder', None]:
         """
         Get a folder by it's name.
 

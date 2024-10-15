@@ -1,16 +1,16 @@
 """
 # .helpers
 
-A module containing all helper functions.
+A module containing all helper functions for the module.
 
 You don't need to use this module when using the package.
 """
 
 import httpx
-import json
 import base64
 import zlib
 from typing import List, Dict, Union
+from .models.enums import Difficulty, DemonDifficulty
 
 # Custom Exceptions
 class ResponseError(Exception):
@@ -176,3 +176,46 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
 
 def is_newgrounds_song(id: int) -> bool:
     return not id >= 10000000
+
+def parse_comma_separated_int_list(key: str) -> List[int]:
+    """
+    Helper method to parse a comma-separated list of integers.
+    
+    :param key: A string of numbers seperated by ","
+    :type key: str
+    :return: List[int]
+    """
+    try:
+        return [int(x) for x in key.split(",") if x.isdigit()]
+    except AttributeError:
+        return []
+    
+def determine_difficulty(parsed: dict, return_demon_diff: bool = True) -> Difficulty:
+    """
+    Determines the level's difficulty based on parsed data.
+    
+    :param parsed: Parsed data from the servers
+    :type parsed: dict
+    :param return_demon_diff: Whether to return the specific demon difficulty (if applicable)
+    :type return_demon_diff: bool
+    :return: `Difficulty`
+    """
+
+    if return_demon_diff and parsed.get('17', False):
+        match parsed.get('43', None):
+            case 3:
+                return DemonDifficulty.EASY_DEMON
+            case 4:
+                return DemonDifficulty.MEDIUM_DEMON
+            case 0:
+                return DemonDifficulty.HARD_DEMON
+            case 5:
+                return DemonDifficulty.INSANE_DEMON
+            case 6:
+                return DemonDifficulty.EXTREME_DEMON
+            case _:
+                pass
+    elif parsed.get("25"):
+        return Difficulty.AUTO
+    else:
+        return Difficulty(parsed.get("9", 0) // 10)

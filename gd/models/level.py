@@ -7,7 +7,7 @@ A module containing all the classes and methods related to levels in Geometry Da
 from ..helpers import *
 from .enums import *
 from .icons import *
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from .song import *
 from dataclasses import dataclass
 
@@ -58,7 +58,7 @@ class DownloadedLevel:
         If the level was a weekly level.
     rating : LevelRating
         The rating of the level. (None, Featured, Epic, etc.)
-    difficulty : Difficulty
+    difficulty : Union[Difficulty, DemonDifficulty]
         The difficulty of the level.
     level_password: Union[int, None]
         The password for the level to copy.
@@ -132,8 +132,8 @@ class DownloadedLevel:
             stars=parsed.get("18"),
             coins=parsed.get("37", 0),
             custom_song_id=parsed.get("35", None),
-            song_list_ids=DownloadedLevel._parse_comma_separated_int_list(parsed.get("52")),
-            sfx_list_ids=DownloadedLevel._parse_comma_separated_int_list(parsed.get("53")),
+            song_list_ids=parse_comma_separated_int_list(parsed.get("52")),
+            sfx_list_ids=parse_comma_separated_int_list(parsed.get("53")),
             daily_id=parsed.get("41", -1),
             copied_level_id=parsed.get("30"),
             low_detail_mode=bool(parsed.get("40")),
@@ -143,37 +143,19 @@ class DownloadedLevel:
             is_daily=0 <= parsed.get("41", -1) <= 100000,
             is_weekly=parsed.get("41", -1) >= 100000,
             rating=DownloadedLevel._determine_rating(parsed),
-            difficulty=DownloadedLevel._determine_difficulty(parsed),
+            difficulty=determine_difficulty(parsed),
             level_password=None if isinstance(parsed.get("27"), bool) else parsed.get("27"),
             official_song=OfficialSong(parsed.get("12")) if parsed.get("12") else None
         )
 
     @staticmethod
-    def _parse_comma_separated_int_list(key: str) -> List[int]:
-        """
-        Helper method to parse a comma-separated list of integers.
-        
-        Args:
-            key (str): A string containing integers separated by commas.
-            
-        Returns:
-            List[int]: A list of parsed integers.
-        """
-        try:
-            return [int(x) for x in key.split(",") if x.isdigit()]
-        except AttributeError:
-            return []
-
-    @staticmethod
-    def _determine_rating(parsed) -> LevelRating:
+    def _determine_rating(parsed: dict) -> LevelRating:
         """
         Determines the level's rating based on parsed data.
         
-        Args:
-            parsed (dict): The parsed level data.
-            
-        Returns:
-            LevelRating: The rating of the level.
+        :param parsed: Parsed data from the servers
+        :type parsed: dict
+        :return: `LevelRating`
         """
 
         if parsed.get("42", 0) >= 1:
@@ -184,25 +166,6 @@ class DownloadedLevel:
             return LevelRating.RATED
         
         return LevelRating.NO_RATE
-
-    @staticmethod
-    def _determine_difficulty(parsed) -> Difficulty:
-        """
-        Determines the level's difficulty based on parsed data.
-        
-        Args:
-            parsed (dict): The parsed level data.
-            
-        Returns:
-            Difficulty: The difficulty of the level.
-        """
-
-        if parsed.get("17"):
-            return Difficulty(6 + parsed.get("43", 0) / 10)
-        elif parsed.get("25"):
-
-            return Difficulty.AUTO
-        return Difficulty(parsed.get("9", 0) / 10)
 
 
 @dataclass
@@ -256,8 +219,8 @@ class SearchedLevel(DownloadedLevel):
             two_player_mode=instance.two_player_mode,
             verified_coins=instance.verified_coins,
             in_gauntlet=instance.in_gauntlet,
-            is_daily=instance.daily,
-            is_weekly=instance.weekly,
+            is_daily=instance.is_daily,
+            is_weekly=instance.is_weekly,
             rating=instance.rating,
             difficulty=instance.difficulty,
             creator_name=creator_name,
@@ -268,6 +231,7 @@ class SearchedLevel(DownloadedLevel):
             daily_id=None,
             low_detail_mode=None,
             level_password=None,
+            official_song=instance.official_song
         )
 
     # Note: Ensure LevelSong also has a `from_raw` method defined accordingly.
@@ -350,7 +314,7 @@ class LevelComment:
             author_player_id=int(comment_value.get("3", 0)),
             author_account_id=int(str(user_value.get("16", 0)).split("#")[0]),
             likes=int(comment_value.get("4", 0)),
-            message_id=int(comment_value.get("6", 0)),
+            comment_id=int(comment_value.get("6", 0)),
             is_spam=bool(int(comment_value.get("7", 0))),
             posted_ago=comment_value.get("9", None),
             precentage=int(comment_value.get("10", 0)),
@@ -359,6 +323,77 @@ class LevelComment:
             author_name=user_value.get("1", ""),
             author_icon=Icon(user_value.get("9", ""), gamemode=Gamemode(int(user_value.get("14", 0)))),
             author_icon_display_gamemode=Gamemode(int(user_value.get("14", 0))),
-            author_primary_color=Color(int(user_value.get("10", 1)), ColorType.primary),
-            author_secondary_color=Color(int(user_value.get("11", 1)), ColorType.secondary),
+            author_primary_color=Color(int(user_value.get("10", 1)), ColorType.PRIMARY),
+            author_secondary_color=Color(int(user_value.get("11", 1)), ColorType.SECONDARY),
+            author_has_glow=bool(int(user_value.get("15", 0)))
         )
+
+@dataclass
+class MapPack:
+    """
+    A class representing a map pack.
+
+    Attributes
+    ----------
+    id : int
+        ID of the map pack
+    name : str
+        Name of the map pack
+    levels_id : List[int]
+        The list of the levels' id.
+    stars : int
+        The star count of the map pack
+    coins : int
+        The coin count of the map pack
+    difficulty : Difficulty
+        The difficulty of the map pack (`HARD_DEMON` it's just `DEMON`)
+    text_rgb_color : List[int]
+        The rgb color of the map pack's text
+    progress_bar_rgb_color : List[int]
+        The rgb color of the map pack's progress bar
+    """
+
+    id: int
+    name: str
+    levels_id: List[int]
+    stars: int
+    coins: int
+    difficulty: Difficulty
+    text_rgb_color: List[int]
+    progress_bar_rgb_color: List[int]
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'MapPack':
+        """
+        A static method that parses the raw string and returns a MapPack object.
+        
+        :param raw_str: Raw data returned from the servers.
+        :type raw_str: str
+        :return: A MapPack object created from the raw data.
+        """
+        parsed = parse_key_value_pairs(raw_str)
+        return MapPack(
+            id=int(parsed.get("1", 0)),
+            name=parsed.get("2", ""),
+            levels_id=parse_comma_separated_int_list(parsed.get("3", "")),
+            stars=int(parsed.get("4", 0)),
+            coins=int(parsed.get("5", 0)),
+            difficulty=Difficulty(int(parsed.get("6", 0))),
+            text_rgb_color=parse_comma_separated_int_list(parsed.get("7", "")),
+            progress_bar_rgb_color=parse_comma_separated_int_list(parsed.get("8", ""))
+        )
+    
+    async def get_display_info_all_levels(self) -> Tuple[SearchedLevel]:
+        """
+        A coroutine method that fetches and returns all the levels in the map pack with their display information.
+        
+        :return: A list of SearchedLevel objects.
+        """
+        str_ids = ','.join([str(level) for level in self.levels_id])
+        search_raw = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevels21.php",
+            data={'secret': "Wmfd2893gb7", "str": str_ids, "type": 10}
+        )
+        search_parsed = parse_search_results(search_raw)
+        level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
+        return level_list
