@@ -224,12 +224,14 @@ class Client:
         map_packs = response.split('#')[0].split("|")
         return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
 
-    async def get_gauntlets(self, only_2_point_1: bool = True) -> List[Gauntlet]:
+    async def get_gauntlets(self, only_2_point_1: bool = True, add_ncs_gauntlets: bool = True) -> List[Gauntlet]:
         """
         Get the list of gauntlets objects.
 
         :param only_2_point_1: Whether to get ONLY the 2.1 guantlets or both 2.2 and 2.1. Defaults to True.
-        :type: bool
+        :type only_2_point_1: bool
+        :param add_ncs_gauntlets: Whether to add NCS gauntlets to the list. Defaults to True.
+        :type add_ncs_gauntlets: bool
         :return: A list of `Gauntlet` instances.
         """
         response = await send_post_request(
@@ -238,4 +240,10 @@ class Client:
         )
         
         guantlets = response.split('#')[0].split("|")
-        return [Gauntlet.from_raw(guantlet) for guantlet in guantlets]
+        list_guantlets = [Gauntlet.from_raw(guantlet) for guantlet in guantlets]
+
+        if add_ncs_gauntlets:
+            list_guantlets.append(Gauntlet(id=51, name="NCS I", levels_id=[110715909, 110774313, 110665441, 110610038, 109432148], image_url="https://gdbrowser.com/assets/gauntlets/ncs_i.png"))
+            list_guantlets.append(Gauntlet(id=52, name="NCS II", levels_id=[110681124, 110774310, 110638716, 110473393, 110774330], image_url="https://gdbrowser.com/assets/gauntlets/ncs_ii.png"))
+
+        return list_guantlets

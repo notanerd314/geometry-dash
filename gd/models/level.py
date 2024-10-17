@@ -418,10 +418,13 @@ class Gauntlet:
         The name of the gauntlet.
     levels_id : List[int]
         The IDs of the levels.
+    image_url : str
+        The URL of the image (from gdbrowser.com)
     """
     id: int
     name: str
     levels_id: List[int]
+    image_url: str
 
     @staticmethod
     def from_raw(raw_str: str) -> 'Gauntlet':
@@ -432,11 +435,13 @@ class Gauntlet:
         :type raw_str: str
         :return: A Gauntlet object created from the raw data.
         """
-        parsed = parse_key_value_pairs(raw_str)
+        parsed: dict = parse_key_value_pairs(raw_str)
+        name: str = guantlets_names[str(parsed.get("1"))]
         return Gauntlet(
             id=parsed.get("1", 0),
-            name=guantlets_names[str(parsed.get("1"))],
-            levels_id=parse_comma_separated_int_list(parsed.get("3", ""))
+            name=name,
+            levels_id=parse_comma_separated_int_list(parsed.get("3", "")),
+            image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png"
         )
     
     async def get_display_info_all_levels(self) -> Tuple[SearchedLevel]:
@@ -448,7 +453,7 @@ class Gauntlet:
         str_ids = ','.join([str(level) for level in self.levels_id])
         search_raw = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={'secret': "Wmfd2893gb7", "str": str_ids, "type": 10}
+            data={'secret': "Wmfd2893gb7", "gauntlet": self.id}
         )
         search_parsed = parse_search_results(search_raw)
         level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
