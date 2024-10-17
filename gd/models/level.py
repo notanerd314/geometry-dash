@@ -10,6 +10,13 @@ from .icons import *
 from typing import List, Optional, Union, Tuple
 from .song import *
 from dataclasses import dataclass
+from json import load
+from os import path
+
+relative_path = path.dirname(__file__)
+
+with open(path.join(relative_path, "spreadsheet", "gauntlets.json"), 'r') as guantlets_names_file:
+    guantlets_names = load(guantlets_names_file)
 
 @dataclass
 class DownloadedLevel:
@@ -397,3 +404,70 @@ class MapPack:
         search_parsed = parse_search_results(search_raw)
         level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
         return level_list
+
+@dataclass
+class Gauntlet:
+    """
+    A class representing a gauntlet.
+    
+    Attributes
+    ----------
+    id : int
+        The ID of the gauntlet.
+    name: str
+        The name of the gauntlet.
+    levels_id : List[int]
+        The IDs of the levels.
+    """
+    id: int
+    name: str
+    levels_id: List[int]
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'Gauntlet':
+        """
+        A static method that parses the raw string and returns a Gauntlet object.
+        
+        :param raw_str: Raw data returned from the servers.
+        :type raw_str: str
+        :return: A Gauntlet object created from the raw data.
+        """
+        parsed = parse_key_value_pairs(raw_str)
+        return Gauntlet(
+            id=parsed.get("1", 0),
+            name=guantlets_names[str(parsed.get("1"))],
+            levels_id=parse_comma_separated_int_list(parsed.get("3", ""))
+        )
+    
+    async def get_display_info_all_levels(self) -> Tuple[SearchedLevel]:
+        """
+        A coroutine method that fetches and returns all the levels in the gauntlet with their display information.
+        
+        :return: A list of SearchedLevel objects.
+        """
+        str_ids = ','.join([str(level) for level in self.levels_id])
+        search_raw = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevels21.php",
+            data={'secret': "Wmfd2893gb7", "str": str_ids, "type": 10}
+        )
+        search_parsed = parse_search_results(search_raw)
+        level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
+        return level_list
+    
+    async def download_level(self, index: int = 0) -> DownloadedLevel:
+        """
+        A coroutine method that downloads a level from the gauntlet based on the index.
+        
+        :param index: The index of the level to download (default: 0).
+        :type index: int
+        :return: A DownloadedLevel object representing the downloaded level.
+        """
+        if index < 0 or index >= len(self.levels_id):
+            raise IndexError("Invalid level index, index limit is 4.")
+        
+        level_id = self.levels_id[index]
+        download_raw = await send_post_request(
+            url="http://www.boomlings.com/database/downloadGJLevel22.php",
+            data={'secret': "Wmfd2893gb7", "levelID": level_id}
+        )
+        return DownloadedLevel.from_raw(download_raw)

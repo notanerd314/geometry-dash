@@ -223,3 +223,19 @@ class Client:
         
         map_packs = response.split('#')[0].split("|")
         return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
+
+    async def get_gauntlets(self, only_2_point_1: bool = True) -> List[Gauntlet]:
+        """
+        Get the list of gauntlets objects.
+
+        :param only_2_point_1: Whether to get ONLY the 2.1 guantlets or both 2.2 and 2.1. Defaults to True.
+        :type: bool
+        :return: A list of `Gauntlet` instances.
+        """
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJGauntlets21.php",
+            data={'secret': _secret, 'special': int(only_2_point_1)}
+        )
+        
+        guantlets = response.split('#')[0].split("|")
+        return [Gauntlet.from_raw(guantlet) for guantlet in guantlets]
