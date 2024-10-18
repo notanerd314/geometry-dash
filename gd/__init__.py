@@ -1,6 +1,5 @@
 """
 # GDAPI
-### **THIS PACKAGE IS NOT DONE**
 
 An object-oriented and asyncronious wrapper for **Geometry Dash** and **Pointercrate**.
 
@@ -30,11 +29,6 @@ $ python -m pip install gdapi
 
 The package requires the following dependencies:
 - httpx
-
-#
-**Documentation** will be available soon after the package is officially released.
-
-In the meantime, you can contribute to the project by making a pull request.
 
 *bro wtf this project is so stupid :sob: why i'm being so serious*
 """

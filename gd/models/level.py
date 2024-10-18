@@ -296,8 +296,8 @@ class LevelComment:
     author_player_id: int
     author_account_id: int
     author_name: str
-    author_primary_color: Color
-    author_secondary_color: Color
+    author_primary_color_id: int
+    author_secondary_color_id: int
     author_has_glow: bool
     author_icon: Icon
     author_icon_display_gamemode: Gamemode
@@ -329,10 +329,13 @@ class LevelComment:
             mod_level=ModLevel(int(comment_value.get("11", 0))),
 
             author_name=user_value.get("1", ""),
-            author_icon=Icon(user_value.get("9", ""), gamemode=Gamemode(int(user_value.get("14", 0)))),
+            author_icon=Icon(
+                user_value.get("9", ""), gamemode=Gamemode(int(user_value.get("14", 0))), 
+                primary_color_id=int(user_value.get("10", 1)), secondary_color_id=int(user_value.get("11", 1))
+            ),
             author_icon_display_gamemode=Gamemode(int(user_value.get("14", 0))),
-            author_primary_color=Color(int(user_value.get("10", 1)), ColorType.PRIMARY),
-            author_secondary_color=Color(int(user_value.get("11", 1)), ColorType.SECONDARY),
+            author_primary_color_id=int(user_value.get("10", 1)),
+            author_secondary_color_id=int(user_value.get("11", 1)),
             author_has_glow=bool(int(user_value.get("15", 0)))
         )
 
