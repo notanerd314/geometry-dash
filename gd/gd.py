@@ -170,7 +170,7 @@ class Client:
         )
         return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
     
-    async def get_user_posts(self, account_id: int, page: int = 0) -> List[ProfilePost] | None:
+    async def get_user_posts(self, account_id: int, page: int = 0) -> List[UserPost] | None:
         """
         Get an user's posts by Account ID
 
@@ -178,7 +178,7 @@ class Client:
         :type account_id: int
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
-        :return: A list of `ProfilePost` instances or None if there are no posts.
+        :return: A list of `UserPost` instances or None if there are no posts.
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
@@ -189,7 +189,7 @@ class Client:
             posts_list = []
             parsed_res = response.split("|")
             for post in parsed_res:
-                posts_list.append(ProfilePost.from_raw(post, account_id))
+                posts_list.append(UserPost.from_raw(post, account_id))
             return posts_list
         
     async def get_user_comments_history(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> List[LevelComment]:

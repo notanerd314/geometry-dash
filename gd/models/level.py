@@ -9,6 +9,7 @@ from .enums import *
 from .icons import *
 from typing import List, Optional, Union, Tuple
 from .song import *
+from .users import UserProfile
 from dataclasses import dataclass
 from json import load
 from os import path
@@ -335,6 +336,22 @@ class LevelComment:
             author_has_glow=bool(int(user_value.get("15", 0)))
         )
 
+    async def view_author_profile(self) -> UserProfile:
+        """
+        Fetches the author's profile.
+
+        :return: A UserProfile object of the author.
+        """
+        if isinstance(self.author_account_id, int):
+            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
+            data = {'secret': "Wmfd2893gb7", "targetAccountID": self.author_account_id}
+        else:
+            raise ValueError("ID must be int")
+
+        response = await send_post_request(url=url, data=data)
+        return UserProfile.from_raw(response)
+
+
 @dataclass
 class MapPack:
     """
@@ -394,7 +411,7 @@ class MapPack:
         """
         A coroutine method that fetches and returns all the levels in the map pack with their display information.
         
-        :return: A list of SearchedLevel objects.
+        :return: A tuple of SearchedLevel objects.
         """
         str_ids = ','.join([str(level) for level in self.levels_id])
         search_raw = await send_post_request(
@@ -404,6 +421,24 @@ class MapPack:
         search_parsed = parse_search_results(search_raw)
         level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
         return level_list
+
+    async def download_level_by_index(self, index: int) -> DownloadedLevel:
+        """
+        A coroutine method that downloads a level from the map pack based on the index.
+        
+        :param index: The index of the level to download.
+        :type index: int
+        :return: A DownloadedLevel object representing the downloaded level.
+        """
+        if index < 0 or index >= len(self.levels_id):
+            raise IndexError("Invalid level index, index limit is 4.")
+        
+        level_id = self.levels_id[index]
+        download_raw = await send_post_request(
+            url="http://www.boomlings.com/database/downloadGJLevel22.php",
+            data={'secret': "Wmfd2893gb7", "levelID": level_id}
+        )
+        return DownloadedLevel.from_raw(download_raw)
 
 @dataclass
 class Gauntlet:
@@ -448,9 +483,8 @@ class Gauntlet:
         """
         A coroutine method that fetches and returns all the levels in the gauntlet with their display information.
         
-        :return: A list of SearchedLevel objects.
+        :return: A tuple of SearchedLevel objects.
         """
-        str_ids = ','.join([str(level) for level in self.levels_id])
         search_raw = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
             data={'secret': "Wmfd2893gb7", "gauntlet": self.id}
@@ -459,11 +493,11 @@ class Gauntlet:
         level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
         return level_list
     
-    async def download_level(self, index: int = 0) -> DownloadedLevel:
+    async def download_level(self, index: int) -> DownloadedLevel:
         """
         A coroutine method that downloads a level from the gauntlet based on the index.
         
-        :param index: The index of the level to download (default: 0).
+        :param index: The index of the level to download.
         :type index: int
         :return: A DownloadedLevel object representing the downloaded level.
         """

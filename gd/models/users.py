@@ -13,7 +13,7 @@ from dataclasses import dataclass
 _secret = "Wmfd2893gb7"
 
 @dataclass
-class ProfilePost:
+class UserPost:
     """
     A class representing a post from an account.
 
@@ -37,20 +37,20 @@ class ProfilePost:
     author_account_id: Union[int, None]
 
     @staticmethod
-    def from_raw(raw_str: str, account_id: int = None) -> 'ProfilePost':
+    def from_raw(raw_str: str, account_id: int = None) -> 'UserPost':
         """
-        A static method that converts the raw data from the server into a ProfilePost instance.
+        A static method that converts the raw data from the server into a UserPost instance.
 
         :param raw_str: The raw data from the server.
         :type raw_str: str
         :param account_id: The account ID of the user.
         :type account_id: int
-        :return: A ProfilePost instance.
+        :return: A UserPost instance.
         """
         parsed = raw_str.split(":")
         comment_value = parse_key_value_pairs(parsed[0], '~')
 
-        return ProfilePost(
+        return UserPost(
             content=decrypt_data(comment_value.get("2", "")),
             likes=int(comment_value.get("4", 0)),
             post_id=int(comment_value.get("6", 0)),
@@ -164,13 +164,13 @@ class UserProfile:
             twitch=parsed.get('45')
         )
 
-    async def load_posts(self, page: int = 0) -> List[ProfilePost] | None:
+    async def load_posts(self, page: int = 0) -> List[UserPost] | None:
         """
         Load all posts from the user.
 
         :param page: The page number to load, default is 0.
         :type page: int
-        :return: A list of ProfilePost instances or None if the request failed.
+        :return: A list of UserPost instances or None if the request failed.
         """
         account_id = self.account_id
         response = await send_post_request(
@@ -182,7 +182,7 @@ class UserProfile:
             posts_list = []
             parsed_res = response.split("|")
             for post in parsed_res:
-                posts_list.append(ProfilePost.from_raw(post, account_id))
+                posts_list.append(UserPost.from_raw(post, account_id))
             return posts_list
         
     async def load_comments_history(self, page: int = 0, display_most_liked: bool = False) -> List[LevelComment]:
