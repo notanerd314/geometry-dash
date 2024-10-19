@@ -1,9 +1,9 @@
 """
 # .helpers
 
-A module containing all helper functions for the module.
+A module containing all helper functions.
 
-You don't need to use this module when using the package.
+You typically don't want to use this module because it has limited documentation and confusing information.
 """
 
 import httpx
@@ -144,7 +144,8 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
         creator_info = creator.split(":")
         parsed_levels[index]['creator'] = {
             "playerID": creator_info[0],
-            "playerName": creator_info[1]
+            "playerName": creator_info[1],
+            "accountID": creator_info[2]
         }
 
     for current_level in parsed_levels:
@@ -158,13 +159,15 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
             # If valid creator, assign player details
             current_level['creator'] = {
                 "playerID": user_id,
-                "playerName": creator_info[1]  # Assuming creator name is fetched appropriately
+                "playerName": creator_info[1],  # Assuming creator name is fetched appropriately
+                "accountID": creator_info[2]
             }
         else:
             # Create a fake creator with None values
             current_level['creator'] = {
                 "playerID": user_id,
-                "playerName": None
+                "playerName": None,
+                "accountID": creator_info[2]
             }
 
     for song in songs_data:
@@ -193,7 +196,7 @@ def parse_comma_separated_int_list(key: str) -> List[int]:
     except AttributeError:
         return []
     
-def determine_difficulty(parsed: dict, return_demon_diff: bool = True) -> Difficulty:
+def determine_difficulty(parsed: dict, return_demon_diff: bool = True) -> Union[Difficulty, DemonDifficulty]:
     """
     Determines the level's difficulty based on parsed data.
     
@@ -206,19 +209,37 @@ def determine_difficulty(parsed: dict, return_demon_diff: bool = True) -> Diffic
 
     if return_demon_diff and parsed.get('17', False):
         match parsed.get('43', None):
-            case 3:
-                return DemonDifficulty.EASY_DEMON
-            case 4:
-                return DemonDifficulty.MEDIUM_DEMON
-            case 0:
-                return DemonDifficulty.HARD_DEMON
-            case 5:
-                return DemonDifficulty.INSANE_DEMON
-            case 6:
-                return DemonDifficulty.EXTREME_DEMON
-            case _:
-                pass
+            case 3: return DemonDifficulty.EASY_DEMON
+            case 4: return DemonDifficulty.MEDIUM_DEMON
+            case 0: return DemonDifficulty.HARD_DEMON
+            case 5: return DemonDifficulty.INSANE_DEMON
+            case 6: return DemonDifficulty.EXTREME_DEMON
+            case _: raise ValueError(f"{parsed.get('43', None)} is not a valid DemonDifficulty.")
     elif parsed.get("25"):
         return Difficulty.AUTO
     else:
         return Difficulty(parsed.get("9", 0) // 10)
+    
+def determine_list_difficulty(raw_integer_difficulty: int) -> Union[Difficulty, DemonDifficulty]:
+    """
+    Determines the list's difficulty based on parsed data.
+    
+    :param raw_integer_difficulty: The number of the difficulty.
+    :type raw_integer_difficulty: int
+    :return: `Difficulty`
+    """
+
+    match raw_integer_difficulty:
+        case -1: return Difficulty.NA
+        case 0: return Difficulty.AUTO
+        case 1: return Difficulty.EASY
+        case 2: return Difficulty.NORMAL
+        case 3: return Difficulty.HARD
+        case 4: return Difficulty.HARDER
+        case 5: return Difficulty.INSANE
+        case 6: return DemonDifficulty.EASY_DEMON
+        case 7: return DemonDifficulty.MEDIUM_DEMON
+        case 8: return DemonDifficulty.HARD_DEMON
+        case 9: return DemonDifficulty.INSANE_DEMON
+        case 10: return DemonDifficulty.EXTREME_DEMON
+        case _: raise ValueError(f"Invalid difficulty integer {raw_integer_difficulty}.")

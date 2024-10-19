@@ -93,15 +93,15 @@ class Gamemode(Enum):
     """
     An **Enum** class representing the different game modes in Geometry Dash.
 
-    - `CUBE` (1): Cube mode.
-    - `SHIP` (2): Ship mode.
-    - `BALL` (3): Ball mode.
-    - `UFO` (4): UFO mode.
-    - `WAVE` (5): Wave mode.
-    - `ROBOT` (6): Robot mode.
-    - `SPIDER` (7): Spider mode.
-    - `SWING` (8): Swingcopter mode.
-    - `JETPACK` (9): Jetpack mode.
+    - `CUBE` (0): Cube mode.
+    - `SHIP` (1): Ship mode.
+    - `BALL` (2): Ball mode.
+    - `UFO` (3): UFO mode.
+    - `WAVE` (4): Wave mode.
+    - `ROBOT` (5): Robot mode.
+    - `SPIDER` (6): Spider mode.
+    - `SWING` (7): Swingcopter mode.
+    - `JETPACK` (8): Jetpack mode.
     """
     
     CUBE = 0

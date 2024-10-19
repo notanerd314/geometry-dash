@@ -8,8 +8,8 @@ from ..helpers import *
 from .enums import *
 from .icons import *
 from typing import List, Optional, Union, Tuple
-from .song import *
-from .users import UserProfile
+from .song import LevelSong, OfficialSong
+from datetime import datetime
 from dataclasses import dataclass
 from json import load
 from os import path
@@ -38,8 +38,8 @@ class DownloadedLevel:
         The level's data.
     version : int
         The level's version.
-    creator_id : int
-        The ID of the creator of the level.
+    creator_player_id : int
+        The player ID of the creator of the level.
     downloads : int
         The download count of the level.
     likes : int
@@ -86,7 +86,7 @@ class DownloadedLevel:
     description: Optional[str]
     level_data: Optional[str]
     version: Optional[int]
-    creator_id: Optional[int]
+    creator_player_id: Optional[int]
     downloads: int
     likes: Optional[int]
     copyable: bool
@@ -131,7 +131,7 @@ class DownloadedLevel:
             description=parsed.get("3"),
             level_data=parsed.get("4"),
             version=parsed.get("5"),
-            creator_id=parsed.get("6"),
+            creator_player_id=parsed.get("6"),
             downloads=parsed.get("10", 0),
             likes=parsed.get("14"),
             copyable=bool(parsed.get("27")),
@@ -187,11 +187,14 @@ class SearchedLevel(DownloadedLevel):
     ----------
     creator_name : Optional[str]
         The creator name of the level.
+    creator_account_id : Optional[int]
+        The creator's account ID.
     song_data : LevelSong
         The song object of the level.
     """
 
     creator_name: Optional[str]
+    creator_account_id: Optional[int]
     song_data: 'LevelSong'
 
     @staticmethod
@@ -206,6 +209,7 @@ class SearchedLevel(DownloadedLevel):
 
         instance = DownloadedLevel.from_raw(parsed_str['level'])
         creator_name = parsed_str["creator"]["playerName"]
+        creator_account_id = parsed_str["creator"]["accountID"]
         song_data = LevelSong.from_raw(parsed_str["song"])
         
         return SearchedLevel(
@@ -214,7 +218,8 @@ class SearchedLevel(DownloadedLevel):
             name=instance.name,
             description=instance.description,
             version=instance.version,
-            creator_id=instance.creator_id,
+            creator_player_id=instance.creator_id,
+            creator_account_id=creator_account_id,
             downloads=instance.downloads,
             likes=instance.likes,
             copyable=instance.copyable,
@@ -241,8 +246,6 @@ class SearchedLevel(DownloadedLevel):
             level_password=None,
             official_song=instance.official_song
         )
-
-    # Note: Ensure LevelSong also has a `from_raw` method defined accordingly.
 
 @dataclass
 class LevelComment:
@@ -338,25 +341,134 @@ class LevelComment:
             author_secondary_color_id=int(user_value.get("11", 1)),
             author_has_glow=bool(int(user_value.get("15", 0)))
         )
+    
+@dataclass
+class __ListOfLevels__:
+    """
+    A class representing a list of levels. (Used for inheritance, not for API.)
+    
+    Attributes
+    ----------
+    id : int
+    name : str
+    level_ids : List[int]
+    """
+    id: int
+    name: str
+    level_ids: List[int]
 
-    async def view_author_profile(self) -> UserProfile:
+    async def get_display_info_all_levels(self) -> Tuple[SearchedLevel]:
         """
-        Fetches the author's profile.
-
-        :return: A UserProfile object of the author.
+        A coroutine method that fetches and returns all the levels in the level list with their display information.
+        
+        :return: A tuple of SearchedLevel objects.
         """
-        if isinstance(self.author_account_id, int):
-            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {'secret': "Wmfd2893gb7", "targetAccountID": self.author_account_id}
-        else:
-            raise ValueError("ID must be int")
-
-        response = await send_post_request(url=url, data=data)
-        return UserProfile.from_raw(response)
-
+        str_ids = ','.join([str(level) for level in self.levels_id])
+        search_raw = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevels21.php",
+            data={'secret': "Wmfd2893gb7", "str": str_ids, "type": 10}
+        )
+        search_parsed = parse_search_results(search_raw)
+        level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
+        return level_list
+    
+    async def download_level_by_index(self, index: int) -> DownloadedLevel:
+        """
+        A coroutine method that downloads a level from the level list based on the index.
+        
+        :param index: The index of the level to download.
+        :type index: int
+        :return: A DownloadedLevel object representing the downloaded level.
+        """
+        if index < 0 or index >= len(self.levels_id):
+            raise IndexError("Invalid level index, index limit is 4.")
+        
+        level_id = self.levels_id[index]
+        download_raw = await send_post_request(
+            url="http://www.boomlings.com/database/downloadGJLevel22.php",
+            data={'secret': "Wmfd2893gb7", "levelID": level_id}
+        )
+        return DownloadedLevel.from_raw(download_raw)
 
 @dataclass
-class MapPack:
+class LevelList(__ListOfLevels__):
+    """
+    A class representing a list.
+
+    Attributes
+    ----------
+    id : int
+        The list ID.
+    name : str
+        The name of the list.
+    description : str
+        The description of the list.
+    difficulty : Difficulty
+        The difficulty of the list.
+    downloads : int
+        The amount of downloads in the list.
+    likes : int
+        The amount of likes in the list.
+    is_rated : bool
+        If the level has a rating.
+    upload_date : datetime
+        The upload date of the list.
+    last_update_date : datetime
+        The last update date of the list
+    author_account_id : int
+        The author's account ID.
+    author_name : str
+        The author's name.
+    level_ids : List[int]
+        The list of level IDs inside the list.
+    diamonds : int
+        The amount of diamonds given when completing the list.
+    minimum_levels : int
+        The minimum of levels required to complete the list. 
+    """
+
+    description: str
+    difficulty: Difficulty
+    downloads: int
+    likes: int
+    is_rated: bool
+    upload_date: datetime
+    last_update_date: datetime
+    author_account_id: int
+    author_name: str
+    diamonds: int
+    minimum_levels: int
+
+    @staticmethod
+    def from_raw(raw_str: str) -> 'LevelList':
+        """
+        Converts a raw string to a LevelList object.
+
+        :param raw_str: Raw data returned from the servers.
+        :type raw_str: str
+        :return: A LevelList object created from the raw data.
+        """
+        parsed = parse_key_value_pairs(raw_str)
+
+        return LevelList(
+            id=int(parsed.get("1", 0)),
+            name=parsed.get("2", ""),
+            level_ids=parse_comma_separated_int_list(parsed.get("51", "")),
+            description=decrypt_data(parsed.get("3", "")),
+            difficulty=determine_list_difficulty(parsed.get("7", None)),
+            downloads=int(parsed.get("10", 0)),
+            likes=int(parsed.get("14", 0)),
+            is_rated=True if parsed.get("19") else False,
+            upload_date=datetime.fromtimestamp(int(parsed.get("28", 0))),
+            last_update_date=datetime.fromtimestamp(int(parsed.get("29", 0))),
+            author_account_id=int(parsed.get("49", 0)),
+            author_name=parsed.get("50", ""),
+            diamonds=int(parsed.get("55", 0)),
+            minimum_levels=int(parsed.get("56", 0))
+        )
+
+@dataclass
+class MapPack(__ListOfLevels__):
     """
     A class representing a map pack.
 
@@ -366,7 +478,7 @@ class MapPack:
         ID of the map pack
     name : str
         Name of the map pack
-    levels_id : List[int]
+    level_ids : List[int]
         The list of the levels' id.
     stars : int
         The star count of the map pack
@@ -380,9 +492,6 @@ class MapPack:
         The rgb color of the map pack's progress bar
     """
 
-    id: int
-    name: str
-    levels_id: List[int]
     stars: int
     coins: int
     difficulty: Difficulty
@@ -402,49 +511,16 @@ class MapPack:
         return MapPack(
             id=int(parsed.get("1", 0)),
             name=parsed.get("2", ""),
-            levels_id=parse_comma_separated_int_list(parsed.get("3", "")),
+            level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
             stars=int(parsed.get("4", 0)),
             coins=int(parsed.get("5", 0)),
             difficulty=Difficulty(int(parsed.get("6", 0))),
             text_rgb_color=parse_comma_separated_int_list(parsed.get("7", "")),
             progress_bar_rgb_color=parse_comma_separated_int_list(parsed.get("8", ""))
         )
-    
-    async def get_display_info_all_levels(self) -> Tuple[SearchedLevel]:
-        """
-        A coroutine method that fetches and returns all the levels in the map pack with their display information.
-        
-        :return: A tuple of SearchedLevel objects.
-        """
-        str_ids = ','.join([str(level) for level in self.levels_id])
-        search_raw = await send_post_request(
-            url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={'secret': "Wmfd2893gb7", "str": str_ids, "type": 10}
-        )
-        search_parsed = parse_search_results(search_raw)
-        level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
-        return level_list
-
-    async def download_level_by_index(self, index: int) -> DownloadedLevel:
-        """
-        A coroutine method that downloads a level from the map pack based on the index.
-        
-        :param index: The index of the level to download.
-        :type index: int
-        :return: A DownloadedLevel object representing the downloaded level.
-        """
-        if index < 0 or index >= len(self.levels_id):
-            raise IndexError("Invalid level index, index limit is 4.")
-        
-        level_id = self.levels_id[index]
-        download_raw = await send_post_request(
-            url="http://www.boomlings.com/database/downloadGJLevel22.php",
-            data={'secret': "Wmfd2893gb7", "levelID": level_id}
-        )
-        return DownloadedLevel.from_raw(download_raw)
 
 @dataclass
-class Gauntlet:
+class Gauntlet(__ListOfLevels__):
     """
     A class representing a gauntlet.
     
@@ -454,14 +530,11 @@ class Gauntlet:
         The ID of the gauntlet.
     name: str
         The name of the gauntlet.
-    levels_id : List[int]
+    level_ids : List[int]
         The IDs of the levels.
     image_url : str
         The URL of the image (from gdbrowser.com)
     """
-    id: int
-    name: str
-    levels_id: List[int]
     image_url: str
 
     @staticmethod
@@ -478,7 +551,7 @@ class Gauntlet:
         return Gauntlet(
             id=parsed.get("1", 0),
             name=name,
-            levels_id=parse_comma_separated_int_list(parsed.get("3", "")),
+            level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
             image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png"
         )
     
@@ -495,21 +568,3 @@ class Gauntlet:
         search_parsed = parse_search_results(search_raw)
         level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
         return level_list
-    
-    async def download_level(self, index: int) -> DownloadedLevel:
-        """
-        A coroutine method that downloads a level from the gauntlet based on the index.
-        
-        :param index: The index of the level to download.
-        :type index: int
-        :return: A DownloadedLevel object representing the downloaded level.
-        """
-        if index < 0 or index >= len(self.levels_id):
-            raise IndexError("Invalid level index, index limit is 4.")
-        
-        level_id = self.levels_id[index]
-        download_raw = await send_post_request(
-            url="http://www.boomlings.com/database/downloadGJLevel22.php",
-            data={'secret': "Wmfd2893gb7", "levelID": level_id}
-        )
-        return DownloadedLevel.from_raw(download_raw)

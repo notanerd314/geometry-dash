@@ -43,8 +43,8 @@ class UserPost:
 
         :param raw_str: The raw data from the server.
         :type raw_str: str
-        :param account_id: The account ID of the user.
-        :type account_id: int
+        :param account_id: The account ID of the user, optional if not provided.
+        :type account_id: Union[int, None]
         :return: A UserPost instance.
         """
         parsed = raw_str.split(":")
@@ -57,6 +57,24 @@ class UserPost:
             posted_ago=comment_value.get("9", None),
             author_account_id=account_id
         )
+    
+    async def load_author_profile(self) -> 'UserProfile':
+        """
+        Fetch the author's profile.
+
+        :return: An instance of the UserProfile class.
+        """
+        account_id = self.account_id
+
+        if not account_id:
+            raise ValueError("Account ID is not provided.")
+
+        if isinstance(account_id, int):
+            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
+            data = {'secret': _secret, "targetAccountID": account_id}
+
+        response = await send_post_request(url=url, data=data)
+        return UserProfile.from_raw(response)
 
 @dataclass
 class UserProfile:
@@ -91,12 +109,12 @@ class UserProfile:
         If the user has registered.
     mod_level : Optional[ModLevel]
         The mod level of the user.
-    primary_color : Optional[Color]
-        The primary color of the user's icon.
-    secondary_color : Optional[Color]
-        The secondary color of the user's icon.
-    glow_color : Optional[Color]
-        The glow color of the user's icon.
+    primary_color_id : Optional[Color_id]
+        The primary color_id of the user's icon.
+    secondary_color_id : Optional[Color_id]
+        The secondary color_id of the user's icon.
+    glow_color_id : Optional[Color_id]
+        The glow color_id of the user's icon.
     profile_icon_type : Optional[Gamemode]
         The gamemode that the user primarily chooses to display.
     youtube : Union[str, None]
@@ -120,9 +138,9 @@ class UserProfile:
     registered: Optional[bool]
     mod_level: Optional[ModLevel]
 
-    primary_color: Optional[Color]
-    secondary_color: Optional[Color]
-    glow_color: Optional[Color]
+    primary_color_id: Optional[int]
+    secondary_color_id: Optional[int]
+    glow_color_id: Optional[int]
     profile_icon_type: Optional[Gamemode]
     
     youtube: Optional[str]
@@ -155,9 +173,9 @@ class UserProfile:
             mod_level=ModLevel(parsed.get('49', 0)),
 
             profile_icon_type=Gamemode(parsed.get('14', 1)),
-            primary_color=Color(parsed.get('10', 0), ColorType.primary),
-            secondary_color=Color(parsed.get('11', 0), ColorType.secondary),
-            glow_color=Color(parsed.get('51', 0), ColorType.glow),
+            primary_color_id=int(parsed.get('10', 0)),
+            secondary_color_id=int(parsed.get('11', 0)),
+            glow_color_id=int(parsed.get('51')) if parsed.get('51', None) is not None else None,
 
             youtube=parsed.get('20', None) if parsed.get('20') != r"%%00" else None,
             twitter_or_x=parsed.get('44'),

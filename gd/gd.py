@@ -8,6 +8,8 @@ from asyncio import run
 
 _secret = "Wmfd2893gb7"
 
+# TODO: Add filtering to search_level and search_list
+
 class Client:
     """
     Client for interacting with the Geometry Dash servers.
@@ -247,3 +249,19 @@ class Client:
             list_guantlets.append(Gauntlet(id=52, name="NCS II", levels_id=[110681124, 110774310, 110638716, 110473393, 110774330], image_url="https://gdbrowser.com/assets/gauntlets/ncs_ii.png"))
 
         return list_guantlets
+    
+    async def search_lists(self, query: str) -> List[LevelList]:
+        """
+        Search for level lists by query.
+
+        :param query: The query string to search for.
+        :type query: str
+        :return: A list of `LevelList` instances.
+        """
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevelLists.php",
+            data={'secret': _secret, 'str': query, 'type': 0}
+        )
+
+        response = response.split("#")[0]
+        return [LevelList.from_raw(level_list_data) for level_list_data in response.split("|")]
