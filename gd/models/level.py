@@ -210,7 +210,7 @@ class SearchedLevel(DownloadedLevel):
         instance = DownloadedLevel.from_raw(parsed_str['level'])
         creator_name = parsed_str["creator"]["playerName"]
         creator_account_id = parsed_str["creator"]["accountID"]
-        song_data = LevelSong.from_raw(parsed_str["song"]) if parsed_str["song"] else None
+        song_data = LevelSong.from_raw(parsed_str["song"]) if parsed_str.get("song", None) else None
         
         return SearchedLevel(
             raw_str=parsed_str['level'],

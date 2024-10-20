@@ -4,7 +4,7 @@
 A module containing all enumerations of various things.
 """
 
-from enum import IntEnum, Enum
+from enum import IntEnum, Enum, StrEnum
 
 # Enum
 class Difficulty(Enum):
@@ -63,16 +63,16 @@ class LevelRating(Enum):
     - `RATED` (-1): Rated level.
     - `FEATURED` (0): Featured level.
     - `EPIC` (1): Epic-rated level.
-    - `MYTHIC` (2): Mythic-rated level.
-    - `LEGENDARY` (3): Legendary-rated level.
+    - `MYTHIC` (3): Mythic-rated level.
+    - `LEGENDARY` (2): Legendary-rated level.
     """
     
     NO_RATE = -2
     RATED = -1
     FEATURED = 0
     EPIC = 1
-    MYTHIC = 2
-    LEGENDARY = 3
+    MYTHIC = 3
+    LEGENDARY = 2
 
 
 class ModLevel(IntEnum):
@@ -128,3 +128,19 @@ class ColorType(Enum):
     SECONDARY = 2
     GLOW = 3
 
+class Sort(IntEnum):
+    """
+    An **Enum** class representing sorting options in Geometry Dash.
+    """
+
+    MOST_DOWNLOADED = 1
+    MOST_LIKED = 2
+    TRENDING = 3
+    RECENT = 4
+    FEATURED = 6
+    MAGIC = 7
+    AWARDED = 11
+    HALL_OF_FAME = 16
+    GD_WORLD = 17
+    DAILY = 21
+    WEEKLY = 22

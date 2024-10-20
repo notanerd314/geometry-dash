@@ -9,6 +9,7 @@ You typically don't want to use this module because it has limited documentation
 import httpx
 import base64
 import zlib
+import re
 from typing import List, Dict, Union
 from .models.enums import Difficulty, DemonDifficulty
 
@@ -143,8 +144,7 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
     split_parts = text.split('#')
     levels_data = split_parts[0].split("|")
     creators_data = split_parts[1].split("|")
-    print(split_parts[2])
-    songs_data = split_parts[2].split(":")
+    songs_data = split_parts[2].split("~:~")
     
     parsed_levels = [{"level": level} for level in levels_data]
 
@@ -174,9 +174,7 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
             }
 
     for song in songs_data:
-        print(song)
         parsed_song = parse_song_data(song)
-        print(parsed_song)
         for current_level in parsed_levels:
             level_data = parse_level_data(current_level['level'])
             if level_data.get("35") == 0:
@@ -185,8 +183,6 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
                 current_level['song'] = song
 
     return parsed_levels
-
-
 
 def is_newgrounds_song(id: int) -> bool:
     return not id >= 10000000

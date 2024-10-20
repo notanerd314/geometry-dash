@@ -68,36 +68,53 @@ class Client:
             raise RuntimeError(f"Failed to get daily level: {e}")
 
     async def search_level(
-        self, query: str = None, page: int = 0, 
+        self, query: str = "", page: int = 0, 
         level_rating: LevelRating = None, length: Length = None,
         difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
         two_player_mode: bool = False, has_coins: bool = False, not_copied: bool = False,
-        song_id: int = None, gd_world: bool = False
+        song_id: int = None, gd_world: bool = False, sort: Sort = 0
     ) -> List[SearchedLevel]:
         """
-        Searches for levels matching the given query string.
+        Searches for levels matching the given query string and filters them.
 
-        Filters will be added in the next version.
+        To get a specific demon difficulty, make param `difficulty` as `Difficulty.DEMON`.
+
+        **Note: `difficulty`, `length` and `query` does not work with `sort`!**
 
         :param query: The query for the search.
-        :type query: str
+        :type query: Optional[str]
+        :param page: The page number for the search. Defaults to 0.
+        :type page: int
+        :param level_rating: The level rating filter. (Featured, Epic, Legendary, ...)
+        :type level_rating: Optional[LevelRating]
+        :param length: The length filter.
+        :type length: Optional[Length]
+        :param difficulty: The difficulty filter.
+        :type difficulty: Optional[List[Difficulty]]
+        :param demon_difficulty: The demon difficulty filter.
+        :type demon_difficulty: Optional[DemonDifficulty]
+        :param two_player_mode: Filters level that has two player mode enabled.
+        :type two_player_mode: Optional[bool]
+        :param has_coins: Filters level that has coins.
+        :type has_coins: Optional[bool]
+        :param not_copied: Filters level that has not been copied.
+        :type not_copied: Optional[bool]
+        :param song_id: Filters level that has the specified song ID.
+        :type song_id: Optional[int]
+        :param gd_world: Filters level that is from Geometry Dash World.
+        :type gd_world: Optional[bool]
+        :param sort: Sort the result by Magic, Recent, ...
+        :type sort: Optional[Union[Sort, str]]
+
         :return: A list of `SearchedLevel` instances.
         """
         
         # Standard data
         data = {
             "secret": _secret,
-            "type": 0,
+            "type": sort.value if isinstance(sort, Sort) else sort,
             "page": page,
-            "twoPlayer": int(two_player_mode),
-            "coins": int(has_coins),
-            "original": int(not_copied),
-            "gdw": int(gd_world)
         }
-
-        # query
-        if query:
-            data["str"] = query
         
         # Determine level rating
         match level_rating:
@@ -105,8 +122,8 @@ class Client:
             case LevelRating.RATED: data["star"] = 1
             case LevelRating.FEATURED: data["featured"] = 1
             case LevelRating.EPIC: data["epic"] = 1
-            case LevelRating.LEGENDARY: data["legendary"] = 1
-            case LevelRating.MYTHIC: data["mythic"] = 1
+            case LevelRating.MYTHIC: data["legendary"] = 1
+            case LevelRating.LEGENDARY: data["mythic"] = 1
             case None: pass
             case _: raise ValueError("Invalid level rating, are you sure that it's an LevelRating object?")
 
@@ -114,29 +131,29 @@ class Client:
         if difficulty != Difficulty.DEMON and demon_difficulty:
             raise ValueError("Demon difficulty can only be used with Difficulty.DEMON!")
 
-        # Determine normal difficulty
-        if isinstance(difficulty, list):
+        if difficulty:
             if len(difficulty) > 1 and Difficulty.DEMON in difficulty:
                 raise ValueError("Difficulty.DEMON can not be with other difficulties!")
             difficulty_list_int = [str(determine_search_difficulty(diff)) for diff in difficulty]
             data["diff"] = ",".join(difficulty_list_int)
-        elif difficulty:
-            data["diff"] = difficulty
-
-        # Determine demon difficulty
         if demon_difficulty:
             data["demonFilter"] = determine_demon_search_difficulty(demon_difficulty)
-
-        # Custom song ID
         if song_id:
             data["customSong"] = 1
             data["song"] = song_id
-        
         if length:
             data["length"] = length.value
-
+        if two_player_mode:
+            data["twoPlayer"] = int(two_player_mode)
+        if has_coins:
+            data["coins"] = int(has_coins)
+        if not_copied:
+            data["original"] = int(not_copied)
+        if gd_world:
+            data["gdw"] = int(gd_world)
+        if query:
+            data["str"] = query
         print(data)
-
         # Do the response
         search_data: str = await send_post_request(url="http://www.boomlings.com/database/getGJLevels21.php", data=data)
         parsed_results = parse_search_results(search_data)
