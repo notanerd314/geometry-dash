@@ -119,9 +119,9 @@ class ColorType(Enum):
     """
     An **Enum** class representing icon color parts in Geometry Dash.
 
-    - `primary` (1): Primary color.
-    - `secondary` (2): Secondary color.
-    - `glow` (3): Glow color.
+    - `PRIMARY` (1): Primary color.
+    - `SECONDARY` (2): Secondary color.
+    - `GLOW` (3): Glow color.
     """
     
     PRIMARY = 1

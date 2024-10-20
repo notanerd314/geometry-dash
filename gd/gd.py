@@ -5,10 +5,11 @@ from .models.users import *
 from datetime import timedelta
 from typing import Union, Tuple
 from asyncio import run
+from pprint import pprint
 
 _secret = "Wmfd2893gb7"
 
-# TODO: Add filtering to search_level and search_list
+# TODO: robtop fucked up my parser, fix potential ":" in song data.
 
 class Client:
     """
@@ -66,7 +67,13 @@ class Client:
         except RuntimeError as e:
             raise RuntimeError(f"Failed to get daily level: {e}")
 
-    async def search_level(self, query: str, type: int = 0) -> List[SearchedLevel]:
+    async def search_level(
+        self, query: str = None, page: int = 0, 
+        level_rating: LevelRating = None, length: Length = None,
+        difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
+        two_player_mode: bool = False, has_coins: bool = False, not_copied: bool = False,
+        song_id: int = None, gd_world: bool = False
+    ) -> List[SearchedLevel]:
         """
         Searches for levels matching the given query string.
 
@@ -76,10 +83,62 @@ class Client:
         :type query: str
         :return: A list of `SearchedLevel` instances.
         """
-        search_data: str = await send_post_request(
-            url="http://www.boomlings.com/database/getGJLevels21.php", 
-            data={"secret": _secret, "str": query, "type": type}
-        )
+        
+        # Standard data
+        data = {
+            "secret": _secret,
+            "type": 0,
+            "page": page,
+            "twoPlayer": int(two_player_mode),
+            "coins": int(has_coins),
+            "original": int(not_copied),
+            "gdw": int(gd_world)
+        }
+
+        # query
+        if query:
+            data["str"] = query
+        
+        # Determine level rating
+        match level_rating:
+            case LevelRating.NO_RATE: data["noStar"] = 1
+            case LevelRating.RATED: data["star"] = 1
+            case LevelRating.FEATURED: data["featured"] = 1
+            case LevelRating.EPIC: data["epic"] = 1
+            case LevelRating.LEGENDARY: data["legendary"] = 1
+            case LevelRating.MYTHIC: data["mythic"] = 1
+            case None: pass
+            case _: raise ValueError("Invalid level rating, are you sure that it's an LevelRating object?")
+
+        # Check errors
+        if difficulty != Difficulty.DEMON and demon_difficulty:
+            raise ValueError("Demon difficulty can only be used with Difficulty.DEMON!")
+
+        # Determine normal difficulty
+        if isinstance(difficulty, list):
+            if len(difficulty) > 1 and Difficulty.DEMON in difficulty:
+                raise ValueError("Difficulty.DEMON can not be with other difficulties!")
+            difficulty_list_int = [str(determine_search_difficulty(diff)) for diff in difficulty]
+            data["diff"] = ",".join(difficulty_list_int)
+        elif difficulty:
+            data["diff"] = difficulty
+
+        # Determine demon difficulty
+        if demon_difficulty:
+            data["demonFilter"] = determine_demon_search_difficulty(demon_difficulty)
+
+        # Custom song ID
+        if song_id:
+            data["customSong"] = 1
+            data["song"] = song_id
+        
+        if length:
+            data["length"] = length.value
+
+        print(data)
+
+        # Do the response
+        search_data: str = await send_post_request(url="http://www.boomlings.com/database/getGJLevels21.php", data=data)
         parsed_results = parse_search_results(search_data)
         return [SearchedLevel.from_dict(result) for result in parsed_results]
 

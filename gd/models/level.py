@@ -158,7 +158,7 @@ class DownloadedLevel:
 
     @staticmethod
     def _determine_rating(parsed: dict) -> LevelRating:
-        """
+        """d
         Determines the level's rating based on parsed data.
         
         :param parsed: Parsed data from the servers
@@ -189,8 +189,8 @@ class SearchedLevel(DownloadedLevel):
         The creator name of the level.
     creator_account_id : Optional[int]
         The creator's account ID.
-    song_data : LevelSong
-        The song object of the level.
+    song_data : Union[LevelSong, None]
+        The custom song object of the level.
     """
 
     creator_name: Optional[str]
@@ -210,7 +210,7 @@ class SearchedLevel(DownloadedLevel):
         instance = DownloadedLevel.from_raw(parsed_str['level'])
         creator_name = parsed_str["creator"]["playerName"]
         creator_account_id = parsed_str["creator"]["accountID"]
-        song_data = LevelSong.from_raw(parsed_str["song"])
+        song_data = LevelSong.from_raw(parsed_str["song"]) if parsed_str["song"] else None
         
         return SearchedLevel(
             raw_str=parsed_str['level'],
@@ -218,7 +218,7 @@ class SearchedLevel(DownloadedLevel):
             name=instance.name,
             description=instance.description,
             version=instance.version,
-            creator_player_id=instance.creator_id,
+            creator_player_id=instance.creator_player_id,
             creator_account_id=creator_account_id,
             downloads=instance.downloads,
             likes=instance.likes,

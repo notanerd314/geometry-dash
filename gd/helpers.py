@@ -41,8 +41,18 @@ async def send_get_request(**kwargs) -> httpx.Response:
 
 # Function to add padding to base64 encoded data
 def add_padding(data: str) -> str:
-    """Add padding to the input data to make its length a multiple of 4."""
-    return data + "=" * (-len(data) % 4)
+    """Add padding to the input base64 data to make its length a multiple of 4.
+
+    Args:
+        data (str): The input data to pad.
+
+    Returns:
+        str: The padded data.
+    """
+    if not isinstance(data, str):
+        raise ValueError("Input data must be a string.")
+
+    return data + "=" * ((4 - len(data) % 4) % 4)
 
 # XOR decryption function
 def xor_decrypt(input_bytes: bytes, key: str) -> str:
@@ -54,7 +64,7 @@ def xor_decrypt(input_bytes: bytes, key: str) -> str:
 def decrypt_data(encrypted: Union[str, bytes], decrypt_type: str = "base64") -> str:
     """Decrypt the input data using the specified decrypt type."""
     if decrypt_type == "base64_decompress":
-        # padded_data = add_padding(encrypted)
+        padded_data = add_padding(encrypted)
         decoded_data = base64.urlsafe_b64decode(encrypted)
         decompressed_data = zlib.decompress(decoded_data, 15 | 32)
         return decompressed_data.decode()
@@ -62,8 +72,8 @@ def decrypt_data(encrypted: Union[str, bytes], decrypt_type: str = "base64") -> 
         decoded_bytes = base64.b64decode(encrypted)
         return xor_decrypt(decoded_bytes, '26364')
     elif decrypt_type == "base64":
-        padded_data = add_padding(encrypted)
-        return base64.b64decode(padded_data).decode('utf-8')
+        # padded_data = add_padding(encrypted)
+        return base64.urlsafe_b64decode(encrypted).decode('utf-8')
     else:
         raise ValueError("Invalid decrypt type!")
 
@@ -130,55 +140,53 @@ def parse_song_data(song: str) -> Dict[str, Union[str, int]]:
 # Function to parse search results
 def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
     """Parse search results from input text."""
-    parts_splitted = text.split('#')
-    levels_data = parts_splitted[0].split("|")
-    creators_data = parts_splitted[1].split("|")
-    songs_data = parts_splitted[2].split(":")
+    split_parts = text.split('#')
+    levels_data = split_parts[0].split("|")
+    creators_data = split_parts[1].split("|")
+    print(split_parts[2])
+    songs_data = split_parts[2].split(":")
     
     parsed_levels = [{"level": level} for level in levels_data]
 
-    # Create a set of player IDs from the creators list for quick lookup
-    creator_ids = {creator.split(":")[0] for creator in creators_data}
-
-    for index, creator in enumerate(creators_data):
-        creator_info = creator.split(":")
-        parsed_levels[index]['creator'] = {
-            "playerID": creator_info[0],
-            "playerName": creator_info[1],
-            "accountID": creator_info[2]
-        }
-
     for current_level in parsed_levels:
         level_data = parse_level_data(current_level['level'])
-        
-        # Get the user ID from the current level
-        user_id = level_data.get('6')
+        user_id = str(level_data.get('6'))  # Ensure user_id is a string
 
-        # Check if the user ID exists in the creator_ids set
-        if user_id in creator_ids:
-            # If valid creator, assign player details
+        # Match creator by looping through creators_data
+        matching_creator = None
+        for creator in creators_data:
+            creator_info = creator.split(":")
+            if creator_info[0] == user_id:
+                matching_creator = creator_info
+                break
+
+        if matching_creator:
             current_level['creator'] = {
-                "playerID": user_id,
-                "playerName": creator_info[1],  # Assuming creator name is fetched appropriately
-                "accountID": creator_info[2]
+                "playerID": matching_creator[0],
+                "playerName": matching_creator[1],
+                "accountID": matching_creator[2]
             }
         else:
-            # Create a fake creator with None values
             current_level['creator'] = {
-                "playerID": user_id,
+                "playerID": None,
                 "playerName": None,
-                "accountID": creator_info[2]
+                "accountID": None
             }
 
     for song in songs_data:
+        print(song)
         parsed_song = parse_song_data(song)
-
+        print(parsed_song)
         for current_level in parsed_levels:
             level_data = parse_level_data(current_level['level'])
-            if level_data['35'] == int(parsed_song.get("1", -1)):
+            if level_data.get("35") == 0:
+                current_level['song'] = None
+            elif level_data['35'] == int(parsed_song.get("1", -1)):
                 current_level['song'] = song
 
     return parsed_levels
+
+
 
 def is_newgrounds_song(id: int) -> bool:
     return not id >= 10000000
@@ -243,3 +251,24 @@ def determine_list_difficulty(raw_integer_difficulty: int) -> Union[Difficulty, 
         case 9: return DemonDifficulty.INSANE_DEMON
         case 10: return DemonDifficulty.EXTREME_DEMON
         case _: raise ValueError(f"Invalid difficulty integer {raw_integer_difficulty}.")
+
+def determine_search_difficulty(difficulty_obj: Difficulty) -> int:
+    match difficulty_obj:
+        case Difficulty.NA: return -1
+        case Difficulty.AUTO: return -3
+        case Difficulty.DEMON: return -2
+        case Difficulty.EASY: return 1
+        case Difficulty.NORMAL: return 2
+        case Difficulty.HARD: return 3
+        case Difficulty.HARDER: return 4
+        case Difficulty.INSANE: return 5
+        case _: raise ValueError(f"Invalid difficulty object type {type(difficulty_obj)}")
+
+def determine_demon_search_difficulty(difficulty_obj: DemonDifficulty) -> int:
+    match difficulty_obj:
+        case DemonDifficulty.EASY_DEMON: return 1
+        case DemonDifficulty.MEDIUM_DEMON: return 2
+        case DemonDifficulty.HARD_DEMON: return 3
+        case DemonDifficulty.INSANE_DEMON: return 4
+        case DemonDifficulty.EXTREME_DEMON: return 5
+        case _: raise ValueError(f"Invalid demon difficulty object type {type(difficulty_obj)}")
