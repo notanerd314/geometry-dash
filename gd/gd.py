@@ -116,44 +116,44 @@ class Client:
             "page": page,
         }
         
-        # Determine level rating
-        match level_rating:
-            case LevelRating.NO_RATE: data["noStar"] = 1
-            case LevelRating.RATED: data["star"] = 1
-            case LevelRating.FEATURED: data["featured"] = 1
-            case LevelRating.EPIC: data["epic"] = 1
-            case LevelRating.MYTHIC: data["legendary"] = 1
-            case LevelRating.LEGENDARY: data["mythic"] = 1
-            case None: pass
-            case _: raise ValueError("Invalid level rating, are you sure that it's an LevelRating object?")
+        # Level rating check
+        if level_rating:
+            match level_rating:
+                case LevelRating.NO_RATE: data["noStar"] = 1
+                case LevelRating.RATED: data["star"] = 1
+                case LevelRating.FEATURED: data["featured"] = 1
+                case LevelRating.EPIC: data["epic"] = 1
+                case LevelRating.MYTHIC: data["legendary"] = 1
+                case LevelRating.LEGENDARY: data["mythic"] = 1
+                case _: raise ValueError("Invalid level rating, are you sure that it's a LevelRating object?")
 
-        # Check errors
-        if difficulty != Difficulty.DEMON and demon_difficulty:
-            raise ValueError("Demon difficulty can only be used with Difficulty.DEMON!")
-
+        # Difficulty and demon difficulty checks
         if difficulty:
-            if len(difficulty) > 1 and Difficulty.DEMON in difficulty:
-                raise ValueError("Difficulty.DEMON can not be with other difficulties!")
-            difficulty_list_int = [str(determine_search_difficulty(diff)) for diff in difficulty]
-            data["diff"] = ",".join(difficulty_list_int)
+            if Difficulty.DEMON in difficulty and len(difficulty) > 1:
+                raise ValueError("Difficulty.DEMON cannot be combined with other difficulties!")
+            data["diff"] = ",".join(str(determine_search_difficulty(diff)) for diff in difficulty)
+
         if demon_difficulty:
+            if difficulty != [Difficulty.DEMON]:
+                raise ValueError("Demon difficulty can only be used with Difficulty.DEMON!")
             data["demonFilter"] = determine_demon_search_difficulty(demon_difficulty)
+
+        # Optional parameters
         if song_id:
-            data["customSong"] = 1
-            data["song"] = song_id
-        if length:
-            data["length"] = length.value
-        if two_player_mode:
-            data["twoPlayer"] = int(two_player_mode)
-        if has_coins:
-            data["coins"] = int(has_coins)
-        if not_copied:
-            data["original"] = int(not_copied)
-        if gd_world:
-            data["gdw"] = int(gd_world)
-        if query:
-            data["str"] = query
-        print(data)
+            data.update({"customSong": 1, "song": song_id})
+
+        optional_params = {
+            "length": length.value if length else None,
+            "twoPlayer": int(two_player_mode) if two_player_mode else None,
+            "coins": int(has_coins) if has_coins else None,
+            "original": int(not_copied) if not_copied else None,
+            "gdw": int(gd_world) if gd_world else None,
+            "str": query if query else None
+        }
+
+        # Update data with non-None values from optional_params
+        data.update({k: v for k, v in optional_params.items() if v is not None})
+
         # Do the response
         search_data: str = await send_post_request(url="http://www.boomlings.com/database/getGJLevels21.php", data=data)
         parsed_results = parse_search_results(search_data)
