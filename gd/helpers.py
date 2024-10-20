@@ -1,7 +1,7 @@
 """
 # .helpers
 
-A module containing all helper functions.
+A module containing all helper functions for the module.
 
 You typically don't want to use this module because it has limited documentation and confusing information.
 """

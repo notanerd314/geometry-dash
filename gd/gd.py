@@ -4,18 +4,26 @@ from .models.song import *
 from .models.users import *
 from datetime import timedelta
 from typing import Union, Tuple
-from asyncio import run
-from pprint import pprint
 
 _secret = "Wmfd2893gb7"
 
-# TODO: robtop fucked up my parser, fix potential ":" in song data.
+# TODO: Add filter for lists.
+# TODO: Fix potential errors and add more exceptions, because people are stupid sometimes...
+# TODO: Organize methods into subclasses or something I don't even fucking know?
+# TODO: fuck my sanity
 
 class Client:
     """
-    Client for interacting with the Geometry Dash servers.
+    Client for interacting with Geometry Dash.
 
-    It contains all methods to interact with the Geometry Dash API.
+    You can use it to download levels, get music library, load profiles, etc. Signing in accounts will be added in v2.0.
+
+    Example usage:
+    ```
+    >>> gd = Client()
+    >>> level = gd.search_level("sigma") # Returns a list of SearchedLevel instances
+    [SearchedLevel(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
+    ```
     """
     def __init__(self) -> None:
         pass
@@ -44,13 +52,13 @@ class Client:
         """
         Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally.
 
+        If `get_time_left` is set to True then returns a tuple containing the `DownloadedLevel` and the time left for the level.
+
         :param return_weekly: Whether to return the weekly or daily level. Defaults to False for daily.
         :type return_weekly: bool
-        :param get_time_left: Whether to return the time left for the level. Defaults to False.
+        :param get_time_left: Whether to return both the level and the time left for the level. Defaults to False.
         :type get_time_left: bool
         :return: A `DownloadedLevel` instance containing the downloaded level data.
-
-            If `get_time_left` is set to True then returns a tuple containing the `DownloadedLevel` and the time left for the level.
         """
         try:
             level = await self.download_level(-2 if return_weekly else -1)
