@@ -12,33 +12,26 @@ import zlib
 import re
 from typing import List, Dict, Union
 from .models.enums import Difficulty, DemonDifficulty
-
-# Custom Exceptions
-class ResponseError(Exception):
-    pass
-
-class DownloadingSongError(Exception):
-    pass
+from .exceptions import *
 
 # Helper function to send an asynchronous POST request
 async def send_post_request(**kwargs) -> str:
-    """Send an asynchronous POST request and handle response."""
+    """Send an asynchronous POST request and handle response. Returns the content of the response."""
     async with httpx.AsyncClient() as client:
         response = await client.post(**kwargs, headers={"User-Agent": ""})
         if response.status_code == 200:
-            if response.text == "-1":
-                raise ResponseError("The request has failed and returned a stupid '-1'!")
             return response.text
         else:
             raise ResponseError(f"Unable to fetch data, got {response.status_code}.")
 
 async def send_get_request(**kwargs) -> httpx.Response:
+    """Send an asynchronous GET request and handle response."""
     async with httpx.AsyncClient() as client:
         response = await client.get(**kwargs, timeout=60)
         if response.status_code == 200:
             return response
         else:
-            raise ResponseError(f"Unable to fetch data, got {response.status_code}")
+            raise ResponseError(f"Unable to fetch data, got {response.status_code}.")
 
 # Function to add padding to base64 encoded data
 def add_padding(data: str) -> str:
@@ -81,19 +74,22 @@ def decrypt_data(encrypted: Union[str, bytes], decrypt_type: str = "base64") -> 
 # Function to parse key-value pairs from a string
 def parse_key_value_pairs(text: str, separator: str = ":") -> Dict[str, Union[str, int]]:
     """Parse key-value pairs from a colon-separated string."""
-    pairs = {}
-    text = text.split("#")[0]
-    items = text.split(separator)
-    for index in range(0, len(items), 2):
-        key = items[index]
-        value = items[index + 1] if index + 1 < len(items) else None
-        if value is not None:
-            try:
-                value = int(value)
-            except ValueError:
-                pass
-        pairs[key] = value
-    return pairs
+    try:
+        pairs = {}
+        text = text.split("#")[0]
+        items = text.split(separator)
+        for index in range(0, len(items), 2):
+            key = items[index]
+            value = items[index + 1] if index + 1 < len(items) else None
+            if value is not None:
+                try:
+                    value = int(value)
+                except ValueError:
+                    pass
+            pairs[key] = value
+        return pairs
+    except Exception as e:
+        raise ParseError(f"Error parsing key-value pairs: {str(e)}") from None
 
 # Function to parse level data
 def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
@@ -141,46 +137,49 @@ def parse_song_data(song: str) -> Dict[str, Union[str, int]]:
 # Function to parse search results
 def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
     """Parse search results from input text."""
-    split_parts = text.split('#')
-    levels_data = split_parts[0].split("|")
-    creators_data = split_parts[1].split("|")
-    songs_data = split_parts[2].split("~:~")
-    
-    parsed_levels = [{"level": level} for level in levels_data]
+    try:
+        split_parts = text.split('#')
+        levels_data = split_parts[0].split("|")
+        creators_data = split_parts[1].split("|")
+        songs_data = split_parts[2].split("~:~")
+        
+        parsed_levels = [{"level": level} for level in levels_data]
 
-    for current_level in parsed_levels:
-        level_data = parse_level_data(current_level['level'])
-        user_id = str(level_data.get('6'))  # Ensure user_id is a string
-
-        # Match creator by looping through creators_data
-        matching_creator = None
-        for creator in creators_data:
-            creator_info = creator.split(":")
-            if creator_info[0] == user_id:
-                matching_creator = creator_info
-                break
-
-        if matching_creator:
-            current_level['creator'] = {
-                "playerID": matching_creator[0],
-                "playerName": matching_creator[1],
-                "accountID": matching_creator[2]
-            }
-        else:
-            current_level['creator'] = {
-                "playerID": None,
-                "playerName": None,
-                "accountID": None
-            }
-
-    for song in songs_data:
-        parsed_song = parse_song_data(song)
         for current_level in parsed_levels:
             level_data = parse_level_data(current_level['level'])
-            if level_data.get("35") == 0:
-                current_level['song'] = None
-            elif level_data['35'] == int(parsed_song.get("1", -1)):
-                current_level['song'] = song
+            user_id = str(level_data.get('6'))  # Ensure user_id is a string
+
+            # Match creator by looping through creators_data
+            matching_creator = None
+            for creator in creators_data:
+                creator_info = creator.split(":")
+                if creator_info[0] == user_id:
+                    matching_creator = creator_info
+                    break
+
+            if matching_creator:
+                current_level['creator'] = {
+                    "playerID": matching_creator[0],
+                    "playerName": matching_creator[1],
+                    "accountID": matching_creator[2]
+                }
+            else:
+                current_level['creator'] = {
+                    "playerID": None,
+                    "playerName": None,
+                    "accountID": None
+                }
+
+        for song in songs_data:
+            parsed_song = parse_song_data(song)
+            for current_level in parsed_levels:
+                level_data = parse_level_data(current_level['level'])
+                if level_data.get("35") == 0:
+                    current_level['song'] = None
+                elif level_data['35'] == int(parsed_song.get("1", -1)):
+                    current_level['song'] = song
+    except Exception as e:
+        raise ParseError(f"Error parsing search results: {str(e)}") from None
 
     return parsed_levels
 

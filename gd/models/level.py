@@ -124,7 +124,8 @@ class DownloadedLevel:
             raise ValueError("Level string must be a str!")
 
         parsed = parse_level_data(raw_str)
-        return DownloadedLevel(
+        try:
+            return DownloadedLevel(
             raw_str=raw_str,
             id=parsed.get("1"),
             name=parsed.get("2"),
@@ -155,10 +156,12 @@ class DownloadedLevel:
             level_password=None if isinstance(parsed.get("27"), bool) else parsed.get("27"),
             official_song=OfficialSong(parsed.get("12")) if parsed.get("12") else None
         )
+        except Exception as e:
+            raise ParseError(f"Could not parse the data provided, error: {e}")
 
     @staticmethod
     def _determine_rating(parsed: dict) -> LevelRating:
-        """d
+        """
         Determines the level's rating based on parsed data.
         
         :param parsed: Parsed data from the servers
@@ -212,7 +215,8 @@ class SearchedLevel(DownloadedLevel):
         creator_account_id = parsed_str["creator"]["accountID"]
         song_data = LevelSong.from_raw(parsed_str["song"]) if parsed_str.get("song", None) else None
         
-        return SearchedLevel(
+        try:
+            return SearchedLevel(
             raw_str=parsed_str['level'],
             id=instance.id,
             name=instance.name,
@@ -246,6 +250,8 @@ class SearchedLevel(DownloadedLevel):
             level_password=None,
             official_song=instance.official_song
         )
+        except Exception as e:
+            raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
 class LevelComment:
@@ -319,7 +325,8 @@ class LevelComment:
         user_value = parse_key_value_pairs(parsed[1], "~")
         comment_value = parse_key_value_pairs(parsed[0], '~')
 
-        return LevelComment(
+        try:
+            return LevelComment(
             level_id=int(comment_value.get("1", 0)),
             content=decrypt_data(comment_value.get("2", "")),
             author_player_id=int(comment_value.get("3", 0)),
@@ -341,7 +348,9 @@ class LevelComment:
             author_secondary_color_id=int(user_value.get("11", 1)),
             author_has_glow=bool(int(user_value.get("15", 0)))
         )
-    
+        except Exception as e:
+            raise ParseError(f"Could not parse the data provided, error: {e}")
+
 @dataclass
 class __ListOfLevels__:
     """
@@ -368,6 +377,7 @@ class __ListOfLevels__:
             url="http://www.boomlings.com/database/getGJLevels21.php",
             data={'secret': "Wmfd2893gb7", "str": str_ids, "type": 10}
         )
+        check_negative_1_response(search_raw, ResponseError, "Unable to load all the levels.")
         search_parsed = parse_search_results(search_raw)
         level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
         return level_list
@@ -388,6 +398,7 @@ class __ListOfLevels__:
             url="http://www.boomlings.com/database/downloadGJLevel22.php",
             data={'secret': "Wmfd2893gb7", "levelID": level_id}
         )
+        check_negative_1_response(download_raw, InvalidLevelID, "Can't download the level provided, maybe a mix up with the IDs")
         return DownloadedLevel.from_raw(download_raw)
 
 @dataclass
@@ -449,23 +460,25 @@ class LevelList(__ListOfLevels__):
         :return: A LevelList object created from the raw data.
         """
         parsed = parse_key_value_pairs(raw_str)
-
-        return LevelList(
-            id=int(parsed.get("1", 0)),
-            name=parsed.get("2", ""),
-            level_ids=parse_comma_separated_int_list(parsed.get("51", "")),
-            description=decrypt_data(parsed.get("3", "")),
-            difficulty=determine_list_difficulty(parsed.get("7", None)),
-            downloads=int(parsed.get("10", 0)),
-            likes=int(parsed.get("14", 0)),
-            is_rated=True if parsed.get("19") else False,
-            upload_date=datetime.fromtimestamp(int(parsed.get("28", 0))),
-            last_update_date=datetime.fromtimestamp(int(parsed.get("29", 0))),
-            author_account_id=int(parsed.get("49", 0)),
-            author_name=parsed.get("50", ""),
-            diamonds=int(parsed.get("55", 0)),
-            minimum_levels=int(parsed.get("56", 0))
-        )
+        try:
+            return LevelList(
+                id=int(parsed.get("1", 0)),
+                name=parsed.get("2", ""),
+                level_ids=parse_comma_separated_int_list(parsed.get("51", "")),
+                description=decrypt_data(parsed.get("3", "")),
+                difficulty=determine_list_difficulty(parsed.get("7", None)),
+                downloads=int(parsed.get("10", 0)),
+                likes=int(parsed.get("14", 0)),
+                is_rated=True if parsed.get("19") else False,
+                upload_date=datetime.fromtimestamp(int(parsed.get("28", 0))),
+                last_update_date=datetime.fromtimestamp(int(parsed.get("29", 0))),
+                author_account_id=int(parsed.get("49", 0)),
+                author_name=parsed.get("50", ""),
+                diamonds=int(parsed.get("55", 0)),
+                minimum_levels=int(parsed.get("56", 0))
+            )
+        except Exception as e:
+            raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
 class MapPack(__ListOfLevels__):
@@ -508,16 +521,19 @@ class MapPack(__ListOfLevels__):
         :return: A MapPack object created from the raw data.
         """
         parsed = parse_key_value_pairs(raw_str)
-        return MapPack(
-            id=int(parsed.get("1", 0)),
-            name=parsed.get("2", ""),
-            level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
-            stars=int(parsed.get("4", 0)),
-            coins=int(parsed.get("5", 0)),
-            difficulty=Difficulty(int(parsed.get("6", 0))),
-            text_rgb_color=parse_comma_separated_int_list(parsed.get("7", "")),
-            progress_bar_rgb_color=parse_comma_separated_int_list(parsed.get("8", ""))
-        )
+        try:
+            return MapPack(
+                id=int(parsed.get("1", 0)),
+                name=parsed.get("2", ""),
+                level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
+                stars=int(parsed.get("4", 0)),
+                coins=int(parsed.get("5", 0)),
+                difficulty=Difficulty(int(parsed.get("6", 0))),
+                text_rgb_color=parse_comma_separated_int_list(parsed.get("7", "")),
+                progress_bar_rgb_color=parse_comma_separated_int_list(parsed.get("8", ""))
+            )
+        except Exception as e:
+            raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
 class Gauntlet(__ListOfLevels__):
@@ -548,12 +564,15 @@ class Gauntlet(__ListOfLevels__):
         """
         parsed: dict = parse_key_value_pairs(raw_str)
         name: str = guantlets_names[str(parsed.get("1"))]
-        return Gauntlet(
-            id=parsed.get("1", 0),
-            name=name,
-            level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
-            image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png"
-        )
+        try:
+            return Gauntlet(
+                id=parsed.get("1", 0),
+                name=name,
+                level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
+                image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png"
+            )
+        except Exception as e:
+            raise ParseError(f"Could not parse the data provided, error: {e}")
     
     async def get_display_info_all_levels(self) -> Tuple[SearchedLevel]:
         """
@@ -565,6 +584,7 @@ class Gauntlet(__ListOfLevels__):
             url="http://www.boomlings.com/database/getGJLevels21.php",
             data={'secret': "Wmfd2893gb7", "gauntlet": self.id}
         )
+        check_negative_1_response(search_raw, ResponseError, "Unable to load all the levels.")
         search_parsed = parse_search_results(search_raw)
         level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
         return level_list

@@ -45,13 +45,16 @@ class MusicLibraryArtist:
         :return: A `MusicLibraryArtist` instance.
         """
 
-        parsed = raw_str.strip().split(",")
-        return MusicLibraryArtist(
-            id=int(parsed[0]),
-            name=parsed[1],
-            website=unquote(parsed[2]) if parsed[2].strip() else None,
-            youtube_channel_id=parsed[3] if parsed[3].strip() else None
-        )
+        try:
+            parsed = raw_str.strip().split(",")
+            return MusicLibraryArtist(
+                id=int(parsed[0]),
+                name=parsed[1],
+                website=unquote(parsed[2]) if parsed[2].strip() else None,
+                youtube_channel_id=parsed[3] if parsed[3].strip() else None
+            )
+        except Exception as e:
+            raise ParseError(f"Cannot parse the data provided, error: {e}")
 
 @dataclass
 class MusicLibrarySong:
@@ -98,26 +101,29 @@ class MusicLibrarySong:
         :return: An instance of a MusicLibrarySong.
         """
 
-        parsed = raw_str.strip().split(",")
         try:
-            artist_id = int(parsed[2]) if parsed[2].strip() else None
-        except ValueError:
-            artist_id = None
+            parsed = raw_str.strip().split(",")
+            try:
+                artist_id = int(parsed[2]) if parsed[2].strip() else None
+            except ValueError:
+                artist_id = None
 
-        raw_song_tag_list = [tag for tag in parsed[5].split(".") if tag]
-        song_tag_list = {tags_list.get(int(tag)) for tag in raw_song_tag_list}
+            raw_song_tag_list = [tag for tag in parsed[5].split(".") if tag]
+            song_tag_list = {tags_list.get(int(tag)) for tag in raw_song_tag_list}
 
-        return MusicLibrarySong(
-            id=int(parsed[0]),
-            name=parsed[1],
-            artist=artists_list.get(artist_id),
-            tags=song_tag_list,
-            file_size_bytes=float(parsed[3]),
-            duration_seconds=timedelta(seconds=int(parsed[4])),
-            is_ncs=parsed[6] == '1',
-            link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
-            external_link=f"https://{unquote(parsed[8])}"
-        )
+            return MusicLibrarySong(
+                id=int(parsed[0]),
+                name=parsed[1],
+                artist=artists_list.get(artist_id),
+                tags=song_tag_list,
+                file_size_bytes=float(parsed[3]),
+                duration_seconds=timedelta(seconds=int(parsed[4])),
+                is_ncs=parsed[6] == '1',
+                link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
+                external_link=f"https://{unquote(parsed[8])}"
+            )
+        except Exception as e:
+            raise ParseError(f"Cannot parse the data provided, error: {e}")
     
     async def download(self, name_file: str = None, path: str = None) -> None:
         """
@@ -127,7 +133,7 @@ class MusicLibrarySong:
         :type name_file: Optional[str]
         :param path: The path to save the song. Default is the current working directory.
         :type path: Optional[str]
-        :raises DownloadingSongError: If an error occurs during downloading the song.
+        :raises DownloadSongError: If an error occurs during downloading the song.
         :return: None
         """
         if not name_file:
@@ -149,7 +155,7 @@ class MusicLibrarySong:
             with open(os.path.join(path, name_file), "wb") as file:
                 file.write(response.content)
         except Exception as e:
-            raise DownloadingSongError(f"Error downloading song: {e}")
+            raise DownloadSongError(f"Error downloading song: {e}")
 
 
 @dataclass
@@ -465,7 +471,7 @@ class SoundEffect:
         :type name_file: Optional[str]
         :param path: The path to save the song. Default is the current working directory.
         :type path: Optional[str]
-        :raises DownloadingSongError: If an error occurs during downloading the song.
+        :raises DownloadSongError: If an error occurs during downloading the song.
         :return: None
         """
         if not name_file:
@@ -486,7 +492,7 @@ class SoundEffect:
             with open(os.path.join(path, name_file), "wb") as file:
                 file.write(response.content)
         except Exception as e:
-            raise DownloadingSongError(f"Error downloading song: {e}")
+            raise DownloadSongError(f"Error downloading song: {e}")
 
 @dataclass
 class SoundEffectFolder:
@@ -643,7 +649,7 @@ class LevelSong:
         :type name_file: Optional[str]
         :param path: The path to save the song. Default is the current working directory.
         :type path: Optional[str]
-        :raises DownloadingSongError: If an error occurs during downloading the song.
+        :raises DownloadSongError: If an error occurs during downloading the song.
         :return: None
         """
         if not name_file:
@@ -664,7 +670,7 @@ class LevelSong:
             with open(os.path.join(path, name_file), "wb") as file:
                 file.write(response.content)
         except Exception as e:
-            raise DownloadingSongError(f"Error downloading song: {e}")
+            raise DownloadSongError(f"Error downloading song: {e}")
 
 
 

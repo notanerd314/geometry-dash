@@ -1,4 +1,5 @@
 from .helpers import *
+from .exceptions import *
 from .models.level import *
 from .models.song import *
 from .models.users import *
@@ -8,7 +9,6 @@ from typing import Union, Tuple
 _secret = "Wmfd2893gb7"
 
 # TODO: Add filter for lists.
-# TODO: Fix potential errors and add more exceptions, because people are stupid sometimes...
 # TODO: Organize methods into subclasses or something I don't even fucking know?
 # TODO: fuck my sanity
 
@@ -39,14 +39,15 @@ class Client:
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")
 
-        try:
-            response = await send_post_request(
-                url="http://www.boomlings.com/database/downloadGJLevel22.php", 
-                data={"levelID": id, "secret": _secret}
-            )
-            return DownloadedLevel.from_raw(response)
-        except RuntimeError as e:
-            raise RuntimeError(f"Failed to download level: {e}")
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/downloadGJLevel22.php", 
+            data={"levelID": id, "secret": _secret}
+        )
+
+        # Check if response is valid
+        check_negative_1_response(response, InvalidLevelID, f"Invalid level ID {id}.")
+
+        return DownloadedLevel.from_raw(response)
 
     async def download_daily_level(self, return_weekly: bool = False, get_time_left: bool = False) -> Union[DownloadedLevel, Tuple[DownloadedLevel, timedelta]]:
         """
@@ -60,20 +61,19 @@ class Client:
         :type get_time_left: bool
         :return: A `DownloadedLevel` instance containing the downloaded level data.
         """
-        try:
-            level = await self.download_level(-2 if return_weekly else -1)
-            
-            if get_time_left:
-                daily_data: str = await send_post_request(
-                    url="http://www.boomlings.com/database/getGJDailyLevel.php", 
-                    data={"secret": _secret, "weekly": "1" if return_weekly else "0"}
-                )
-                daily_data = daily_data.split("|")
-                return level, timedelta(seconds=int(daily_data[1]))
-            
-            return level
-        except RuntimeError as e:
-            raise RuntimeError(f"Failed to get daily level: {e}")
+        level = await self.download_level(-2 if return_weekly else -1)
+        
+        # Makes another response for time left.
+        if get_time_left:
+            daily_data: str = await send_post_request(
+                url="http://www.boomlings.com/database/getGJDailyLevel.php", 
+                data={"secret": _secret, "weekly": "1" if return_weekly else "0"}
+            )
+            check_negative_1_response(daily_data, ResponseError, "Cannot get current time left for the daily/weekly level.")
+            daily_data = daily_data.split("|")
+            return level, timedelta(seconds=int(daily_data[1]))
+
+        return level
 
     async def search_level(
         self, query: str = "", page: int = 0, 
@@ -164,6 +164,9 @@ class Client:
 
         # Do the response
         search_data: str = await send_post_request(url="http://www.boomlings.com/database/getGJLevels21.php", data=data)
+        
+        check_negative_1_response(search_data, SearchLevelError, "Unable to fetch search results. Perhaps it doesn't exist after all?")
+
         parsed_results = parse_search_results(search_data)
         return [SearchedLevel.from_dict(result) for result in parsed_results]
 
@@ -205,6 +208,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJSongInfo.php",
             data={'secret': _secret, "songID": id}
         )
+        check_negative_1_response(response, InvalidSongID, f"Invalid song ID {id}.")
         return LevelSong.from_raw(response)
 
     async def get_user_profile(self, account_id: int) -> UserProfile:
@@ -215,13 +219,14 @@ class Client:
         :type account_id: int
         :return: A `UserProfile` instance containing the user's profile data.
         """
-        if isinstance(account_id, int):
-            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {'secret': _secret, "targetAccountID": account_id}
-        else:
+        if not isinstance(account_id, int):
             raise ValueError("ID must be int")
+        
+        url = "http://www.boomlings.com/database/getGJUserInfo20.php"
+        data = {'secret': _secret, "targetAccountID": account_id}
 
         response = await send_post_request(url=url, data=data)
+        check_negative_1_response(response, InvalidAccountID, f"Invalid account ID {account_id}.")
         return UserProfile.from_raw(response)
 
     async def search_user(self, username: str) -> UserProfile:
@@ -238,6 +243,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJUsers20.php",
             data={'secret': _secret, "str": username}
         )
+        check_negative_1_response(response, InvalidAccountName, f"Invalid username {username}.")
         return UserProfile.from_raw(response)
     
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[LevelComment]:
@@ -250,15 +256,19 @@ class Client:
         :type page: int
         :return: A list of `LevelComment` instances.
         """
+        if page < 0:
+            raise ValueError("Page number must be non-negative.")
+        
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJComments21.php",
             data={'secret': _secret, "levelID": level_id, "page": page}
         )
+        check_negative_1_response(response, InvalidLevelID, f"Invalid level ID {level_id}.")
         return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
     
-    async def get_user_posts(self, account_id: int, page: int = 0) -> List[UserPost] | None:
+    async def get_user_posts(self, account_id: int, page: int = 0) -> Union[List[UserPost], None]:
         """
-        Get an user's posts by Account ID
+        Get an user's posts by Account ID.
 
         :param account_id: The account ID to retrieve the posts.
         :type account_id: int
@@ -271,14 +281,18 @@ class Client:
             data={'secret': _secret, "accountID": account_id, "page": page}
         )
 
-        if response:
-            posts_list = []
-            parsed_res = response.split("|")
-            for post in parsed_res:
-                posts_list.append(UserPost.from_raw(post, account_id))
-            return posts_list
+        check_negative_1_response(response, ResponseError, "Invalid account ID.")
+        if not response.split("#")[0]:
+            return None
+
+        posts_list = []
+        parsed_res = response.split("#")[0]
+        parsed_res = response.split("|")
+        for post in parsed_res:
+            posts_list.append(UserPost.from_raw(post, account_id))
+        return posts_list
         
-    async def get_user_comments_history(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> List[LevelComment]:
+    async def get_user_comments_history(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> Union[List[LevelComment], None]:
         """
         Get an user's comments history.
         
@@ -288,13 +302,17 @@ class Client:
         :type page: int
         :param display_most_liked: Whether to display the most liked comments. Defaults to False.
         :type display_most_liked: bool
-        :return: A list of `LevelComment` instances.
+        :return: A list of `LevelComment` instances or None if no comments were found.
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={'secret': _secret, "userID": player_id, "page": page, "mode": int(display_most_liked)}
         )
-        return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
+        check_negative_1_response(response, ResponseError, "Invalid account ID.")
+        if not response.split("#")[0]:
+            return None
+        
+        return [LevelComment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
 
     async def get_map_packs(self, page: int = 0) -> List[MapPack]:
         """
@@ -302,11 +320,16 @@ class Client:
 
         :return: A list of `MapPack` instances.
         """
+        if page < 0:
+            raise ValueError("Page must be a non-negative number.")
+        elif page > 6:
+            raise ValueError("Page limit is 6.")
+        
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJMapPacks21.php",
             data={'secret': _secret, 'page': page}
         )
-        
+        check_negative_1_response(response, LoadError, "An error occurred when getting map packs.")
         map_packs = response.split('#')[0].split("|")
         return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
 
@@ -324,7 +347,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJGauntlets21.php",
             data={'secret': _secret, 'special': int(only_2_point_1)}
         )
-        
+        check_negative_1_response(response, LoadError, "An error occurred when getting gauntlets.")
         guantlets = response.split('#')[0].split("|")
         list_guantlets = [Gauntlet.from_raw(guantlet) for guantlet in guantlets]
 
@@ -346,6 +369,6 @@ class Client:
             url="http://www.boomlings.com/database/getGJLevelLists.php",
             data={'secret': _secret, 'str': query, 'type': 0}
         )
-
+        check_negative_1_response(response, SearchLevelError, "An error occurred while searching lists, maybe it doesn't exist?")
         response = response.split("#")[0]
         return [LevelList.from_raw(level_list_data) for level_list_data in response.split("|")]

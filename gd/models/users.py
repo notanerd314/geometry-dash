@@ -50,31 +50,16 @@ class UserPost:
         parsed = raw_str.split(":")
         comment_value = parse_key_value_pairs(parsed[0], '~')
 
-        return UserPost(
-            content=decrypt_data(comment_value.get("2", "")),
-            likes=int(comment_value.get("4", 0)),
-            post_id=int(comment_value.get("6", 0)),
-            posted_ago=comment_value.get("9", None),
-            author_account_id=account_id
-        )
-    
-    async def load_author_profile(self) -> 'UserProfile':
-        """
-        Fetch the author's profile.
-
-        :return: An instance of the UserProfile class.
-        """
-        account_id = self.account_id
-
-        if not account_id:
-            raise ValueError("Account ID is not provided.")
-
-        if isinstance(account_id, int):
-            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {'secret': _secret, "targetAccountID": account_id}
-
-        response = await send_post_request(url=url, data=data)
-        return UserProfile.from_raw(response)
+        try:
+            return UserPost(
+                content=decrypt_data(comment_value.get("2", "")),
+                likes=int(comment_value.get("4", 0)),
+                post_id=int(comment_value.get("6", 0)),
+                posted_ago=comment_value.get("9", None),
+                author_account_id=account_id
+            )
+        except Exception as e:
+            raise ParseError(f"Failed to parse the data provided, error: {e}")
 
 @dataclass
 class UserProfile:
@@ -157,30 +142,33 @@ class UserProfile:
         :return: An instance of the UserProfile class.                                     
         """
         parsed = parse_key_value_pairs(raw_str)
-        return UserProfile(
-            name=parsed.get('1', None),
-            player_id=parsed.get('2', 0),
-            account_id=parsed.get('16', 0),
-            stars=parsed.get('3', 0),
-            moons=parsed.get('52', 0),
-            demons=parsed.get('4', 0),
-            diamonds=parsed.get('46'),
-            rank=parsed.get('30'),
-            creator_points=parsed.get('8', 0),
-            secret_coins=parsed.get('13', 0),
-            user_coins=parsed.get('17', 0),
-            registered=True if parsed.get('29') == 1 else False,
-            mod_level=ModLevel(parsed.get('49', 0)),
+        try:
+            return UserProfile(
+                name=parsed.get('1', None),
+                player_id=parsed.get('2', 0),
+                account_id=parsed.get('16', 0),
+                stars=parsed.get('3', 0),
+                moons=parsed.get('52', 0),
+                demons=parsed.get('4', 0),
+                diamonds=parsed.get('46'),
+                rank=parsed.get('30'),
+                creator_points=parsed.get('8', 0),
+                secret_coins=parsed.get('13', 0),
+                user_coins=parsed.get('17', 0),
+                registered=True if parsed.get('29') == 1 else False,
+                mod_level=ModLevel(parsed.get('49', 0)),
 
-            profile_icon_type=Gamemode(parsed.get('14', 1)),
-            primary_color_id=int(parsed.get('10', 0)),
-            secondary_color_id=int(parsed.get('11', 0)),
-            glow_color_id=int(parsed.get('51')) if parsed.get('51', None) is not None else None,
+                profile_icon_type=Gamemode(parsed.get('14', 1)),
+                primary_color_id=int(parsed.get('10', 0)),
+                secondary_color_id=int(parsed.get('11', 0)),
+                glow_color_id=int(parsed.get('51')) if parsed.get('51', None) is not None else None,
 
-            youtube=parsed.get('20', None) if parsed.get('20') != r"%%00" else None,
-            twitter_or_x=parsed.get('44'),
-            twitch=parsed.get('45')
-        )
+                youtube=parsed.get('20', None) if parsed.get('20') != r"%%00" else None,
+                twitter_or_x=parsed.get('44'),
+                twitch=parsed.get('45')
+            )
+        except Exception as e:
+            raise ParseError(f"Could not parse the data provided, error: {e}")
 
     async def load_posts(self, page: int = 0) -> List[UserPost] | None:
         """
@@ -190,18 +178,21 @@ class UserProfile:
         :type page: int
         :return: A list of UserPost instances or None if the request failed.
         """
-        account_id = self.account_id
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
-            data={'secret': _secret, "accountID": account_id, "page": page}
+            data={'secret': _secret, "accountID": self.account_id, "page": page}
         )
 
-        if response:
-            posts_list = []
-            parsed_res = response.split("|")
-            for post in parsed_res:
-                posts_list.append(UserPost.from_raw(post, account_id))
-            return posts_list
+        check_negative_1_response(response, ResponseError, f"Invalid account ID {self.account_id}.")
+        if not response.split("#")[0]:
+            return None
+
+        posts_list = []
+        parsed_res = response.split("#")[0]
+        parsed_res = response.split("|")
+        for post in parsed_res:
+            posts_list.append(UserPost.from_raw(post, self.account_id))
+        return posts_list
         
     async def load_comments_history(self, page: int = 0, display_most_liked: bool = False) -> List[LevelComment]:
         """
@@ -213,12 +204,15 @@ class UserProfile:
         :type display_most_liked: bool
         :return: A list of LevelComment instances.
         """
-        player_id = self.player_id
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
-            data={'secret': self.secret, "playerID": player_id, "page": page, "mode": int(display_most_liked)}
+            data={'secret': _secret, "userID": self.player_id, "page": page, "mode": int(display_most_liked)}
         )
-        return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
+        check_negative_1_response(response, ResponseError, f"Invalid account ID {self.account_id}.")
+        if not response.split("#")[0]:
+            return None
+        
+        return [LevelComment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
         
     async def reload(self) -> 'UserProfile':
         """
@@ -226,10 +220,12 @@ class UserProfile:
 
         :return: An instance of the UserProfile class.
         """
-        account_id = self.account_id
-        if isinstance(account_id, int):
-            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {'secret': _secret, "targetAccountID": account_id}
+        if not isinstance(self.account_id, int):
+            raise ValueError("ID must be int")
+        
+        url = "http://www.boomlings.com/database/getGJUserInfo20.php"
+        data = {'secret': _secret, "targetAccountID": self.account_id}
 
         response = await send_post_request(url=url, data=data)
+        check_negative_1_response(response, InvalidAccountID, f"Invalid account ID {self.account_id}.")
         return UserProfile.from_raw(response)
