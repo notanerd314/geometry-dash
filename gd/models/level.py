@@ -8,7 +8,7 @@ from ..helpers import *
 from .enums import *
 from .icons import *
 from typing import List, Optional, Union, Tuple
-from .song import LevelSong, OfficialSong
+from .song import Song, OfficialSong
 from datetime import datetime
 from dataclasses import dataclass
 from json import load
@@ -20,7 +20,7 @@ with open(path.join(relative_path, "spreadsheet", "gauntlets.json"), 'r') as gua
     guantlets_names = load(guantlets_names_file)
 
 @dataclass
-class DownloadedLevel:
+class Level:
     """
     A class representing a downloaded level in Geometry Dash.
     
@@ -74,7 +74,7 @@ class DownloadedLevel:
         The official song used in the level. Returns None if the level uses a custom song.
     
     ### Methods:
-        - `from_raw`: Parses a raw level string into a `DownloadedLevel` object.
+        - `from_raw`: Parses a raw level string into a `Level` object.
         - `_parse_comma_separated_int_list`: Helper method to parse comma-separated integers from a string.
         - `_determine_rating`: Determines the rating of the level based on parsed data.
         - `_determine_difficulty`: Determines the difficulty of the level based on parsed data.
@@ -111,13 +111,13 @@ class DownloadedLevel:
     official_song: Optional[OfficialSong]
 
     @staticmethod
-    def from_raw(raw_str: str) -> 'DownloadedLevel':
+    def from_raw(raw_str: str) -> 'Level':
         """
-        A staticmethod that converts a raw level string into a DownloadedLevel object.
+        A staticmethod that converts a raw level string into a Level object.
         
         :param raw_str: The raw string returned from the server.
         :type raw_str: str
-        :return: A DownloadedLevel object created from the parsed data.
+        :return: A Level object created from the parsed data.
         """
 
         if not isinstance(raw_str, str):
@@ -125,7 +125,7 @@ class DownloadedLevel:
 
         parsed = parse_level_data(raw_str)
         try:
-            return DownloadedLevel(
+            return Level(
             raw_str=raw_str,
             id=parsed.get("1"),
             name=parsed.get("2"),
@@ -151,7 +151,7 @@ class DownloadedLevel:
             in_gauntlet=bool(parsed.get("44")),
             is_daily=0 <= parsed.get("41", -1) <= 100000,
             is_weekly=parsed.get("41", -1) >= 100000,
-            rating=DownloadedLevel._determine_rating(parsed),
+            rating=Level._determine_rating(parsed),
             difficulty=determine_difficulty(parsed),
             level_password=None if isinstance(parsed.get("27"), bool) else parsed.get("27"),
             official_song=OfficialSong(parsed.get("12")) if parsed.get("12") else None
@@ -180,11 +180,11 @@ class DownloadedLevel:
 
 
 @dataclass
-class SearchedLevel(DownloadedLevel):
+class LevelDisplay(Level):
     """
-    A class representing a level searched in Geometry Dash. It's a child class from DownloadedLevel.
+    A class representing a level searched in Geometry Dash. It's a child class from Level.
 
-    Note that some of the attributes that belong to DownloadedLevel were not present in SearchedLevel
+    Note that some of the attributes that belong to Level were not present in LevelDisplay
     
     Attributes
     ----------
@@ -192,64 +192,64 @@ class SearchedLevel(DownloadedLevel):
         The creator name of the level.
     creator_account_id : Optional[int]
         The creator's account ID.
-    song_data : Union[LevelSong, None]
+    song_data : Union[Song, None]
         The custom song object of the level.
     """
 
     creator_name: Optional[str]
     creator_account_id: Optional[int]
-    song_data: 'LevelSong'
+    song_data: 'Song'
 
     @staticmethod
-    def from_dict(parsed_str: dict) -> 'SearchedLevel':
+    def from_dict(parsed_str: dict) -> 'LevelDisplay':
         """
-        A staticmethod that converts parsed dict level data into a SearchedLevel object.
+        A staticmethod that converts parsed dict level data into a LevelDisplay object.
         
         :param parsed_str: The parsed str returned.
         :type parsed_str: dict
-        :return: A SearchedLevel object created from the parsed data.
+        :return: A LevelDisplay object created from the parsed data.
         """
 
-        instance = DownloadedLevel.from_raw(parsed_str['level'])
+        instance = Level.from_raw(parsed_str['level'])
         creator_name = parsed_str["creator"]["playerName"]
         creator_account_id = parsed_str["creator"]["accountID"]
-        song_data = LevelSong.from_raw(parsed_str["song"]) if parsed_str.get("song", None) else None
+        song_data = Song.from_raw(parsed_str["song"]) if parsed_str.get("song", None) else None
         
         try:
-            return SearchedLevel(
-            raw_str=parsed_str['level'],
-            id=instance.id,
-            name=instance.name,
-            description=instance.description,
-            version=instance.version,
-            creator_player_id=instance.creator_player_id,
-            creator_account_id=creator_account_id,
-            downloads=instance.downloads,
-            likes=instance.likes,
-            copyable=instance.copyable,
-            length=instance.length,
-            requested_stars=instance.requested_stars,
-            stars=instance.stars,
-            coins=instance.coins,
-            custom_song_id=instance.custom_song_id,
-            copied_level_id=instance.copied_level_id,
-            two_player_mode=instance.two_player_mode,
-            verified_coins=instance.verified_coins,
-            in_gauntlet=instance.in_gauntlet,
-            is_daily=instance.is_daily,
-            is_weekly=instance.is_weekly,
-            rating=instance.rating,
-            difficulty=instance.difficulty,
-            creator_name=creator_name,
-            song_data=song_data,
-            level_data=None,
-            song_list_ids=None,
-            sfx_list_ids=None,
-            daily_id=None,
-            low_detail_mode=None,
-            level_password=None,
-            official_song=instance.official_song
-        )
+            return LevelDisplay(
+                raw_str=parsed_str['level'],
+                id=instance.id,
+                name=instance.name,
+                description=instance.description,
+                version=instance.version,
+                creator_player_id=instance.creator_player_id,
+                creator_account_id=creator_account_id,
+                downloads=instance.downloads,
+                likes=instance.likes,
+                copyable=instance.copyable,
+                length=instance.length,
+                requested_stars=instance.requested_stars,
+                stars=instance.stars,
+                coins=instance.coins,
+                custom_song_id=instance.custom_song_id,
+                copied_level_id=instance.copied_level_id,
+                two_player_mode=instance.two_player_mode,
+                verified_coins=instance.verified_coins,
+                in_gauntlet=instance.in_gauntlet,
+                is_daily=instance.is_daily,
+                is_weekly=instance.is_weekly,
+                rating=instance.rating,
+                difficulty=instance.difficulty,
+                creator_name=creator_name,
+                song_data=song_data,
+                level_data=None,
+                song_list_ids=instance.song_list_ids,
+                sfx_list_ids=instance.sfx_list_ids,
+                daily_id=instance.daily_id,
+                low_detail_mode=instance.low_detail_mode,
+                level_password=instance.level_password,
+                official_song=instance.official_song
+            )
         except Exception as e:
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
@@ -366,11 +366,11 @@ class __ListOfLevels__:
     name: str
     level_ids: List[int]
 
-    async def get_display_info_all_levels(self) -> Tuple[SearchedLevel]:
+    async def get_display_info_all_levels(self) -> Tuple[LevelDisplay]:
         """
         A coroutine method that fetches and returns all the levels in the level list with their display information.
         
-        :return: A tuple of SearchedLevel objects.
+        :return: A tuple of LevelDisplay objects.
         """
         str_ids = ','.join([str(level) for level in self.levels_id])
         search_raw = await send_post_request(
@@ -379,16 +379,16 @@ class __ListOfLevels__:
         )
         check_negative_1_response(search_raw, ResponseError, "Unable to load all the levels.")
         search_parsed = parse_search_results(search_raw)
-        level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
+        level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
         return level_list
     
-    async def download_level_by_index(self, index: int) -> DownloadedLevel:
+    async def download_level_by_index(self, index: int) -> Level:
         """
         A coroutine method that downloads a level from the level list based on the index.
         
         :param index: The index of the level to download.
         :type index: int
-        :return: A DownloadedLevel object representing the downloaded level.
+        :return: A Level object representing the downloaded level.
         """
         if index < 0 or index >= len(self.levels_id):
             raise IndexError("Invalid level index, index limit is 4.")
@@ -399,7 +399,7 @@ class __ListOfLevels__:
             data={'secret': "Wmfd2893gb7", "levelID": level_id}
         )
         check_negative_1_response(download_raw, InvalidLevelID, "Can't download the level provided, maybe a mix up with the IDs")
-        return DownloadedLevel.from_raw(download_raw)
+        return Level.from_raw(download_raw)
 
 @dataclass
 class LevelList(__ListOfLevels__):
@@ -574,11 +574,11 @@ class Gauntlet(__ListOfLevels__):
         except Exception as e:
             raise ParseError(f"Could not parse the data provided, error: {e}")
     
-    async def get_display_info_all_levels(self) -> Tuple[SearchedLevel]:
+    async def get_display_info_all_levels(self) -> Tuple[LevelDisplay]:
         """
         A coroutine method that fetches and returns all the levels in the gauntlet with their display information.
         
-        :return: A tuple of SearchedLevel objects.
+        :return: A tuple of LevelDisplay objects.
         """
         search_raw = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
@@ -586,5 +586,5 @@ class Gauntlet(__ListOfLevels__):
         )
         check_negative_1_response(search_raw, ResponseError, "Unable to load all the levels.")
         search_parsed = parse_search_results(search_raw)
-        level_list = [SearchedLevel.from_dict(level) for level in search_parsed]
+        level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
         return level_list

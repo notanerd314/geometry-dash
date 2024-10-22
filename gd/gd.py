@@ -21,20 +21,20 @@ class Client:
     Example usage:
     ```
     >>> gd = Client()
-    >>> level = gd.search_level("sigma") # Returns a list of SearchedLevel instances
-    [SearchedLevel(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
+    >>> level = gd.search_level("sigma") # Returns a list of LevelDisplay instances
+    [LevelDisplay(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
     ```
     """
     def __init__(self) -> None:
         pass
 
-    async def download_level(self, id: int) -> DownloadedLevel:
+    async def download_level(self, id: int) -> Level:
         """
         Downloads a specific level from the Geometry Dash servers using the provided ID.
         
         :param id: The ID of the level.
         :type id: int
-        :return: A `DownloadedLevel` instance containing the downloaded level data.
+        :return: A `Level` instance containing the downloaded level data.
         """
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")
@@ -47,19 +47,19 @@ class Client:
         # Check if response is valid
         check_negative_1_response(response, InvalidLevelID, f"Invalid level ID {id}.")
 
-        return DownloadedLevel.from_raw(response)
+        return Level.from_raw(response)
 
-    async def download_daily_level(self, return_weekly: bool = False, get_time_left: bool = False) -> Union[DownloadedLevel, Tuple[DownloadedLevel, timedelta]]:
+    async def download_daily_level(self, return_weekly: bool = False, get_time_left: bool = False) -> Union[Level, Tuple[Level, timedelta]]:
         """
         Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally.
 
-        If `get_time_left` is set to True then returns a tuple containing the `DownloadedLevel` and the time left for the level.
+        If `get_time_left` is set to True then returns a tuple containing the `Level` and the time left for the level.
 
         :param return_weekly: Whether to return the weekly or daily level. Defaults to False for daily.
         :type return_weekly: bool
         :param get_time_left: Whether to return both the level and the time left for the level. Defaults to False.
         :type get_time_left: bool
-        :return: A `DownloadedLevel` instance containing the downloaded level data.
+        :return: A `Level` instance containing the downloaded level data.
         """
         level = await self.download_level(-2 if return_weekly else -1)
         
@@ -75,13 +75,13 @@ class Client:
 
         return level
 
-    async def search_level(
+    async def search_levels(
         self, query: str = "", page: int = 0, 
         level_rating: LevelRating = None, length: Length = None,
         difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
         two_player_mode: bool = False, has_coins: bool = False, not_copied: bool = False,
         song_id: int = None, gd_world: bool = False, sort: Sort = 0
-    ) -> List[SearchedLevel]:
+    ) -> List[LevelDisplay]:
         """
         Searches for levels matching the given query string and filters them.
 
@@ -114,7 +114,7 @@ class Client:
         :param sort: Sort the result by Magic, Recent, ...
         :type sort: Optional[Union[Sort, str]]
 
-        :return: A list of `SearchedLevel` instances.
+        :return: A list of `LevelDisplay` instances.
         """
         
         # Standard data
@@ -168,7 +168,7 @@ class Client:
         check_negative_1_response(search_data, SearchLevelError, "Unable to fetch search results. Perhaps it doesn't exist after all?")
 
         parsed_results = parse_search_results(search_data)
-        return [SearchedLevel.from_dict(result) for result in parsed_results]
+        return [LevelDisplay.from_dict(result) for result in parsed_results]
 
     async def get_music_library(self) -> MusicLibrary:
         """
@@ -196,20 +196,20 @@ class Client:
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
         return SFXLibrary.from_raw(music_library)
 
-    async def get_song(self, id: int) -> LevelSong:
+    async def get_song_data(self, id: int) -> Song:
         """
         Gets song data by ID, either from Newgrounds or the music library.
 
         :param id: The ID of the song. (Use ID larger than 10000000 to get the song from the library.)
         :type id: int
-        :return: A `LevelSong` instance containing the song data.
+        :return: A `Song` instance containing the song data.
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
             data={'secret': _secret, "songID": id}
         )
         check_negative_1_response(response, InvalidSongID, f"Invalid song ID {id}.")
-        return LevelSong.from_raw(response)
+        return Song.from_raw(response)
 
     async def get_user_profile(self, account_id: int) -> UserProfile:
         """
