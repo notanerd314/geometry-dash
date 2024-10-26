@@ -6,7 +6,7 @@ A module containing all the classes and methods related to users and accounts in
 from ..helpers import *
 from .enums import *
 from .icons import *
-from .level import LevelComment
+from .level import Comment
 from typing import List, Optional, Union
 from dataclasses import dataclass
 
@@ -194,7 +194,7 @@ class UserProfile:
             posts_list.append(UserPost.from_raw(post, self.account_id))
         return posts_list
         
-    async def load_comments_history(self, page: int = 0, display_most_liked: bool = False) -> List[LevelComment]:
+    async def load_comments_history(self, page: int = 0, display_most_liked: bool = False) -> List[Comment]:
         """
         Get user's comments history.
 
@@ -202,7 +202,7 @@ class UserProfile:
         :type page: int
         :param display_most_liked: If True, display most liked comments, otherwise display newest comments.
         :type display_most_liked: bool
-        :return: A list of LevelComment instances.
+        :return: A list of Comment instances.
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
@@ -212,7 +212,7 @@ class UserProfile:
         if not response.split("#")[0]:
             return None
         
-        return [LevelComment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
+        return [Comment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
         
     async def reload(self) -> 'UserProfile':
         """

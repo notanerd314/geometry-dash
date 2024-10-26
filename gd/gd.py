@@ -6,6 +6,8 @@ from .models.users import *
 from datetime import timedelta
 from typing import Union, Tuple
 
+from hashlib import sha1
+
 _secret = "Wmfd2893gb7"
 
 # TODO: Add filter for lists.
@@ -14,20 +16,19 @@ _secret = "Wmfd2893gb7"
 
 class Client:
     """
-    Client for interacting with Geometry Dash.
-
-    You can use it to download levels, get music library, load profiles, etc. Signing in accounts will be added in v2.0.
+    Client class for interacting with Geometry Dash.
 
     Example usage:
     ```
-    >>> gd = Client()
+    >>> import gd
+    >>> gd = gd.Client()
     >>> level = gd.search_level("sigma") # Returns a list of LevelDisplay instances
     [LevelDisplay(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
     ```
     """
     def __init__(self) -> None:
         pass
-
+    
     async def download_level(self, id: int) -> Level:
         """
         Downloads a specific level from the Geometry Dash servers using the provided ID.
@@ -246,7 +247,7 @@ class Client:
         check_negative_1_response(response, InvalidAccountName, f"Invalid username {username}.")
         return UserProfile.from_raw(response)
     
-    async def get_level_comments(self, level_id: int, page: int = 0) -> List[LevelComment]:
+    async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
         """
         Get level's comments by level ID.
 
@@ -254,7 +255,7 @@ class Client:
         :type level_id: int
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
-        :return: A list of `LevelComment` instances.
+        :return: A list of `Comment` instances.
         """
         if page < 0:
             raise ValueError("Page number must be non-negative.")
@@ -264,7 +265,7 @@ class Client:
             data={'secret': _secret, "levelID": level_id, "page": page}
         )
         check_negative_1_response(response, InvalidLevelID, f"Invalid level ID {level_id}.")
-        return [LevelComment.from_raw(comment_data) for comment_data in response.split("|")]
+        return [Comment.from_raw(comment_data) for comment_data in response.split("|")]
     
     async def get_user_posts(self, account_id: int, page: int = 0) -> Union[List[UserPost], None]:
         """
@@ -292,7 +293,7 @@ class Client:
             posts_list.append(UserPost.from_raw(post, account_id))
         return posts_list
         
-    async def get_user_comments_history(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> Union[List[LevelComment], None]:
+    async def get_user_comments_history(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> Union[List[Comment], None]:
         """
         Get an user's comments history.
         
@@ -302,7 +303,7 @@ class Client:
         :type page: int
         :param display_most_liked: Whether to display the most liked comments. Defaults to False.
         :type display_most_liked: bool
-        :return: A list of `LevelComment` instances or None if no comments were found.
+        :return: A list of `Comment` instances or None if no comments were found.
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
@@ -312,7 +313,7 @@ class Client:
         if not response.split("#")[0]:
             return None
         
-        return [LevelComment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
+        return [Comment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
 
     async def get_map_packs(self, page: int = 0) -> List[MapPack]:
         """

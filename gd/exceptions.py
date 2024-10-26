@@ -40,6 +40,10 @@ class ParseError(Exception):
     """Raised when parsing a response fails."""
     pass
 
+class LoginError(Exception):
+    """Raised when logging in fails."""
+    pass
+
 def check_negative_1_response(data: Any, exception: Exception, text: str) -> None:
     """Helper function to check if the server returns -1 as a response. Raises the exception passed if it is."""
     if data == "-1":

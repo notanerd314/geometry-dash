@@ -342,20 +342,20 @@ class SFXLibrary:
                 name=parsed[1],
             )
     
-        def add_sfx(self, raw_str_song: str) -> None:
+        def add_sfx(self, raw_str: str) -> None:
             """Helper function to add a sound effect to the folder."""
-            injected_sfx: SoundEffect = SoundEffect.from_raw(raw_str_song)
+            injected_sfx: SoundEffect = SoundEffect.from_raw(raw_str)
 
             if injected_sfx.parent_folder_id != self.id:  # Compare folder names
-                raise ValueError(f"Cannot inject an sfx that belongs to a different folder ({injected_sfx.parent_folder.name}).")
+                raise ValueError(f"Cannot add a sound effect that belongs to a different folder ({injected_sfx.parent_folder.name}).")
             
             self.sfx.append(injected_sfx)
 
         def get_song_by_name(self, name: str) -> 'SoundEffect':
             """
-            Get a song by it's name.
+            Get a sound effect by it's name.
 
-            :param name: The name of the song.
+            :param name: The name of the sound effect.
             :type name: str
             :return: A SFX class, if not found, returns NoneType.
             """
@@ -364,11 +364,11 @@ class SFXLibrary:
                     return sfx
             return None
         
-        def get_song_by_id(self, id: int) -> 'SoundEffect' | None:
+        def get_song_by_id(self, id: int) -> Union['SoundEffect', None]:
             """
-            Get a song by it's id.
+            Get a sound effect by it's id.
 
-            :param id: The id of the song.
+            :param id: The id of the sound effect.
             :type id: int
             :return: A SFX class, if not found, returns NoneType.
             """

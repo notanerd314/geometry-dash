@@ -9,7 +9,7 @@ You typically don't want to use this module because it has limited documentation
 import httpx
 import base64
 import zlib
-import re
+import random
 from typing import List, Dict, Union
 from .models.enums import Difficulty, DemonDifficulty
 from .exceptions import *
@@ -267,3 +267,6 @@ def determine_demon_search_difficulty(difficulty_obj: DemonDifficulty) -> int:
         case DemonDifficulty.INSANE_DEMON: return 4
         case DemonDifficulty.EXTREME_DEMON: return 5
         case _: raise ValueError(f"Invalid demon difficulty object type {type(difficulty_obj)}")
+
+def generate_udid(start: int = 100_000, end: int = 100_000_000) -> str:
+    return "S" + str(random.randrange(start, end))

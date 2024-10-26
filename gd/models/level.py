@@ -182,9 +182,7 @@ class Level:
 @dataclass
 class LevelDisplay(Level):
     """
-    A class representing a level searched in Geometry Dash. It's a child class from Level.
-
-    Note that some of the attributes that belong to Level were not present in LevelDisplay
+    A class representing a level displayed in the search results in Geometry Dash. It's inherited from `Level`.
     
     Attributes
     ----------
@@ -254,7 +252,7 @@ class LevelDisplay(Level):
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class LevelComment:
+class Comment:
     """
     A class representing a comment in a level.
 
@@ -312,13 +310,13 @@ class LevelComment:
     author_icon_display_gamemode: Gamemode
 
     @staticmethod
-    def from_raw(raw_str: str) -> 'LevelComment':
+    def from_raw(raw_str: str) -> 'Comment':
         """
-        A staticmethod that parses the raw string and returns a LevelComment object.
+        A staticmethod that parses the raw string and returns a Comment object.
 
         :param raw_str: Raw data returned from the servers.
         :type raw_str: str
-        :return: A LevelComment object created from the raw data.
+        :return: A Comment object created from the raw data.
         """
 
         parsed = raw_str.split(":")
@@ -326,7 +324,7 @@ class LevelComment:
         comment_value = parse_key_value_pairs(parsed[0], '~')
 
         try:
-            return LevelComment(
+            return Comment(
             level_id=int(comment_value.get("1", 0)),
             content=decrypt_data(comment_value.get("2", "")),
             author_player_id=int(comment_value.get("3", 0)),
@@ -352,7 +350,7 @@ class LevelComment:
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class __ListOfLevels__:
+class _ListofLevels:
     """
     A class representing a list of levels. (Used for inheritance, not for API.)
     
@@ -382,7 +380,7 @@ class __ListOfLevels__:
         level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
         return level_list
     
-    async def download_level_by_index(self, index: int) -> Level:
+    async def download_level(self, index: int) -> Level:
         """
         A coroutine method that downloads a level from the level list based on the index.
         
@@ -402,7 +400,7 @@ class __ListOfLevels__:
         return Level.from_raw(download_raw)
 
 @dataclass
-class LevelList(__ListOfLevels__):
+class LevelList(_ListofLevels):
     """
     A class representing a list.
 
@@ -481,7 +479,7 @@ class LevelList(__ListOfLevels__):
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class MapPack(__ListOfLevels__):
+class MapPack(_ListofLevels):
     """
     A class representing a map pack.
 
@@ -536,7 +534,7 @@ class MapPack(__ListOfLevels__):
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class Gauntlet(__ListOfLevels__):
+class Gauntlet(_ListofLevels):
     """
     A class representing a gauntlet.
     
