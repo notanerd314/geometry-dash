@@ -290,7 +290,7 @@ class MusicLibrary:
 # SFX Library
 
 @dataclass
-class SFXLibrary:
+class SoundEffectLibrary:
     """
     A class representing the sound effect library.
 
@@ -298,14 +298,14 @@ class SFXLibrary:
     ----------
     version : int
         The version of the library.
-    folders : List[SFXLibrary.Folder]
-        All the folders of the SFXLibrary that also contains the songs in each value.
+    folders : List[SoundEffectLibrary.Folder]
+        All the folders of the SoundEffectLibrary that also contains the songs in each value.
     creators : List[Creator]
         The list of all the creators in the library.
     """
 
     version: int
-    folders: List['SFXLibrary.Folder']
+    folders: List['SoundEffectLibrary.Folder']
     creators: List['Creator']
     sfx: List['SoundEffect']
     
@@ -328,16 +328,16 @@ class SFXLibrary:
         sfx: List['SoundEffect'] = field(default_factory=list)  # Initialize sfx list
 
         @staticmethod
-        def from_raw(raw_str: str) -> 'SFXLibrary.Folder':
+        def from_raw(raw_str: str) -> 'SoundEffectLibrary.Folder':
             """
-            A static method to create a SFXLibrary.Folder from raw data.
+            A static method to create a SoundEffectLibrary.Folder from raw data.
             
             :param raw_str: The raw data of the folder.
             :type raw_str: str
-            :return: An instance of the SFXLibrary.Folder class.
+            :return: An instance of the SoundEffectLibrary.Folder class.
             """
             parsed = raw_str.strip().split(",")
-            return SFXLibrary.Folder(
+            return SoundEffectLibrary.Folder(
                 id=int(parsed[0]),
                 name=parsed[1],
             )
@@ -408,21 +408,21 @@ class SFXLibrary:
         url: Union[str, None]
 
         @staticmethod
-        def from_raw(raw_str: str) -> 'SFXLibrary.Creator':
+        def from_raw(raw_str: str) -> 'SoundEffectLibrary.Creator':
             parsed = raw_str.strip().split(",")
-            return SFXLibrary.Creator(
+            return SoundEffectLibrary.Creator(
                 name=parsed[0],
                 url=unquote(parsed[1])
             )
 
     @staticmethod
-    def from_raw(raw_str: str) -> 'SFXLibrary':
+    def from_raw(raw_str: str) -> 'SoundEffectLibrary':
         """
-        A static method that converts the raw data returned from the servers to a SFXLibrary instance.
+        A static method that converts the raw data returned from the servers to a SoundEffectLibrary instance.
 
         :param raw_str: The raw data returned from the servers.
         :type raw_str: str
-        :return: An instance of the SFXLibrary class.
+        :return: An instance of the SoundEffectLibrary class.
         """
         parsed = raw_str.strip().split("|")
         parsed_sfx = parsed[0].split(";")
@@ -437,7 +437,7 @@ class SFXLibrary:
                 is_folder = False
 
             if is_folder:
-                folder = SFXLibrary.Folder.from_raw(folder_str)
+                folder = SoundEffectLibrary.Folder.from_raw(folder_str)
                 if folder.id == 1:
                     version_name = folder.name  # Folder with id 1 contains the version name
                 else:
@@ -462,17 +462,17 @@ class SFXLibrary:
 
             sfx.append(parsed_sfx_obj)
 
-        creators = [SFXLibrary.Creator.from_raw(creator) for creator in parsed_creators if creator != ""]
+        creators = [SoundEffectLibrary.Creator.from_raw(creator) for creator in parsed_creators if creator != ""]
 
-        return SFXLibrary(version=int(version_name), folders=folders, creators=creators)
+        return SoundEffectLibrary(version=int(version_name), folders=folders, creators=creators)
 
-    def get_folder_by_name(self, name: str) -> Union['SFXLibrary.Folder', None]:
+    def get_folder_by_name(self, name: str) -> Union['SoundEffectLibrary.Folder', None]:
         """
         Get a folder by it's name.
 
         :param name: The name of the folder.
         :type name: str
-        :return: A SFXLibrary.Folder class, if not found, returns NoneType.
+        :return: A SoundEffectLibrary.Folder class, if not found, returns NoneType.
         """
         for folder in self.folders:
             if folder.name.lower() == name.lower():
@@ -480,13 +480,13 @@ class SFXLibrary:
             
         return None
     
-    def get_folder_by_id(self, id: int) -> Union['SFXLibrary.Folder', None]:
+    def get_folder_by_id(self, id: int) -> Union['SoundEffectLibrary.Folder', None]:
         """
         Get a folder by it's ID.
 
         :param id: The ID of the folder.
         :type id: int
-        :return: A SFXLibrary.Folder class, if not found, returns NoneType.
+        :return: A SoundEffectLibrary.Folder class, if not found, returns NoneType.
         """
         for folder in self.folders:
             if folder.id == id:
@@ -508,13 +508,13 @@ class SFXLibrary:
             
         return None
     
-    def search_folders(self, query: str) -> List['SFXLibrary.Folder']:
+    def search_folders(self, query: str) -> List['SoundEffectLibrary.Folder']:
         """
         Filter folders by the query. (Different from `.get_folder_by_name`!)
 
         :param query: The query for the search.
         :type query: str
-        :return: A list of SFXLibrary.Folder.
+        :return: A list of SoundEffectLibrary.Folder.
         """
 
         folders = []
@@ -524,13 +524,13 @@ class SFXLibrary:
 
         return folders
     
-    def search_folders_and_sfx(self, query: str) -> List[Union['SFXLibrary.Folder', 'SoundEffect']]:
+    def search_folders_and_sfx(self, query: str) -> List[Union['SoundEffectLibrary.Folder', 'SoundEffect']]:
         """
         Filter folders and sfx by the query.
 
         :param query: The query for the search.
         :type query: str
-        :return: A list of SFXLibrary.Folder and SoundEffect.
+        :return: A list of SoundEffectLibrary.Folder and SoundEffect.
         """
 
         result = []

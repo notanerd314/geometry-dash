@@ -20,14 +20,18 @@ COLORS_LIST = {
     91: 0xE0E0E0, 92: 0x3D068C, 93: 0x370860, 94: 0x404040, 95: 0x6F49A4, 96: 0x54367F, 97: 0x422A63, 98: 0xFCB5FF, 99: 0xAF57AF, 100: 0x824382,
     101: 0x5E315E, 102: 0x808080, 103: 0x66033E, 104: 0x470134, 105: 0xD2FF32, 106: 0x76BDFF,
 }
+"""A dictionary mapping all the color ids to their corresponding hex colors.
 
-def color_id_to_hex(self, color_id: int) -> int | None:
+Min: 0, Max: 106.
+"""
+
+def color_id_to_hex(color_id: int) -> int | None:
     """
     Returns the hexadecimal color code for the given color ID. If not found, returns None.
     """
     return COLORS_LIST.get(color_id, None)
 
-def hex_to_color_id(self, hex_color: int) -> int | None:
+def hex_to_color_id(hex_color: int) -> int | None:
     """
     Returns the color ID for the given hexadecimal color code. If not found, returns None.
     """

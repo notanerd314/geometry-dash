@@ -92,7 +92,7 @@ class UserProfile:
         The amount of user coins the user has.
     registered : bool
         If the user has registered.
-    mod_level : Optional[ModLevel]
+    mod_level : Optional[ModRank]
         The mod level of the user.
     primary_color_id : Optional[Color_id]
         The primary color_id of the user's icon.
@@ -121,7 +121,7 @@ class UserProfile:
     secret_coins: Optional[int]
     user_coins: Optional[int]
     registered: Optional[bool]
-    mod_level: Optional[ModLevel]
+    mod_level: Optional[ModRank]
 
     primary_color_id: Optional[int]
     secondary_color_id: Optional[int]
@@ -129,7 +129,8 @@ class UserProfile:
     profile_icon_type: Optional[Gamemode]
     
     youtube: Optional[str]
-    twitter_or_x: Optional[str]
+    twitter: Optional[str]
+    """i ain't calling it x"""
     twitch: Optional[str]
 
     @staticmethod
@@ -156,7 +157,7 @@ class UserProfile:
                 secret_coins=parsed.get('13', 0),
                 user_coins=parsed.get('17', 0),
                 registered=True if parsed.get('29') == 1 else False,
-                mod_level=ModLevel(parsed.get('49', 0)),
+                mod_level=ModRank(parsed.get('49', 0)),
 
                 profile_icon_type=Gamemode(parsed.get('14', 1)),
                 primary_color_id=int(parsed.get('10', 0)),
@@ -164,7 +165,7 @@ class UserProfile:
                 glow_color_id=int(parsed.get('51')) if parsed.get('51', None) is not None else None,
 
                 youtube=parsed.get('20', None) if parsed.get('20') != r"%%00" else None,
-                twitter_or_x=parsed.get('44'),
+                twitter=parsed.get('44'),
                 twitch=parsed.get('45')
             )
         except Exception as e:
@@ -183,7 +184,7 @@ class UserProfile:
             data={'secret': _secret, "accountID": self.account_id, "page": page}
         )
 
-        check_negative_1_response(response, ResponseError, f"Invalid account ID {self.account_id}.")
+        check_errors(response, ResponseError, f"Invalid account ID {self.account_id}.")
         if not response.split("#")[0]:
             return None
 
@@ -208,7 +209,7 @@ class UserProfile:
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={'secret': _secret, "userID": self.player_id, "page": page, "mode": int(display_most_liked)}
         )
-        check_negative_1_response(response, ResponseError, f"Invalid account ID {self.account_id}.")
+        check_errors(response, ResponseError, f"Invalid account ID {self.account_id}.")
         if not response.split("#")[0]:
             return None
         
@@ -227,5 +228,5 @@ class UserProfile:
         data = {'secret': _secret, "targetAccountID": self.account_id}
 
         response = await send_post_request(url=url, data=data)
-        check_negative_1_response(response, InvalidAccountID, f"Invalid account ID {self.account_id}.")
+        check_errors(response, InvalidAccountID, f"Invalid account ID {self.account_id}.")
         return UserProfile.from_raw(response)

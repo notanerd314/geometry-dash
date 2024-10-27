@@ -46,7 +46,7 @@ class Client:
         )
 
         # Check if response is valid
-        check_negative_1_response(response, InvalidLevelID, f"Invalid level ID {id}.")
+        check_errors(response, InvalidLevelID, f"Invalid level ID {id}.")
 
         return Level.from_raw(response)
 
@@ -70,7 +70,7 @@ class Client:
                 url="http://www.boomlings.com/database/getGJDailyLevel.php", 
                 data={"secret": _secret, "weekly": "1" if return_weekly else "0"}
             )
-            check_negative_1_response(daily_data, ResponseError, "Cannot get current time left for the daily/weekly level.")
+            check_errors(daily_data, ResponseError, "Cannot get current time left for the daily/weekly level.")
             daily_data = daily_data.split("|")
             return level, timedelta(seconds=int(daily_data[1]))
 
@@ -166,7 +166,7 @@ class Client:
         # Do the response
         search_data: str = await send_post_request(url="http://www.boomlings.com/database/getGJLevels21.php", data=data)
         
-        check_negative_1_response(search_data, SearchLevelError, "Unable to fetch search results. Perhaps it doesn't exist after all?")
+        check_errors(search_data, SearchLevelError, "Unable to fetch search results. Perhaps it doesn't exist after all?")
 
         parsed_results = parse_search_results(search_data)
         return [LevelDisplay.from_dict(result) for result in parsed_results]
@@ -184,18 +184,18 @@ class Client:
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
         return MusicLibrary.from_raw(music_library)
     
-    async def get_sfx_library(self) -> SFXLibrary:
+    async def get_sfx_library(self) -> SoundEffectLibrary:
         """
         Gets the current SFX library in RobTop's servers.
 
-        :return: A `SFXLibrary` instance containing all the SFX library data.
+        :return: A `SoundEffectLibrary` instance containing all the SFX library data.
         """
         response = await send_get_request(
-            url="https://geometrydashfiles.b-cdn.net/sfx/sfxlibrary.dat",
+            url="https://geometrydashfiles.b-cdn.net/sfx/SoundEffectLibrary.dat",
         )
         music_library_encoded = response.content
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
-        return SFXLibrary.from_raw(music_library)
+        return SoundEffectLibrary.from_raw(music_library)
 
     async def get_song_data(self, id: int) -> Song:
         """
@@ -209,7 +209,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJSongInfo.php",
             data={'secret': _secret, "songID": id}
         )
-        check_negative_1_response(response, InvalidSongID, f"Invalid song ID {id}.")
+        check_errors(response, InvalidSongID, f"Invalid song ID {id}.")
         return Song.from_raw(response)
 
     async def get_user_profile(self, account_id: int) -> UserProfile:
@@ -227,7 +227,7 @@ class Client:
         data = {'secret': _secret, "targetAccountID": account_id}
 
         response = await send_post_request(url=url, data=data)
-        check_negative_1_response(response, InvalidAccountID, f"Invalid account ID {account_id}.")
+        check_errors(response, InvalidAccountID, f"Invalid account ID {account_id}.")
         return UserProfile.from_raw(response)
 
     async def search_user(self, username: str) -> UserProfile:
@@ -244,7 +244,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJUsers20.php",
             data={'secret': _secret, "str": username}
         )
-        check_negative_1_response(response, InvalidAccountName, f"Invalid username {username}.")
+        check_errors(response, InvalidAccountName, f"Invalid username {username}.")
         return UserProfile.from_raw(response)
     
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
@@ -264,7 +264,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJComments21.php",
             data={'secret': _secret, "levelID": level_id, "page": page}
         )
-        check_negative_1_response(response, InvalidLevelID, f"Invalid level ID {level_id}.")
+        check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
         return [Comment.from_raw(comment_data) for comment_data in response.split("|")]
     
     async def get_user_posts(self, account_id: int, page: int = 0) -> Union[List[UserPost], None]:
@@ -282,7 +282,7 @@ class Client:
             data={'secret': _secret, "accountID": account_id, "page": page}
         )
 
-        check_negative_1_response(response, ResponseError, "Invalid account ID.")
+        check_errors(response, ResponseError, "Invalid account ID.")
         if not response.split("#")[0]:
             return None
 
@@ -309,7 +309,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={'secret': _secret, "userID": player_id, "page": page, "mode": int(display_most_liked)}
         )
-        check_negative_1_response(response, ResponseError, "Invalid account ID.")
+        check_errors(response, ResponseError, "Invalid account ID.")
         if not response.split("#")[0]:
             return None
         
@@ -330,7 +330,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJMapPacks21.php",
             data={'secret': _secret, 'page': page}
         )
-        check_negative_1_response(response, LoadError, "An error occurred when getting map packs.")
+        check_errors(response, LoadError, "An error occurred when getting map packs.")
         map_packs = response.split('#')[0].split("|")
         return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
 
@@ -353,14 +353,16 @@ class Client:
             data=data
         )
 
-        check_negative_1_response(response, LoadError, "An error occurred when getting gauntlets.")
+        check_errors(response, LoadError, "An error occurred when getting gauntlets.")
         guantlets = response.split('#')[0].split("|")
         list_guantlets = [Gauntlet.from_raw(guantlet) for guantlet in guantlets]
 
         return list_guantlets
     
     async def search_lists(
-        self, query: str
+        self, query: str = None, filter: SearchFilter = 0, page: int = 0, 
+        difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
+        only_rated: bool = False
     ) -> List[LevelList]:
         """
         Search for level lists by query.
@@ -369,10 +371,29 @@ class Client:
         :type query: str
         :return: A list of `LevelList` instances.
         """
+        data = {
+            'secret': _secret, 'str': query, 'type': filter, "page": page
+        }
+
+        if difficulty:
+            if Difficulty.DEMON in difficulty and len(difficulty) > 1:
+                raise ValueError("Difficulty.DEMON cannot be combined with other difficulties!")
+            data["diff"] = ",".join(str(determine_search_difficulty(diff)) for diff in difficulty)
+
+        if demon_difficulty:
+            if difficulty != [Difficulty.DEMON]:
+                raise ValueError("Demon difficulty can only be used with Difficulty.DEMON!")
+            data["demonFilter"] = determine_demon_search_difficulty(demon_difficulty)
+
+        if only_rated:
+            data["star"] = 1
+
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevelLists.php",
-            data={'secret': _secret, 'str': query, 'type': 0}
+            data=data
         )
-        check_negative_1_response(response, SearchLevelError, "An error occurred while searching lists, maybe it doesn't exist?")
+
+        check_errors(response, SearchLevelError, "An error occurred while searching lists, maybe it doesn't exist?")
         response = response.split("#")[0]
+        
         return [LevelList.from_raw(level_list_data) for level_list_data in response.split("|")]

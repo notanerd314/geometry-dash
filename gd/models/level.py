@@ -272,7 +272,7 @@ class Comment:
         The time the comment was posted in a human-readable format. Eg: `"5 months"`
     precentage : int
         The perecentage of the comment.
-    mod_level : ModLevel
+    mod_level : ModRank
         The mod level of the author.
     author_player_id : int
         The ID of the author's player.
@@ -298,7 +298,7 @@ class Comment:
     is_spam: bool
     posted_ago: str
     precentage: int
-    mod_level: ModLevel
+    mod_level: ModRank
 
     author_player_id: int
     author_account_id: int
@@ -334,7 +334,7 @@ class Comment:
             is_spam=bool(int(comment_value.get("7", 0))),
             posted_ago=comment_value.get("9", None),
             precentage=int(comment_value.get("10", 0)),
-            mod_level=ModLevel(int(comment_value.get("11", 0))),
+            mod_level=ModRank(int(comment_value.get("11", 0))),
 
             author_name=user_value.get("1", ""),
             author_icon=Icon(
@@ -375,7 +375,7 @@ class _ListofLevels:
             url="http://www.boomlings.com/database/getGJLevels21.php",
             data={'secret': "Wmfd2893gb7", "str": str_ids, "type": 10}
         )
-        check_negative_1_response(search_raw, ResponseError, "Unable to load all the levels.")
+        check_errors(search_raw, ResponseError, "Unable to load all the levels.")
         search_parsed = parse_search_results(search_raw)
         level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
         return level_list
@@ -396,7 +396,7 @@ class _ListofLevels:
             url="http://www.boomlings.com/database/downloadGJLevel22.php",
             data={'secret': "Wmfd2893gb7", "levelID": level_id}
         )
-        check_negative_1_response(download_raw, InvalidLevelID, "Can't download the level provided, maybe a mix up with the IDs")
+        check_errors(download_raw, InvalidLevelID, "Can't download the level provided, maybe a mix up with the IDs")
         return Level.from_raw(download_raw)
 
 @dataclass
@@ -582,7 +582,7 @@ class Gauntlet(_ListofLevels):
             url="http://www.boomlings.com/database/getGJLevels21.php",
             data={'secret': "Wmfd2893gb7", "gauntlet": self.id}
         )
-        check_negative_1_response(search_raw, ResponseError, "Unable to load all the levels.")
+        check_errors(search_raw, ResponseError, "Unable to load all the levels.")
         search_parsed = parse_search_results(search_raw)
         level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
         return level_list

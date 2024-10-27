@@ -12,13 +12,21 @@ class Difficulty(Enum):
     Enum representing the non-demon difficulty levels in Geometry Dash.
     """
     NA = 0
+    """No difficulty."""
     EASY = 1
+    """Easy difficulty."""
     NORMAL = 2
+    """Normal difficulty."""
     HARD = 3
+    """Hard difficulty."""
     HARDER = 4
+    """Harder difficulty."""
     INSANE = 5
+    """Insane difficulty."""
     DEMON = 6
+    """Demon difficulty."""
     AUTO = 7
+    """Auto difficulty."""
 
 class DemonDifficulty(Enum):
     """
@@ -30,10 +38,15 @@ class DemonDifficulty(Enum):
     - EXTREME_DEMON (6): Extreme Demon difficulty.
     """
     HARD_DEMON = 0
+    """Hard demon."""
     EASY_DEMON = 3
+    """Easy demon."""
     MEDIUM_DEMON = 4
+    """Medium demon."""
     INSANE_DEMON = 5
+    """Insane demon."""
     EXTREME_DEMON = 6
+    """Extreme demon."""
 
 class Length(IntEnum):
     """
@@ -48,11 +61,17 @@ class Length(IntEnum):
     """
     
     TINY = 0
+    """Tiny length."""
     SHORT = 1
+    """Short length."""
     MEDIUM = 2
+    """Medium length."""
     LONG = 3
+    """Long length."""
     XL = 4
+    """Extra long length."""
     PLATFORMER = 5
+    """Platformer level type."""
 
 
 class LevelRating(Enum):
@@ -68,14 +87,20 @@ class LevelRating(Enum):
     """
     
     NO_RATE = -2
+    """No rating specified."""
     RATED = -1
+    """Rated but not featured."""
     FEATURED = 0
+    """Featured level."""
     EPIC = 1
+    """Epic level."""
     MYTHIC = 3
+    """Mythic level."""
     LEGENDARY = 2
+    """Legendary level."""
 
 
-class ModLevel(IntEnum):
+class ModRank(IntEnum):
     """
     An **Enum** class representing the moderator status of a Geometry Dash level.
 
@@ -85,8 +110,11 @@ class ModLevel(IntEnum):
     """
     
     NONE = 0
+    """Not a moderator."""
     MOD = 1
+    """Moderator."""
     ELDER_MOD = 2
+    """Elder moderator."""
 
 
 class Gamemode(Enum):
@@ -125,8 +153,11 @@ class ColorType(Enum):
     """
     
     PRIMARY = 1
+    """Primary icon color."""
     SECONDARY = 2
+    """Secondary icon color."""
     GLOW = 3
+    """Glow icon color."""
 
 class SearchFilter(IntEnum):
     """
@@ -134,13 +165,28 @@ class SearchFilter(IntEnum):
     """
 
     MOST_DOWNLOADED = 1
+    """Sort to most downloaded."""
     MOST_LIKED = 2
+    """Sort to most liked. (default)"""
     TRENDING = 3
+    """Sort to trending."""
     RECENT = 4
+    """Sort to recent."""
     FEATURED = 6
+    """Sort to featured tab."""
+    TOP_LISTS = 6
+    """Sort top lists."""
     MAGIC = 7
+    """Sort to magic."""
     AWARDED = 11
+    """Sort to recently rated."""
     HALL_OF_FAME = 16
+    """Hall of Fame."""
     GD_WORLD = 17
+    """GD World."""
     DAILY = 21
+    """Filter daily levels."""
     WEEKLY = 22
+    """Filter weekly levels."""
+    LIST_SENT = 27
+    """Filter lists sent by moderators."""
