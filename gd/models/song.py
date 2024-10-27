@@ -686,7 +686,7 @@ class Song:
         """
         A method that downloads the song to a specific path location.
 
-        :param name_file: The name of the file to save the song as. Default is the song ID.
+        :param name_file: The name of the file to save the song as (relative). Default is the song ID.
         :type name_file: Optional[str]
         :param path: The path to save the song. Default is the current working directory.
         :type path: Optional[str]
@@ -740,7 +740,3 @@ class OfficialSong(Enum):
     DEADLOCKED = 19
     FINGERDASH = 20
     DASH = 21
-
-        
-
-

@@ -128,7 +128,7 @@ class ColorType(Enum):
     SECONDARY = 2
     GLOW = 3
 
-class Sort(IntEnum):
+class SearchFilter(IntEnum):
     """
     An **Enum** class representing sorting options in Geometry Dash.
     """

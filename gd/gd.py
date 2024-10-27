@@ -10,7 +10,7 @@ from hashlib import sha1
 
 _secret = "Wmfd2893gb7"
 
-# TODO: Add filter for lists.
+# TODO: include filter for lists.
 # TODO: Organize methods into subclasses or something I don't even fucking know?
 # TODO: fuck my sanity
 
@@ -81,14 +81,14 @@ class Client:
         level_rating: LevelRating = None, length: Length = None,
         difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
         two_player_mode: bool = False, has_coins: bool = False, not_copied: bool = False,
-        song_id: int = None, gd_world: bool = False, sort: Sort = 0
+        song_id: int = None, gd_world: bool = False, filter: SearchFilter = 0
     ) -> List[LevelDisplay]:
         """
         Searches for levels matching the given query string and filters them.
 
         To get a specific demon difficulty, make param `difficulty` as `Difficulty.DEMON`.
 
-        **Note: `difficulty`, `length` and `query` does not work with `sort`!**
+        **Note: `difficulty`, `length` and `query` does not work with `filter`!**
 
         :param query: The query for the search.
         :type query: Optional[str]
@@ -112,8 +112,8 @@ class Client:
         :type song_id: Optional[int]
         :param gd_world: Filters level that is from Geometry Dash World.
         :type gd_world: Optional[bool]
-        :param sort: Sort the result by Magic, Recent, ...
-        :type sort: Optional[Union[Sort, str]]
+        :param filter: Filters the result by Magic, Recent, ...
+        :type filter: Optional[Union[filter, str]]
 
         :return: A list of `LevelDisplay` instances.
         """
@@ -121,7 +121,7 @@ class Client:
         # Standard data
         data = {
             "secret": _secret,
-            "type": sort.value if isinstance(sort, Sort) else sort,
+            "type": filter.value if isinstance(filter, filter) else filter,
             "page": page,
         }
         
@@ -334,31 +334,34 @@ class Client:
         map_packs = response.split('#')[0].split("|")
         return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
 
-    async def get_gauntlets(self, only_2_point_1: bool = True, add_ncs_gauntlets: bool = True) -> List[Gauntlet]:
+    async def get_gauntlets(self, only_2_point_1: bool = True, include_ncs_gauntlets: bool = True) -> List[Gauntlet]:
         """
         Get the list of gauntlets objects.
 
         :param only_2_point_1: Whether to get ONLY the 2.1 guantlets or both 2.2 and 2.1. Defaults to True.
         :type only_2_point_1: bool
-        :param add_ncs_gauntlets: Whether to add NCS gauntlets to the list. Defaults to True.
-        :type add_ncs_gauntlets: bool
+        :param include_ncs_gauntlets: Whether to include NCS gauntlets to the list. Defaults to True.
+        :type include_ncs_gauntlets: bool
         :return: A list of `Gauntlet` instances.
         """
+        data = {'secret': _secret, 'special': int(only_2_point_1)}
+        if include_ncs_gauntlets:
+            data['binaryVersion'] = 46
+
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJGauntlets21.php",
-            data={'secret': _secret, 'special': int(only_2_point_1)}
+            data=data
         )
+
         check_negative_1_response(response, LoadError, "An error occurred when getting gauntlets.")
         guantlets = response.split('#')[0].split("|")
         list_guantlets = [Gauntlet.from_raw(guantlet) for guantlet in guantlets]
 
-        if add_ncs_gauntlets:
-            list_guantlets.append(Gauntlet(id=51, name="NCS I", levels_id=[110715909, 110774313, 110665441, 110610038, 109432148], image_url="https://gdbrowser.com/assets/gauntlets/ncs_i.png"))
-            list_guantlets.append(Gauntlet(id=52, name="NCS II", levels_id=[110681124, 110774310, 110638716, 110473393, 110774330], image_url="https://gdbrowser.com/assets/gauntlets/ncs_ii.png"))
-
         return list_guantlets
     
-    async def search_lists(self, query: str) -> List[LevelList]:
+    async def search_lists(
+        self, query: str
+    ) -> List[LevelList]:
         """
         Search for level lists by query.
 
