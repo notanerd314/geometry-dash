@@ -4,7 +4,7 @@
 A module containing all enumerations of various things.
 """
 
-from enum import IntEnum, Enum, StrEnum
+from enum import IntEnum, Enum
 
 # Enum
 class Difficulty(Enum):
@@ -143,7 +143,7 @@ class Gamemode(Enum):
     JETPACK = 8
 
 
-class ColorType(Enum):
+class ColorPart(Enum):
     """
     An **Enum** class representing icon color parts in Geometry Dash.
 

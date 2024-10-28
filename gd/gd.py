@@ -1,8 +1,8 @@
 from .helpers import *
-from .exceptions import *
+from .errors import *
 from .models.level import *
 from .models.song import *
-from .models.users import *
+from .models.user import *
 from datetime import timedelta
 from typing import Union, Tuple
 
@@ -10,7 +10,6 @@ from hashlib import sha1
 
 _secret = "Wmfd2893gb7"
 
-# TODO: include filter for lists.
 # TODO: Organize methods into subclasses or something I don't even fucking know?
 # TODO: fuck my sanity
 
@@ -39,7 +38,7 @@ class Client:
         """
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")
-
+        
         response = await send_post_request(
             url="http://www.boomlings.com/database/downloadGJLevel22.php", 
             data={"levelID": id, "secret": _secret}
@@ -50,25 +49,25 @@ class Client:
 
         return Level.from_raw(response)
 
-    async def download_daily_level(self, return_weekly: bool = False, get_time_left: bool = False) -> Union[Level, Tuple[Level, timedelta]]:
+    async def download_daily_level(self, weekly: bool = False, time_left: bool = False) -> Union[Level, Tuple[Level, timedelta]]:
         """
         Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally.
 
-        If `get_time_left` is set to True then returns a tuple containing the `Level` and the time left for the level.
+        If `time_left` is set to True then returns a tuple containing the `Level` and the time left for the level.
 
-        :param return_weekly: Whether to return the weekly or daily level. Defaults to False for daily.
-        :type return_weekly: bool
-        :param get_time_left: Whether to return both the level and the time left for the level. Defaults to False.
-        :type get_time_left: bool
+        :param weekly: Whether to return the weekly or daily level. Defaults to False for daily.
+        :type weekly: bool
+        :param time_left: Whether to return both the level and the time left for the level. Defaults to False.
+        :type time_left: bool
         :return: A `Level` instance containing the downloaded level data.
         """
-        level = await self.download_level(-2 if return_weekly else -1)
+        level = await self.download_level(-2 if weekly else -1)
         
         # Makes another response for time left.
-        if get_time_left:
+        if time_left:
             daily_data: str = await send_post_request(
                 url="http://www.boomlings.com/database/getGJDailyLevel.php", 
-                data={"secret": _secret, "weekly": "1" if return_weekly else "0"}
+                data={"secret": _secret, "weekly": "1" if weekly else "0"}
             )
             check_errors(daily_data, ResponseError, "Cannot get current time left for the daily/weekly level.")
             daily_data = daily_data.split("|")
@@ -76,11 +75,11 @@ class Client:
 
         return level
 
-    async def search_levels(
+    async def search_level(
         self, query: str = "", page: int = 0, 
         level_rating: LevelRating = None, length: Length = None,
         difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
-        two_player_mode: bool = False, has_coins: bool = False, not_copied: bool = False,
+        two_player_mode: bool = False, has_coins: bool = False, original: bool = False,
         song_id: int = None, gd_world: bool = False, filter: SearchFilter = 0
     ) -> List[LevelDisplay]:
         """
@@ -106,8 +105,8 @@ class Client:
         :type two_player_mode: Optional[bool]
         :param has_coins: Filters level that has coins.
         :type has_coins: Optional[bool]
-        :param not_copied: Filters level that has not been copied.
-        :type not_copied: Optional[bool]
+        :param original: Filters level that has not been copied.
+        :type original: Optional[bool]
         :param song_id: Filters level that has the specified song ID.
         :type song_id: Optional[int]
         :param gd_world: Filters level that is from Geometry Dash World.
@@ -145,7 +144,7 @@ class Client:
         if demon_difficulty:
             if difficulty != [Difficulty.DEMON]:
                 raise ValueError("Demon difficulty can only be used with Difficulty.DEMON!")
-            data["demonFilter"] = determine_demon_search_difficulty(demon_difficulty)
+            data["demonFilter"] = determine_search_difficulty(demon_difficulty)
 
         # Optional parameters
         if song_id:
@@ -155,7 +154,7 @@ class Client:
             "length": length.value if length else None,
             "twoPlayer": int(two_player_mode) if two_player_mode else None,
             "coins": int(has_coins) if has_coins else None,
-            "original": int(not_copied) if not_copied else None,
+            "original": int(original) if original else None,
             "gdw": int(gd_world) if gd_world else None,
             "str": query if query else None
         }
@@ -171,7 +170,7 @@ class Client:
         parsed_results = parse_search_results(search_data)
         return [LevelDisplay.from_dict(result) for result in parsed_results]
 
-    async def get_music_library(self) -> MusicLibrary:
+    async def music_library(self) -> MusicLibrary:
         """
         Gets the current music library in RobTop's servers.
 
@@ -184,7 +183,7 @@ class Client:
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
         return MusicLibrary.from_raw(music_library)
     
-    async def get_sfx_library(self) -> SoundEffectLibrary:
+    async def sfx_library(self) -> SoundEffectLibrary:
         """
         Gets the current SFX library in RobTop's servers.
 
@@ -197,9 +196,9 @@ class Client:
         music_library = decrypt_data(music_library_encoded, "base64_decompress")
         return SoundEffectLibrary.from_raw(music_library)
 
-    async def get_song_data(self, id: int) -> Song:
+    async def get_song(self, id: int) -> Song:
         """
-        Gets song data by ID, either from Newgrounds or the music library.
+        Gets song by ID, either from Newgrounds or the music library.
 
         :param id: The ID of the song. (Use ID larger than 10000000 to get the song from the library.)
         :type id: int
@@ -212,39 +211,26 @@ class Client:
         check_errors(response, InvalidSongID, f"Invalid song ID {id}.")
         return Song.from_raw(response)
 
-    async def get_user_profile(self, account_id: int) -> UserProfile:
+    async def search_user(self, query: Union[str, int], use_id: bool = False) -> UserProfile:
         """
-        Get an user profile by account ID.
+        Get an user profile by account ID or name.
 
-        :param account_id: The account ID to retrieve the profile.
-        :type account_id: int
+        :param query: The account ID/name to retrieve the profile.
+        :type query: Union[str, int]
+        :param use_id: If searches the user using the account ID.
+        :type use_id: Optional[bool]
         :return: A `UserProfile` instance containing the user's profile data.
         """
-        if not isinstance(account_id, int):
-            raise ValueError("ID must be int")
         
-        url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-        data = {'secret': _secret, "targetAccountID": account_id}
+        if use_id:
+            url = "http://www.boomlings.com/database/getGJUserInfo20.php"
+            data = {'secret': _secret, "targetAccountID": query}
+        else:
+            url = "http://www.boomlings.com/database/getGJUsers20.php"
+            data = {'secret': _secret, "str": query}
 
         response = await send_post_request(url=url, data=data)
-        check_errors(response, InvalidAccountID, f"Invalid account ID {account_id}.")
-        return UserProfile.from_raw(response)
-
-    async def search_user(self, username: str) -> UserProfile:
-        """
-        Search for an user by their username. 
-        
-        **Note:** This method doesn't return the full information, use `UserProfile.reload()` to get the full profile after retrieving.
-
-        :param username: The username to search for.
-        :type username: str
-        :return: A `UserProfile` instance containing the user's profile data.
-        """
-        response = await send_post_request(
-            url="http://www.boomlings.com/database/getGJUsers20.php",
-            data={'secret': _secret, "str": username}
-        )
-        check_errors(response, InvalidAccountName, f"Invalid username {username}.")
+        check_errors(response, InvalidAccountID, f"Invalid account name/ID {query}.")
         return UserProfile.from_raw(response)
     
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
@@ -293,9 +279,9 @@ class Client:
             posts_list.append(UserPost.from_raw(post, account_id))
         return posts_list
         
-    async def get_user_comments_history(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> Union[List[Comment], None]:
+    async def get_user_comments(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> Union[List[Comment], None]:
         """
-        Get an user's comments history.
+        Get an user's comments history by player ID.
         
         :param player_id: The player ID to retrieve the comments history.
         :type player_id: int
@@ -315,7 +301,7 @@ class Client:
         
         return [Comment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
 
-    async def get_map_packs(self, page: int = 0) -> List[MapPack]:
+    async def map_packs(self, page: int = 0) -> List[MapPack]:
         """
         Get the full list of map packs available (in a specific page).
 
@@ -334,7 +320,7 @@ class Client:
         map_packs = response.split('#')[0].split("|")
         return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
 
-    async def get_gauntlets(self, only_2_point_1: bool = True, include_ncs_gauntlets: bool = True) -> List[Gauntlet]:
+    async def gauntlets(self, only_2_point_1: bool = True, include_ncs_gauntlets: bool = True) -> List[Gauntlet]:
         """
         Get the list of gauntlets objects.
 
@@ -359,16 +345,26 @@ class Client:
 
         return list_guantlets
     
-    async def search_lists(
+    async def search_list(
         self, query: str = None, filter: SearchFilter = 0, page: int = 0, 
         difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
         only_rated: bool = False
     ) -> List[LevelList]:
         """
-        Search for level lists by query.
+        Search for lists.
 
         :param query: The query string to search for.
         :type query: str
+        :param filter: Filter type (recent, magic, ...)
+        :type filter: SearchFilter
+        :param page: Page number (starting with 0)
+        :type page: int
+        :param difficulty: Filters by a specific difficulty.
+        :type difficulty: List[Difficulty]
+        :param demon_difficulty: Filters by a specific demon difficulty.
+        :type demon_difficulty: DemonDifficulty
+        :param only_rated: Filters only rated lists.
+        :type only_rated: bool
         :return: A list of `LevelList` instances.
         """
         data = {

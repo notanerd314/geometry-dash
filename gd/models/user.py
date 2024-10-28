@@ -5,7 +5,7 @@ A module containing all the classes and methods related to users and accounts in
 
 from ..helpers import *
 from .enums import *
-from .icons import *
+from .cosmetics import *
 from .level import Comment
 from typing import List, Optional, Union
 from dataclasses import dataclass
@@ -171,7 +171,7 @@ class UserProfile:
         except Exception as e:
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
-    async def load_posts(self, page: int = 0) -> List[UserPost] | None:
+    async def posts(self, page: int = 0) -> List[UserPost] | None:
         """
         Load all posts from the user.
 
@@ -195,7 +195,7 @@ class UserProfile:
             posts_list.append(UserPost.from_raw(post, self.account_id))
         return posts_list
         
-    async def load_comments_history(self, page: int = 0, display_most_liked: bool = False) -> List[Comment]:
+    async def comments(self, page: int = 0, display_most_liked: bool = False) -> List[Comment]:
         """
         Get user's comments history.
 
@@ -214,19 +214,3 @@ class UserProfile:
             return None
         
         return [Comment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
-        
-    async def reload(self) -> 'UserProfile':
-        """
-        Reload user profile by account ID and returns the UserProfile instance.
-
-        :return: An instance of the UserProfile class.
-        """
-        if not isinstance(self.account_id, int):
-            raise ValueError("ID must be int")
-        
-        url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-        data = {'secret': _secret, "targetAccountID": self.account_id}
-
-        response = await send_post_request(url=url, data=data)
-        check_errors(response, InvalidAccountID, f"Invalid account ID {self.account_id}.")
-        return UserProfile.from_raw(response)

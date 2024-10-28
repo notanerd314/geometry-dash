@@ -9,6 +9,7 @@ from datetime import timedelta
 from ..helpers import *
 from dataclasses import dataclass, field
 from enum import Enum
+from aiofiles import open as aioopen
 import os
 
 # Music Library
@@ -171,8 +172,8 @@ class MusicLibrary:
             try:
                 print(self.link)
                 response = await send_get_request(url=self.link)
-                with open(os.path.join(path, name_file), "wb") as file:
-                    file.write(response.content)
+                async with aioopen(os.path.join(path, name_file), "wb") as file:
+                    await file.write(response.content)
             except Exception as e:
                 raise DownloadSongError(f"Error downloading song: {e}")
         
@@ -613,8 +614,8 @@ class SoundEffect:
 
         try:
             response = await send_get_request(url=self.url)
-            with open(os.path.join(path, name_file), "wb") as file:
-                file.write(response.content)
+            async with aioopen(os.path.join(path, name_file), "wb") as file:
+                await file.write(response.content)
         except Exception as e:
             raise DownloadSongError(f"Error downloading song: {e}")
 
@@ -708,8 +709,8 @@ class Song:
 
         try:
             response = await send_get_request(url=self.song_link)
-            with open(os.path.join(path, name_file), "wb") as file:
-                file.write(response.content)
+            async with aioopen(os.path.join(path, name_file), "wb") as file:
+                await file.write(response.content)
         except Exception as e:
             raise DownloadSongError(f"Error downloading song: {e}")
 

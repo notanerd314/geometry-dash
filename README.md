@@ -30,6 +30,6 @@ $ python -m pip install gdapi
 
 The package requires the following dependencie(s):
 - httpx
-
+- aiofiles
 
 

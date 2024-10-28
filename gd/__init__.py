@@ -1,7 +1,7 @@
 """
-# GDAPI
+# `gdapi`
 
-An object-oriented and asyncronious wrapper for **Geometry Dash** and **Pointercrate**.
+A lightweight and asyncronious API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
 
 ```py
 >>> from gd import Client
@@ -19,6 +19,8 @@ OfficialSong.POLARGEIST
 "1:13519:2:The Nightmare:3:SGFyZCBtYXAgYnkgSmF4LiA3..."
 ```
 
+It can't do login functions yet but who fricking cares
+
 # Installation and Information
 Install GDAPI via PyPI:
 
@@ -27,10 +29,8 @@ $ python -m pip install gdapi
 ```
 **GDAPI** supports version 3.8 or greater officially.
 
-The package requires the following dependencies:
+The package requires the following dependencie(s):
 - httpx
-
-*bro wtf this project is so stupid :sob: why i'm being so serious*
 """
 
 __title__ = 'gdapi'

@@ -6,8 +6,9 @@ The module containing all the classes and methods related to customization and i
 
 from dataclasses import dataclass
 from .enums import Gamemode
+from typing import Union, Dict, List
 
-COLORS_LIST = {
+COLORS_LIST: Dict[int, int] = {
     0: 0x7DFF00, 1: 0x00FF00, 2: 0x00FF7D, 3: 0x00FFFF, 4: 0x007DFF, 5: 0x0000FF, 6: 0x7D00FF, 7: 0xFF00FF, 8: 0xFF007D, 9: 0xFF0000, 10: 0xFF7D00,
     11: 0xFFFF00, 12: 0xFFFFFF, 13: 0xB900FF, 14: 0xFFB900, 15: 0x000000, 16: 0x00C8FF, 17: 0xAFAFAF, 18: 0x5A5A5A, 19: 0xFF7D7D, 20: 0x00AF4B,
     21: 0x007D7D, 22: 0x004BAF, 23: 0x4B00AF, 24: 0x7D007D, 25: 0xAF004B, 26: 0xAF4B00, 27: 0x7D7D00, 28: 0x4BAF00, 29: 0xFF4B00, 30: 0x963200, 
@@ -22,18 +23,26 @@ COLORS_LIST = {
 }
 """A dictionary mapping all the color ids to their corresponding hex colors.
 
-Min: 0, Max: 106.
+**Minimum ID:** 0, **Maximum ID:** 106
 """
 
-def color_id_to_hex(color_id: int) -> int | None:
+def color_id_to_hex(color_id: int) -> Union[int, None]:
     """
     Returns the hexadecimal color code for the given color ID. If not found, returns None.
+
+    :param color_id: The ID of the color.
+    :type color_id: int
+    :return: The hexadecimal color code if found, otherwise None.
     """
     return COLORS_LIST.get(color_id, None)
 
-def hex_to_color_id(hex_color: int) -> int | None:
+def hex_to_color_id(hex_color: int) -> Union[int, None]:
     """
     Returns the color ID for the given hexadecimal color code. If not found, returns None.
+
+    :param hex_color: The hex of the color.
+    :type hex_color: int
+    :return: The ID of the color if found, otherwise None.
     """
     for color_id, color_hex in COLORS_LIST.items():
         if color_hex == hex_color:
@@ -62,21 +71,21 @@ class Icon:
     gamemode: Gamemode
     primary_color_id: int
     secondary_color_id: int
-    glow_color_id: int | None
+    glow_color_id: Union[int, None]
 
     @property
     def primary_color_hex(self) -> int:
         """
         Returns the primary color ID as a hexadecimal color code.
         """
-        return COLORS_LIST[self.primary_color_id]
+        return color_id_to_hex(self.primary_color_id)
     
     @property
     def secondary_color_hex(self) -> int:
         """
         Returns the secondary color ID as a hexadecimal color code.
         """
-        return COLORS_LIST[self.secondary_color_id]
+        return color_id_to_hex(self.secondary_color_id)
     
     @property
     def glow_color_hex(self) -> int | None:
@@ -86,4 +95,4 @@ class Icon:
         if self.glow_color_id is None:
             raise ValueError("This icon has no glow color.")
         
-        return COLORS_LIST[self.glow_color_id]
+        return color_id_to_hex(self.glow_color_id)

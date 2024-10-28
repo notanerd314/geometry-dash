@@ -1,4 +1,4 @@
-from typing import Any
+from typing import AnyStr
 
 class InvalidSongID(Exception):
     """Raised when an invalid song ID is provided."""
@@ -44,7 +44,7 @@ class LoginError(Exception):
     """Raised when logging in fails."""
     pass
 
-def check_errors(data: Any, exception: Exception, text: str) -> None:
+def check_errors(data: AnyStr, exception: Exception, text: str) -> None:
     """Helper function to check if the server returns -1 as a response. Raises the exception passed if it is."""
     if data == "-1":
         raise exception(text)

@@ -6,7 +6,7 @@ A module containing all the classes and methods related to levels in Geometry Da
 
 from ..helpers import *
 from .enums import *
-from .icons import *
+from .cosmetics import *
 from typing import List, Optional, Union, Tuple
 from .song import Song, OfficialSong
 from datetime import datetime
@@ -14,10 +14,59 @@ from dataclasses import dataclass
 from json import load
 from os import path
 
-relative_path = path.dirname(__file__)
-
-with open(path.join(relative_path, "spreadsheet", "gauntlets.json"), 'r') as guantlets_names_file:
-    guantlets_names = load(guantlets_names_file)
+GAUNTLETS = {
+    "1": "Fire",
+    "2": "Ice",
+    "3": "Poison",
+    "4": "Shadow",
+    "5": "Lava",
+    "6": "Bonus",
+    "7": "Chaos",
+    "8": "Demon",
+    "9": "Time",
+    "10": "Crystal",
+    "11": "Magic",
+    "12": "Spike",
+    "13": "Monster",
+    "14": "Doom",
+    "15": "Death",
+    "16": "Forest",
+    "17": "Rune",
+    "18": "Force",
+    "19": "Spooky",
+    "20": "Dragon",
+    "21": "Water",
+    "22": "Haunted",
+    "23": "Acid",
+    "24": "Witch",
+    "25": "Power",
+    "26": "Potion",
+    "27": "Snake",
+    "28": "Toxic",
+    "29": "Halloween",
+    "30": "Treasure",
+    "31": "Ghost",
+    "32": "Gem",
+    "33": "Inferno",
+    "34": "Portal",
+    "35": "Strange",
+    "36": "Fantasy",
+    "37": "Christmas",
+    "38": "Surprise",
+    "39": "Mystery",
+    "40": "Cursed",
+    "41": "Cyborg",
+    "42": "Castle",
+    "43": "Grave",
+    "44": "Temple",
+    "46": "World",
+    "47": "Galaxy",
+    "48": "Universe",
+    "49": "Discord",
+    "50": "Split",
+    "51": "NCS I",
+    "52": "NCS II"
+}
 
 @dataclass
 class Level:
@@ -527,8 +576,8 @@ class MapPack(_ListofLevels):
                 stars=int(parsed.get("4", 0)),
                 coins=int(parsed.get("5", 0)),
                 difficulty=Difficulty(int(parsed.get("6", 0))),
-                text_rgb_color=parse_comma_separated_int_list(parsed.get("7", "")),
-                progress_bar_rgb_color=parse_comma_separated_int_list(parsed.get("8", ""))
+                text_rgb_color=tuple(parse_comma_separated_int_list(parsed.get("7", ""))),
+                progress_bar_rgb_color=tuple(parse_comma_separated_int_list(parsed.get("8", "")))
             )
         except Exception as e:
             raise ParseError(f"Could not parse the data provided, error: {e}")
@@ -561,7 +610,7 @@ class Gauntlet(_ListofLevels):
         :return: A Gauntlet object created from the raw data.
         """
         parsed: dict = parse_key_value_pairs(raw_str)
-        name: str = guantlets_names[str(parsed.get("1"))]
+        name: str = GAUNTLETS[str(parsed.get("1"))]
         try:
             return Gauntlet(
                 id=parsed.get("1", 0),
