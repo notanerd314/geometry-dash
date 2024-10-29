@@ -6,7 +6,7 @@ A module containing all the classes and methods related to users and accounts in
 from ..helpers import *
 from .enums import *
 from .cosmetics import *
-from .level import Comment
+from .level import Comment, LevelDisplay
 from typing import List, Optional, Union
 from dataclasses import dataclass
 
@@ -184,7 +184,7 @@ class UserProfile:
             data={'secret': _secret, "accountID": self.account_id, "page": page}
         )
 
-        check_errors(response, ResponseError, f"Invalid account ID {self.account_id}.")
+        check_errors(response, LoadError, f"Something wrong had happened when fetching the user's posts.")
         if not response.split("#")[0]:
             return None
 
@@ -209,8 +209,28 @@ class UserProfile:
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={'secret': _secret, "userID": self.player_id, "page": page, "mode": int(display_most_liked)}
         )
-        check_errors(response, ResponseError, f"Invalid account ID {self.account_id}.")
+        check_errors(response, LoadError, f"Something wrong had happened when fetching the user's comments.")
         if not response.split("#")[0]:
             return None
         
         return [Comment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
+
+    async def levels(self, page: int = 0) -> List[LevelDisplay]:
+        """
+        Get user's levels.
+
+        :param page: The page number to load, default is 0.
+        :type page: int
+        :return: A list of LevelDisplay instances.
+        """
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevels21.php",
+            data={'secret': _secret, "type": 5, "page": page, "str": self.player_id}
+        )
+
+        check_errors(response, LoadError, f"Something wrong had happened when fetching the user's levels.")
+        if not response.split("#")[0]:
+            return None
+        
+        return [LevelDisplay.from_raw(level_data) for level_data in response.split("#")[0].split("|")]

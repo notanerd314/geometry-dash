@@ -93,7 +93,7 @@ class MusicLibrary:
             The artist of the song, returns None if it doesn't exist.
         tags : set[str]
             The tags associated with the song.
-        file_size_bytes : float
+        size : float
             The size of the song in bytes.
         duration_seconds : timedelta
             The duration of the song in seconds.
@@ -105,7 +105,7 @@ class MusicLibrary:
         name: str
         artist: Optional['MusicLibrary.Artist']
         tags: set[str]
-        file_size_bytes: float
+        size: float
         duration_seconds: timedelta
         is_ncs: bool
         link: str
@@ -138,7 +138,7 @@ class MusicLibrary:
                     name=parsed[1],
                     artist=artists_list.get(artist_id),
                     tags=song_tag_list,
-                    file_size_bytes=float(parsed[3]),
+                    size=float(parsed[3]),
                     duration_seconds=timedelta(seconds=int(parsed[4])),
                     is_ncs=parsed[6] == '1',
                     link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
@@ -147,7 +147,7 @@ class MusicLibrary:
             except Exception as e:
                 raise ParseError(f"Cannot parse the data provided, error: {e}")
         
-        async def download(self, name_file: str = None, path: str = None) -> None:
+        async def download_to(self, file: str = None, path: str = None) -> None:
             """
             A static method that converts a raw string from the servers to a `MusicLibraryArtist` instance.
 
@@ -156,11 +156,11 @@ class MusicLibrary:
             :return: A `MusicLibraryArtist` instance.
             """
 
-            if not name_file:
-                name_file = f"{self.id}.ogg"
+            if not file:
+                file = f"{self.id}.ogg"
             
-            if not name_file.endswith(".ogg"):
-                raise ValueError("name_file must end with .ogg!")
+            if not file.endswith(".ogg"):
+                raise ValueError("file must end with .ogg!")
 
             # Set the path to the current working directory if not specified
             if path is None:
@@ -172,7 +172,7 @@ class MusicLibrary:
             try:
                 print(self.link)
                 response = await send_get_request(url=self.link)
-                async with aioopen(os.path.join(path, name_file), "wb") as file:
+                async with aioopen(os.path.join(path, file), "wb") as file:
                     await file.write(response.content)
             except Exception as e:
                 raise DownloadSongError(f"Error downloading song: {e}")
@@ -326,7 +326,6 @@ class SoundEffectLibrary:
         """
         id: int
         name: str
-        sfx: List['SoundEffect'] = field(default_factory=list)  # Initialize sfx list
 
         @staticmethod
         def from_raw(raw_str: str) -> 'SoundEffectLibrary.Folder':
@@ -342,56 +341,6 @@ class SoundEffectLibrary:
                 id=int(parsed[0]),
                 name=parsed[1],
             )
-    
-        def add_sfx(self, raw_str: str) -> None:
-            """Helper function to add a sound effect to the folder."""
-            injected_sfx: SoundEffect = SoundEffect.from_raw(raw_str)
-
-            if injected_sfx.parent_folder_id != self.id:  # Compare folder names
-                raise ValueError(f"Cannot add a sound effect that belongs to a different folder ({injected_sfx.parent_folder.name}).")
-            
-            self.sfx.append(injected_sfx)
-
-        def get_song_by_name(self, name: str) -> 'SoundEffect':
-            """
-            Get a sound effect by it's name.
-
-            :param name: The name of the sound effect.
-            :type name: str
-            :return: A SFX class, if not found, returns NoneType.
-            """
-            for sfx in self.sfx:
-                if sfx.name == name:
-                    return sfx
-            return None
-        
-        def get_song_by_id(self, id: int) -> Union['SoundEffect', None]:
-            """
-            Get a sound effect by it's id.
-
-            :param id: The id of the sound effect.
-            :type id: int
-            :return: A SFX class, if not found, returns NoneType.
-            """
-            for sfx in self.sfx:
-                if sfx.id == id:
-                    return sfx
-            return None
-        
-        def search_sfx(self, query: str) -> List['SoundEffect']:
-            """
-            Search sound effects that contains the query in it's name.
-
-            :param query: The query for the search.
-            :type query: str
-            :return: A list of SFX.
-            """
-            sfx_list = []
-            for sfx in self.sfx:
-                if query.lower() in sfx.name.lower():
-                    sfx_list.append(sfx)
-
-            return sfx_list
 
     @dataclass
     class Creator:
@@ -452,20 +401,20 @@ class SoundEffectLibrary:
             except IndexError:
                 is_not_folder = False
             
-            parsed_sfx_obj = SoundEffect.from_raw(raw_sfx)
+            sfx_object = SoundEffect.from_raw(raw_sfx)
             if is_not_folder:
-                sfx_folder_id = parsed_sfx_obj.parent_folder_id
+                sfx_folder_id = sfx_object.parent_folder_id
 
                 for folder in folders:
                     if folder.id == sfx_folder_id:
                         folder.add_sfx(raw_sfx)
                         break
 
-            sfx.append(parsed_sfx_obj)
+            sfx.append(sfx_object)
 
         creators = [SoundEffectLibrary.Creator.from_raw(creator) for creator in parsed_creators if creator != ""]
 
-        return SoundEffectLibrary(version=int(version_name), folders=folders, creators=creators)
+        return SoundEffectLibrary(version=int(version_name), folders=folders, creators=creators, sfx=sfx)
 
     def get_folder_by_name(self, name: str) -> Union['SoundEffectLibrary.Folder', None]:
         """
@@ -541,6 +490,21 @@ class SoundEffectLibrary:
                 result.append(item)
 
         return result
+    
+    def filter_sfx_by_folder(self, folder_id: int) -> List['SoundEffect']:
+        """
+        Filter folders and sfx by the query.
+
+        :param folder_id: The folder ID to filter.
+        :type folder_id: int
+        :return: A list of SoundEffect.
+        """
+        result = []
+        for item in self.sfx:
+            if item.parent_folder_id == folder_id:
+                result.append(item)
+
+        return result
 
 @dataclass
 class SoundEffect:
@@ -555,7 +519,7 @@ class SoundEffect:
         The name of the sound effect.
     parent_folder_id : int
         The folder id of the sound effect belongs to.
-    file_size : float
+    size : float
         The size of the sound effect.
     url : str
         The link to the sound effect.
@@ -565,7 +529,7 @@ class SoundEffect:
     id: int
     name: str
     parent_folder_id: str
-    file_size: float
+    size: float
     url: str
     duration: timedelta
 
@@ -583,27 +547,27 @@ class SoundEffect:
             id=int(parsed[0]),
             name=parsed[1],
             parent_folder_id=int(parsed[3]),
-            file_size=float(parsed[4]),
+            size=float(parsed[4]),
             url=f"https://geometrydashfiles.b-cdn.net/sfx/s{parsed[0]}.ogg",
             duration=timedelta(seconds=int(parsed[5])//100)
         )
     
-    async def download(self, name_file: str = None, path: str = None) -> None:
+    async def download_to(self, file: str = None, path: str = None) -> None:
         """
         A method that downloads the song to a specific path location.
 
-        :param name_file: The name of the file to save the song as. Default is the song ID.
-        :type name_file: Optional[str]
+        :param file: The name of the file to save the song as. Default is the song ID.
+        :type file: Optional[str]
         :param path: The path to save the song. Default is the current working directory.
         :type path: Optional[str]
         :raises DownloadSongError: If an error occurs during downloading the song.
         :return: None
         """
-        if not name_file:
-            name_file = f"{self.id}.ogg"
+        if not file:
+            file = f"{self.id}.ogg"
         
-        if not name_file.endswith(".ogg"):
-            raise ValueError("name_file must end with .ogg!")
+        if not file.endswith(".ogg"):
+            raise ValueError("file must end with .ogg!")
 
         # Set the path to the current working directory if not specified
         if path is None:
@@ -614,7 +578,7 @@ class SoundEffect:
 
         try:
             response = await send_get_request(url=self.url)
-            async with aioopen(os.path.join(path, name_file), "wb") as file:
+            async with aioopen(os.path.join(path, file), "wb") as file:
                 await file.write(response.content)
         except Exception as e:
             raise DownloadSongError(f"Error downloading song: {e}")
@@ -642,11 +606,11 @@ class Song:
         The size of the song in megabytes.
     youtube_link : Optional[str]
         The YouTube link to the song.
-    song_link : Optional[str]
+    link : Optional[str]
         The link to the song.
     is_ncs : Optional[bool]
         If the song was made by NCS.
-    is_library_song : Optional[bool]
+    is_in_library : Optional[bool]
         If the song belongs to the music library.
     """
     id: int
@@ -654,51 +618,60 @@ class Song:
     artist_id: Optional[int]
     artist_name: Optional[str]
     artist_verified: Optional[bool]
-    song_size_mb: float
+    size: float
     youtube_link: Optional[str]
-    song_link: Optional[str]
+    link: Optional[str]
     is_ncs: Optional[bool]
-    is_library_song: Optional[bool]
+    is_in_library: Optional[bool]
 
     @staticmethod
     def from_raw(raw_str: str) -> 'Song':
         """
-        A static method that converts the raw string into a Song object.
-
-        :param raw_str: The raw string from the servers.
+        A static method that converts the raw data from the servers into a Song object.
+        
+        :param raw_str: The raw data from the servers.
         :type raw_str: str
         :return: An instance of the Song class.
         """
-        parsed = parse_song_data(raw_str.strip())
+        parsed = parse_song_data(raw_str)
+        return Song.from_parsed(parsed)
+
+    @staticmethod
+    def from_parsed(parsed_str: Dict) -> 'Song':
+        """
+        A static method that converts the parsed string into a Song object.
+
+        :param parsed_str: The parsed string from the servers.
+        :type parsed_str: str
+        :return: An instance of the Song class.
+        """
+        parsed = parsed_str
         return Song(
             id=int(parsed.get('1')),
             name=parsed.get('2'),
             artist_id=parsed.get('3'),
             artist_name=parsed.get('4'),
             artist_verified=parsed.get('8') == 1,
-            song_size_mb=float(parsed.get('5', 0.0)),
+            size=float(parsed.get('5', 0.0)),
             youtube_link=f"https://youtu.be/watch?v={parsed.get('6')}" if parsed.get("6") else None,
-            song_link=unquote(parsed.get("10", '')) if parsed.get("10") else None,
+            link=unquote(parsed.get("10", '')) if parsed.get("10") else None,
             is_ncs=parsed.get('11') == 1,
-            is_library_song=int(parsed.get('1')) >= 10000000
+            is_in_library=int(parsed.get('1')) >= 10000000
         )
 
-    async def download(self, name_file: str = None, path: str = None) -> None:
+    async def download_to(self, file: str = None, path: str = None) -> None:
         """
         A method that downloads the song to a specific path location.
 
-        :param name_file: The name of the file to save the song as (relative). Default is the song ID.
-        :type name_file: Optional[str]
+        :param file: The name of the file to save the song. Default is the song ID.
+        :type file: Optional[str]
         :param path: The path to save the song. Default is the current working directory.
         :type path: Optional[str]
         :raises DownloadSongError: If an error occurs during downloading the song.
         :return: None
         """
-        if not name_file:
-            name_file = f"{self.id}.mp3"
-        
-        if not name_file.endswith(".mp3"):
-            raise ValueError("name_file must end with .mp3!")
+        if not file:
+            file = f"{self.id}.mp3"
 
         # Set the path to the current working directory if not specified
         if path is None:
@@ -708,8 +681,8 @@ class Song:
         os.makedirs(path, exist_ok=True)
 
         try:
-            response = await send_get_request(url=self.song_link)
-            async with aioopen(os.path.join(path, name_file), "wb") as file:
+            response = await send_get_request(url=self.link)
+            async with aioopen(os.path.join(path, file), "wb") as file:
                 await file.write(response.content)
         except Exception as e:
             raise DownloadSongError(f"Error downloading song: {e}")

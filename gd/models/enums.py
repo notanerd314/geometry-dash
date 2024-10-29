@@ -129,7 +129,6 @@ class Gamemode(Enum):
     - `ROBOT` (5): Robot mode.
     - `SPIDER` (6): Spider mode.
     - `SWING` (7): Swingcopter mode.
-    - `JETPACK` (8): Jetpack mode.
     """
     
     CUBE = 0
@@ -140,7 +139,6 @@ class Gamemode(Enum):
     ROBOT = 5
     SPIDER = 6
     SWING = 7
-    JETPACK = 8
 
 
 class ColorPart(Enum):

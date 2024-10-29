@@ -120,7 +120,7 @@ class Client:
         # Standard data
         data = {
             "secret": _secret,
-            "type": filter.value if isinstance(filter, filter) else filter,
+            "type": filter.value if isinstance(filter, SearchFilter) else filter,
             "page": page,
         }
         
@@ -168,7 +168,7 @@ class Client:
         check_errors(search_data, SearchLevelError, "Unable to fetch search results. Perhaps it doesn't exist after all?")
 
         parsed_results = parse_search_results(search_data)
-        return [LevelDisplay.from_dict(result) for result in parsed_results]
+        return [LevelDisplay.from_parsed(result) for result in parsed_results]
 
     async def music_library(self) -> MusicLibrary:
         """
@@ -231,7 +231,7 @@ class Client:
 
         response = await send_post_request(url=url, data=data)
         check_errors(response, InvalidAccountID, f"Invalid account name/ID {query}.")
-        return UserProfile.from_raw(response)
+        return UserProfile.from_raw(response.split("#")[0])
     
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
         """
@@ -300,6 +300,28 @@ class Client:
             return None
         
         return [Comment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
+    
+    async def get_user_levels(self, player_id: int, page: int = 0) -> List[LevelDisplay]:
+        """
+        Get an user's levels by player ID.
+
+        :param player_id: The player ID to retrieve the levels.
+        :type player_id: int
+        :param page: The page number to load, default is 0.
+        :type page: int
+        :return: A list of LevelDisplay instances.
+        """
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevels21.php",
+            data={'secret': _secret, "type": 5, "page": page, "str": player_id}
+        )
+
+        check_errors(response, ResponseError, f"Invalid account ID {self.account_id}.")
+        if not response.split("#")[0]:
+            return None
+        
+        return [LevelDisplay.from_raw(level_data) for level_data in response.split("#")[0].split("|")]
 
     async def map_packs(self, page: int = 0) -> List[MapPack]:
         """

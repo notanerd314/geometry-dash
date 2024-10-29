@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 setup(
     name="gdapi",
     version="1.0.0",
-    description="An asynchronous wrapper for Geometry Dash.",
+    description="A wrapper for Geometry Dash written in Python.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="notanerd",
     url="https://github.com/notanerd/geometrydash",
     packages=find_packages(),
-    install_requires=["httpx"],
+    install_requires=["aiohttp", "aiofiles"],
     license="MIT License",
     include_package_data=True,
     classifiers=[

@@ -29,8 +29,9 @@ $ python -m pip install gdapi
 ```
 **GDAPI** supports version 3.8 or greater officially.
 
-The package requires the following dependencie(s):
+The package requires the following dependencies:
 - httpx
+- aiofiles
 """
 
 __title__ = 'gdapi'

@@ -14,11 +14,7 @@ Difficulty.EASY_DEMON
 "Hard map by Jax. 7813"
 >>> level.official_song
 OfficialSong.POLARGEIST
->>> level.raw_str # Original data returned from the servers
-"1:13519:2:The Nightmare:3:SGFyZCBtYXAgYnkgSmF4LiA3..."
 ```
-
-It can't do login functions yet but who fricking cares
 
 # Installation and Information
 Install GDAPI via PyPI:
@@ -28,8 +24,20 @@ $ python -m pip install gdapi
 ```
 **GDAPI** supports version 3.8 or greater officially.
 
-The package requires the following dependencie(s):
-- httpx
+The package requires the following dependencies:
+- aiohttp
 - aiofiles
+
+# Usage
+For fetching song then downloading it:
+```py
+import gd
+import asyncio
+
+async def main():
+    client = gd.Client()
+    song = await client.get_song(803223)
+    print(f"{song.title}, ")
+```
 
 

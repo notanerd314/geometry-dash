@@ -6,11 +6,11 @@ A module containing all helper functions for the module.
 You typically don't want to use this module because it has limited documentation and confusing information.
 """
 
-import httpx
+import aiohttp
 import base64
 import zlib
 import random
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union
 from .models.enums import Difficulty, DemonDifficulty
 from .errors import *
 
@@ -22,20 +22,21 @@ AW_CODE = "Aw=="
 DEFAULT_TIMEOUT = 60
 
 # HTTP Helper Functions
-async def handle_response(response: httpx.Response) -> str:
-    if response.status_code == 200:
-        return response.text
-    raise ResponseError(f"Request failed with status {response.status_code}.")
+async def handle_response(response) -> aiohttp.ClientResponse:
+    if response.status == 200:
+        return response
+    raise ResponseError(f"Request failed with status code {response.status}.")
 
 async def send_post_request(**kwargs) -> str:
-    async with httpx.AsyncClient() as client:
-        response = await client.post(**kwargs, headers={"User-Agent": ""})
-        return await handle_response(response)
+    async with aiohttp.ClientSession() as client:
+        async with client.post(**kwargs, headers={"User-Agent": ""}) as response:
+            response_text = await handle_response(response)
+            return await response_text.text()
 
-async def send_get_request(**kwargs) -> httpx.Response:
-    async with httpx.AsyncClient() as client:
-        response = await client.get(**kwargs, timeout=DEFAULT_TIMEOUT)
-        return await handle_response(response)
+async def send_get_request(**kwargs) -> aiohttp.ClientResponse:
+    async with aiohttp.ClientSession() as client:
+        async with client.get(**kwargs, timeout=DEFAULT_TIMEOUT) as response:
+            return await handle_response(response)
 
 # Encryption and Decryption Functions
 def add_padding(data: str) -> str:
@@ -46,7 +47,10 @@ def xor_decrypt(input_bytes: bytes, key: str = XOR_KEY) -> str:
     key_bytes = key.encode()
     return ''.join(chr(byte ^ key_bytes[i % len(key_bytes)]) for i, byte in enumerate(input_bytes))
 
-def decrypt_data(encrypted: Union[str, bytes], decrypt_type: str = "base64") -> str:
+def decrypt_data(encrypted: Union[str, bytes], decrypt_type: str = "base64") -> Union[str, None]:
+    if not encrypted:
+        return
+    
     padded_data = add_padding(encrypted) if decrypt_type != "xor" else encrypted
     if decrypt_type == "base64_decompress":
         decoded_data = base64.urlsafe_b64decode(padded_data)
@@ -59,32 +63,80 @@ def decrypt_data(encrypted: Union[str, bytes], decrypt_type: str = "base64") -> 
 
 # Parsing Functions
 def parse_key_value_pairs(text: str, separator: str = ":") -> Dict[str, Union[str, int, None]]:
-    """Parse key-value pairs from a separator-separated string."""
+    """
+    Parse key-value pairs from a separator-separated string. Example:
+
+    ```
+    1:25:2:65:3:okay
+    ```
+
+    The first column of the string is the key name, then the next column is the previous key's value then it repeats like a pattern.
+
+    :param text: The string to parse.
+    :type text: str
+    :param separator: The separator to parse the string (Default is `:`)
+    :type separator: str
+    :return: A dictionary containing the parsed key-value pairs.
+    """
     pairs = {}
     for index in range(0, len(items := text.split(separator)), 2):
         key, value = items[index], items[index + 1] if index + 1 < len(items) else None
         pairs[key] = int(value) if value and value.isdigit() else value
     return pairs
 
+def unparse_key_value_pairs(parsed: Dict[str, Union[str, int]], separator: str = ":") -> str:
+    """
+    Unparse key-value pairs into a separator-separated string. Basically `parse_key_value_pairs` but reversed.
+    
+    :param parsed: The dictionary containing the parsed key-value pairs.
+    :type parsed: Dict[str, Union[str, int]]
+    :param separator: The separator to unparse the string.
+    :type separator: str
+    :return: A string containing the unparsed key-value pairs.
+    """
+    return separator.join(f"{key}{separator}{value}" for key, value in parsed.items())
+
 def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
     parsed = parse_key_value_pairs(text)
-    parsed['4'] = decrypt_data(parsed.get('4', ''), 'base64_decompress')
-    parsed['3'] = decrypt_data(parsed.get('3', ''))
-    parsed['27'] = decrypt_data(parsed.get('27', '')) if parsed.get('27') not in [None, "0"] else False
+    parsed['4'] = decrypt_data(parsed.get('4'), 'base64_decompress')
+    parsed['3'] = decrypt_data(parsed.get('3'))
+    parsed['27'] = decrypt_data(parsed.get('27')) if parsed.get('27') not in [None, "0"] else False
     return parsed
 
 def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
-    levels_data, creators_data, songs_data = text.split('#')[0].split("|"), text.split('#')[1].split("|"), text.split('#')[2].split("~:~")
-    parsed_levels = [{"level": parse_level_data(level)} for level in levels_data]
+    levels_data, creators_data, songs_data = (
+        text.split('#')[0].split("|"),
+        text.split('#')[1].split("|"),
+        text.split('#')[2].split("~:~")
+    )
     
+    parsed_levels = [{"level": parse_level_data(level)} for level in levels_data]
+
+    # Match each level's creator data
+    for current_level in parsed_levels:
+        level_data = current_level['level']
+        user_id = str(level_data.get('6'))  # User ID from level data
+        creator_info = next(
+            (creator.split(":") for creator in creators_data if creator.startswith(user_id)),
+            None
+        )
+        
+        # Add creator information if available
+        current_level['creator'] = {
+            "playerID": creator_info[0] if creator_info else None,
+            "playerName": creator_info[1] if creator_info else None,
+            "accountID": creator_info[2] if creator_info else None
+        }
+    
+    # Match each level's song data
     for song in songs_data:
         parsed_song = parse_song_data(song)
         for current_level in parsed_levels:
-            level_data = parse_level_data(current_level['level'])
+            level_data = current_level['level']
             if level_data.get("35") == 0:
                 current_level['song'] = None
-            elif level_data['35'] == int(parsed_song.get("1", -1)):
-                current_level['song'] = song
+            elif level_data.get("35") == int(parsed_song.get("1", -1)):
+                current_level['song'] = parsed_song
 
     return parsed_levels
 
@@ -99,7 +151,7 @@ def parse_song_data(song: str) -> Dict[str, Union[str, int]]:
     return parse_key_value_pairs(song.replace("~", ""), '|')
 
 # Difficulty Determination
-DIFFICULTY_MAP = {
+_DIFFICULTY_ = {
     -1: Difficulty.NA, 0: Difficulty.AUTO, 1: Difficulty.EASY, 2: Difficulty.NORMAL, 3: Difficulty.HARD,
     4: Difficulty.HARDER, 5: Difficulty.INSANE, 6: DemonDifficulty.EASY_DEMON, 7: DemonDifficulty.MEDIUM_DEMON,
     8: DemonDifficulty.HARD_DEMON, 9: DemonDifficulty.INSANE_DEMON, 10: DemonDifficulty.EXTREME_DEMON
@@ -139,7 +191,7 @@ def determine_search_difficulty(difficulty_obj: Difficulty) -> int:
     Returns:
         int: Integer representing the search difficulty.
     """
-    difficulty_map = {
+    _DIFFICULTY_ = {
         Difficulty.NA: -1,
         Difficulty.AUTO: -3,
         Difficulty.DEMON: -2,
@@ -150,7 +202,7 @@ def determine_search_difficulty(difficulty_obj: Difficulty) -> int:
         Difficulty.INSANE: 5
     }
     
-    return difficulty_map.get(difficulty_obj, -1)
+    return _DIFFICULTY_.get(difficulty_obj, -1)
 
 def determine_demon_search_difficulty(difficulty_obj: DemonDifficulty) -> int:
     """Converts a DemonDifficulty object to its correspondign integer value."""
@@ -163,7 +215,7 @@ def determine_demon_search_difficulty(difficulty_obj: DemonDifficulty) -> int:
         case _: raise ValueError(f"Invalid demon difficulty object type {type(difficulty_obj)}")
 
 def determine_list_difficulty(raw_integer_difficulty: int) -> Union[Difficulty, DemonDifficulty]:
-    return DIFFICULTY_MAP.get(raw_integer_difficulty, Difficulty.NA)
+    return _DIFFICULTY_.get(raw_integer_difficulty, Difficulty.NA)
 
 # Utility Functions
 def is_newgrounds_song(id: int) -> bool:

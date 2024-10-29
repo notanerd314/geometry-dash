@@ -7,13 +7,14 @@ A module containing all the classes and methods related to levels in Geometry Da
 from ..helpers import *
 from .enums import *
 from .cosmetics import *
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple, Any
 from .song import Song, OfficialSong
 from datetime import datetime
 from dataclasses import dataclass
 from json import load
 from os import path
 
+# A dictionary containing all the names of gauntlets.
 GAUNTLETS = {
     "1": "Fire",
     "2": "Ice",
@@ -121,15 +122,8 @@ class Level:
         The password for the level to copy.
     official_song: Union[OfficialSong, None]
         The official song used in the level. Returns None if the level uses a custom song.
-    
-    ### Methods:
-        - `from_raw`: Parses a raw level string into a `Level` object.
-        - `_parse_comma_separated_int_list`: Helper method to parse comma-separated integers from a string.
-        - `_determine_rating`: Determines the rating of the level based on parsed data.
-        - `_determine_difficulty`: Determines the difficulty of the level based on parsed data.
     """
     
-    raw_str: str
     id: Optional[int]
     name: Optional[str]
     description: Optional[str]
@@ -146,7 +140,7 @@ class Level:
     custom_song_id: Union[int, None]
     song_list_ids: List[int]
     sfx_list_ids: List[int]
-    daily_id: int
+    daily_id: Union[int, None]
     copied_level_id: Optional[int]
     low_detail_mode: bool
     two_player_mode: bool
@@ -166,45 +160,54 @@ class Level:
         
         :param raw_str: The raw string returned from the server.
         :type raw_str: str
+        :return: A Level object created from the raw data.
+        """
+        parsed = parse_level_data(raw_str)
+
+        return Level.from_parsed(parsed)
+
+    @staticmethod
+    def from_parsed(parsed_str: str) -> 'Level':
+        """
+        A staticmethod that converts a raw level string into a Level object.
+        
+        :param parsed_str: The raw string returned from the server.
+        :type raw_str: str
         :return: A Level object created from the parsed data.
         """
-
-        if not isinstance(raw_str, str):
-            raise ValueError("Level string must be a str!")
-
-        parsed = parse_level_data(raw_str)
+        parsed = parsed_str
         try:
             return Level(
-            raw_str=raw_str,
-            id=parsed.get("1"),
-            name=parsed.get("2"),
-            description=parsed.get("3"),
-            level_data=parsed.get("4"),
-            version=parsed.get("5"),
-            creator_player_id=parsed.get("6"),
-            downloads=parsed.get("10", 0),
-            likes=parsed.get("14"),
-            copyable=bool(parsed.get("27")),
-            length=Length(parsed.get("15")),
-            requested_stars=parsed.get("39"),
-            stars=parsed.get("18"),
-            coins=parsed.get("37", 0),
-            custom_song_id=parsed.get("35", None),
-            song_list_ids=parse_comma_separated_int_list(parsed.get("52")),
-            sfx_list_ids=parse_comma_separated_int_list(parsed.get("53")),
-            daily_id=parsed.get("41", -1),
-            copied_level_id=parsed.get("30"),
-            low_detail_mode=bool(parsed.get("40")),
-            two_player_mode=bool(parsed.get("31")),
-            verified_coins=bool(parsed.get("38")),
-            in_gauntlet=bool(parsed.get("44")),
-            is_daily=0 <= parsed.get("41", -1) <= 100000,
-            is_weekly=parsed.get("41", -1) >= 100000,
-            rating=Level._determine_rating(parsed),
-            difficulty=determine_difficulty(parsed),
-            level_password=None if isinstance(parsed.get("27"), bool) else parsed.get("27"),
-            official_song=OfficialSong(parsed.get("12")) if parsed.get("12") else None
-        )
+                # raw_str=parsed_str,
+                id=parsed.get("1"),
+                name=parsed.get("2"),
+                description=parsed.get("3"),
+                level_data=parsed.get("4"),
+                version=parsed.get("5"),
+                creator_player_id=parsed.get("6"),
+                downloads=int(parsed.get("10", 0)),
+                likes=int(parsed.get("14")),
+                copyable=bool(parsed.get("27")),
+                length=Length(parsed.get("15")),
+                requested_stars=parsed.get("39"),
+                stars=parsed.get("18"),
+                coins=parsed.get("37", 0),
+                custom_song_id=parsed.get("35", None),
+                song_list_ids=parse_comma_separated_int_list(parsed.get("52")),
+                sfx_list_ids=parse_comma_separated_int_list(parsed.get("53")),
+                daily_id=parsed.get("41", None),
+                copied_level_id=parsed.get("30"),
+                low_detail_mode=bool(parsed.get("40")),
+                two_player_mode=bool(parsed.get("31")),
+                verified_coins=bool(parsed.get("38")),
+                in_gauntlet=bool(parsed.get("44")),
+                is_daily=0 <= parsed.get("41", -1) <= 100000,
+                is_weekly=parsed.get("41", -1) >= 100000,
+                rating=Level._determine_rating(parsed),
+                difficulty=determine_difficulty(parsed),
+                level_password=None if isinstance(parsed.get("27"), bool) else parsed.get("27"),
+                official_song=OfficialSong(parsed.get("12")) if parsed.get("12") else None
+            )
         except Exception as e:
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
@@ -248,7 +251,7 @@ class LevelDisplay(Level):
     song_data: 'Song'
 
     @staticmethod
-    def from_dict(parsed_str: dict) -> 'LevelDisplay':
+    def from_parsed(parsed_str: dict) -> 'LevelDisplay':
         """
         A staticmethod that converts parsed dict level data into a LevelDisplay object.
         
@@ -257,14 +260,14 @@ class LevelDisplay(Level):
         :return: A LevelDisplay object created from the parsed data.
         """
 
-        instance = Level.from_raw(parsed_str['level'])
+        instance = Level.from_parsed(parsed_str['level'])
         creator_name = parsed_str["creator"]["playerName"]
         creator_account_id = parsed_str["creator"]["accountID"]
-        song_data = Song.from_raw(parsed_str["song"]) if parsed_str.get("song", None) else None
+        song_data = Song.from_parsed(parsed_str["song"]) if parsed_str.get("song", None) else None
         
         try:
             return LevelDisplay(
-                raw_str=parsed_str['level'],
+                # raw_str=parsed_str['level'],
                 id=instance.id,
                 name=instance.name,
                 description=instance.description,
@@ -343,7 +346,7 @@ class Comment:
     level_id: int
     content: str
     likes: int
-    comment_id: int
+    id: int
     is_spam: bool
     posted_ago: str
     precentage: int
@@ -399,7 +402,7 @@ class Comment:
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class _ListofLevels:
+class _ListLevel_:
     """
     A class representing a list of levels. (Used for inheritance, not for API.)
     
@@ -449,7 +452,7 @@ class _ListofLevels:
         return Level.from_raw(download_raw)
 
 @dataclass
-class LevelList(_ListofLevels):
+class LevelList(_ListLevel_):
     """
     A class representing a list.
 
@@ -528,7 +531,7 @@ class LevelList(_ListofLevels):
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class MapPack(_ListofLevels):
+class MapPack(_ListLevel_):
     """
     A class representing a map pack.
 
@@ -545,7 +548,7 @@ class MapPack(_ListofLevels):
     coins : int
         The coin count of the map pack
     difficulty : Difficulty
-        The difficulty of the map pack (`HARD_DEMON` it's just `DEMON`)
+        The difficulty of the map pack
     text_rgb_color : List[int]
         The rgb color of the map pack's text
     progress_bar_rgb_color : List[int]
@@ -583,7 +586,7 @@ class MapPack(_ListofLevels):
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class Gauntlet(_ListofLevels):
+class Gauntlet(_ListLevel_):
     """
     A class representing a gauntlet.
     
@@ -634,4 +637,5 @@ class Gauntlet(_ListofLevels):
         check_errors(search_raw, ResponseError, "Unable to load all the levels.")
         search_parsed = parse_search_results(search_raw)
         level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
+
         return level_list
