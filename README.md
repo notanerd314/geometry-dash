@@ -29,7 +29,7 @@ The package requires the following dependencies:
 - aiofiles
 
 # Usage
-For fetching song then downloading it:
+- For fetching song then downloading it:
 ```py
 import gd
 import asyncio
@@ -37,7 +37,42 @@ import asyncio
 async def main():
     client = gd.Client()
     song = await client.get_song(803223)
-    print(f"{song.title}, ")
+    print(f"Name: {song.title}, ID: {song.id}, Size: {song.size} MB.")
+    # Name: Xtrullor - Arcana, ID: 803223, Size: 8.81 MB.
+
+    await song.download_to("look_i_download_song.mp3")
+    # Downloads to the relative path.
+
+asyncio.run(main())
 ```
+
+- For fetching users' profile
+
+```py
+import gd
+import asyncio
+
+async def main():
+    client = gd.Client()
+    user = await client.search_user("notanerd1")
+    print(f"Name: {user.name}, Account ID: {user.account_id}, Player ID: {user.player_id}, Stars: {user.stars}")
+    # Name: notanerd1, Account ID: 24514763, Player ID: 218839712, Stars: 1477
+```
+
+- Getting gauntlets
+```py
+import gd
+import asyncio
+
+async def main():
+    client = gd.Client()
+    gauntlets = await client.gauntlets()
+    print(gauntlets)
+    # [Gauntlet(id=1, name='Fire', level_ids=[27732941, 28200611, 27483789, 28225110, 27448202], image_url='https://gdbrowser.com/assets/gauntlets/fire.png'), Gauntlet(id=2, ...
+
+asyncio.run(main())
+```
+
+
 
 

@@ -22,10 +22,9 @@ AW_CODE = "Aw=="
 DEFAULT_TIMEOUT = 60
 
 # HTTP Helper Functions
-async def handle_response(response) -> aiohttp.ClientResponse:
-    if response.status == 200:
-        return response
-    raise ResponseError(f"Request failed with status code {response.status}.")
+async def handle_response(response: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
+    response.raise_for_status()
+    return response
 
 async def send_post_request(**kwargs) -> str:
     async with aiohttp.ClientSession() as client:
@@ -33,10 +32,20 @@ async def send_post_request(**kwargs) -> str:
             response_text = await handle_response(response)
             return await response_text.text()
 
-async def send_get_request(**kwargs) -> aiohttp.ClientResponse:
-    async with aiohttp.ClientSession() as client:
-        async with client.get(**kwargs, timeout=DEFAULT_TIMEOUT) as response:
-            return await handle_response(response)
+async def send_get_request(decode: bool = True, **kwargs) -> bytes:
+    """Send a GET request and reads the response."""
+    client = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(60.0))  # Create session
+
+    response = await client.get(**kwargs)  # Make the GET request
+    handled_response = await handle_response(response)  # Handle the response
+    response_data = await handled_response.read()
+    
+    await client.close()  # Close the session
+
+    if decode:
+        return response_data.decode()
+    else:
+        return response_data
 
 # Encryption and Decryption Functions
 def add_padding(data: str) -> str:

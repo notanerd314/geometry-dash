@@ -170,10 +170,9 @@ class MusicLibrary:
             os.makedirs(path, exist_ok=True)
 
             try:
-                print(self.link)
-                response = await send_get_request(url=self.link)
+                response = await send_get_request(decode=False, url=self.link)
                 async with aioopen(os.path.join(path, file), "wb") as file:
-                    await file.write(response.content)
+                    await file.write(response)
             except Exception as e:
                 raise DownloadSongError(f"Error downloading song: {e}")
         
@@ -577,9 +576,9 @@ class SoundEffect:
         os.makedirs(path, exist_ok=True)
 
         try:
-            response = await send_get_request(url=self.url)
+            response = await send_get_request(decode=False, url=self.url)
             async with aioopen(os.path.join(path, file), "wb") as file:
-                await file.write(response.content)
+                await file.write(response)
         except Exception as e:
             raise DownloadSongError(f"Error downloading song: {e}")
 
@@ -681,9 +680,9 @@ class Song:
         os.makedirs(path, exist_ok=True)
 
         try:
-            response = await send_get_request(url=self.link)
+            response = await send_get_request(decode=False, url=self.link)
             async with aioopen(os.path.join(path, file), "wb") as file:
-                await file.write(response.content)
+                await file.write(response)
         except Exception as e:
             raise DownloadSongError(f"Error downloading song: {e}")
 
