@@ -125,11 +125,8 @@ class MusicLibrary:
 
             try:
                 parsed = raw_str.strip().split(",")
-                try:
-                    artist_id = int(parsed[2]) if parsed[2].strip() else None
-                except ValueError:
-                    artist_id = None
-
+                
+                artist_id = int(parsed[2]) if parsed[2].strip().isdigit() else None
                 raw_song_tag_list = [tag for tag in parsed[5].split(".") if tag]
                 song_tag_list = {tags_list.get(int(tag)) for tag in raw_song_tag_list}
 
@@ -377,39 +374,21 @@ class SoundEffectLibrary:
         parsed_sfx = parsed[0].split(";")
         parsed_creators = parsed[1].split(";")
 
-        # Extract the version name from folder with id 1
+        # Check if the entity is a folder or a sound effect and sorts them.
         folders = []
-        for folder_str in parsed_sfx:
-            try:
-                is_folder = folder_str.strip().split(",")[2] == "1"
-            except IndexError:
-                is_folder = False
+        sfx = []
+        for entity in parsed_sfx:
+            is_folder = entity.strip().split(",")[2:3] == ["1"]
 
             if is_folder:
-                folder = SoundEffectLibrary.Folder.from_raw(folder_str)
+                folder = SoundEffectLibrary.Folder.from_raw(entity)
                 if folder.id == 1:
-                    version_name = folder.name  # Folder with id 1 contains the version name
+                    version_name = folder.name
                 else:
                     folders.append(folder)
-
-        # Inject SFX into the appropriate folders
-        sfx = []
-        for raw_sfx in parsed_sfx:
-            try:
-                is_not_folder = raw_sfx.strip().split(",")[2] != "1"
-            except IndexError:
-                is_not_folder = False
-            
-            sfx_object = SoundEffect.from_raw(raw_sfx)
-            if is_not_folder:
-                sfx_folder_id = sfx_object.parent_folder_id
-
-                for folder in folders:
-                    if folder.id == sfx_folder_id:
-                        folder.add_sfx(raw_sfx)
-                        break
-
-            sfx.append(sfx_object)
+            else:
+                sfx_object = SoundEffect.from_raw(entity)
+                sfx.append(sfx_object)
 
         creators = [SoundEffectLibrary.Creator.from_raw(creator) for creator in parsed_creators if creator != ""]
 
@@ -490,18 +469,18 @@ class SoundEffectLibrary:
 
         return result
     
-    def filter_sfx_by_folder(self, folder_id: int) -> List['SoundEffect']:
+    def get_all_sfx_in_folder(self, folder_id: int) -> List['SoundEffect']:
         """
-        Filter folders and sfx by the query.
+        Get all sound effects that is in a folder.
 
         :param folder_id: The folder ID to filter.
         :type folder_id: int
         :return: A list of SoundEffect.
         """
         result = []
-        for item in self.sfx:
-            if item.parent_folder_id == folder_id:
-                result.append(item)
+        for sfx in self.sfx:
+            if sfx.parent_folder_id == folder_id:
+                result.append(sfx)
 
         return result
 

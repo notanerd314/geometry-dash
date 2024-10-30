@@ -29,7 +29,7 @@ The package requires the following dependencies:
 - aiofiles
 
 # Usage
-- For fetching song then downloading it:
+- Fetching a Newgrounds/Music Library song then downloading it:
 ```py
 import gd
 import asyncio
@@ -46,7 +46,7 @@ async def main():
 asyncio.run(main())
 ```
 
-- For fetching users' profile
+- Fetching an user's profile
 
 ```py
 import gd

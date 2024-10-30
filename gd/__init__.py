@@ -43,7 +43,7 @@ __version__ = '1.0.0'
 from collections import namedtuple
 
 from .gd import *
-from .models import *
+from .entities import *
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 

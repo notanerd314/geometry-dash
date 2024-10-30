@@ -1,8 +1,8 @@
 from .helpers import *
 from .errors import *
-from .models.level import *
-from .models.song import *
-from .models.user import *
+from .entities.level import *
+from .entities.song import *
+from .entities.user import *
 from datetime import timedelta
 from typing import Union, Tuple
 
@@ -61,7 +61,8 @@ class Client:
         :type time_left: bool
         :return: A `Level` instance containing the downloaded level data.
         """
-        level = await self.download_level(-2 if weekly else -1)
+        level_id = -2 if weekly else -1
+        level = await self.download_level(level_id)
         
         # Makes another response for time left.
         if time_left:
@@ -168,7 +169,7 @@ class Client:
         check_errors(search_data, SearchLevelError, "Unable to fetch search results. Perhaps it doesn't exist after all?")
 
         parsed_results = parse_search_results(search_data)
-        return [LevelDisplay.from_parsed(result) for result in parsed_results]
+        return [LevelDisplay.from_parsed(result).add_client(self) for result in parsed_results]
 
     async def music_library(self) -> MusicLibrary:
         """
@@ -179,22 +180,21 @@ class Client:
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/music/musiclibrary_02.dat",
         )
-        music_library_encoded = response.content
-        music_library = decrypt_data(music_library_encoded, "base64_decompress")
+
+        music_library = decrypt_data(response, "base64_decompress")
         return MusicLibrary.from_raw(music_library)
     
     async def sfx_library(self) -> SoundEffectLibrary:
         """
-        Gets the current SFX library in RobTop's servers.
+        Gets the current Sound Effect library in RobTop's servers.
 
         :return: A `SoundEffectLibrary` instance containing all the SFX library data.
         """
         response = await send_get_request(
-            url="https://geometrydashfiles.b-cdn.net/sfx/SoundEffectLibrary.dat",
+            url="https://geometrydashfiles.b-cdn.net/sfx/sfxlibrary.dat",
         )
-        music_library_encoded = response.content
-        music_library = decrypt_data(music_library_encoded, "base64_decompress")
-        return SoundEffectLibrary.from_raw(music_library)
+        sfx_library = decrypt_data(response, "base64_decompress")
+        return SoundEffectLibrary.from_raw(sfx_library)
 
     async def get_song(self, id: int) -> Song:
         """

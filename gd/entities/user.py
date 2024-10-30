@@ -9,6 +9,7 @@ from .cosmetics import *
 from .level import Comment, LevelDisplay
 from typing import List, Optional, Union
 from dataclasses import dataclass
+from .entity import Entity
 
 _secret = "Wmfd2893gb7"
 
@@ -30,11 +31,11 @@ class UserPost:
     author_account_id : Union[int, None]
         The ID of the author, or None if doesn't exist.
     """
-    content: str
-    likes: int
-    post_id: int
-    posted_ago: str
-    author_account_id: Union[int, None]
+    content: str = None
+    likes: int = None
+    post_id: int = None
+    posted_ago: str = None
+    author_account_id: Union[int, None] = None
 
     @staticmethod
     def from_raw(raw_str: str, account_id: int = None) -> 'UserPost':
@@ -62,7 +63,7 @@ class UserPost:
             raise ParseError(f"Failed to parse the data provided, error: {e}")
 
 @dataclass
-class UserProfile:
+class UserProfile(Entity):
     """
     A class representing an user's profile.
     
@@ -109,29 +110,29 @@ class UserProfile:
     twitch : Union[str, None]
         The Twitch username of the user.
     """
-    name: str
-    player_id: int
-    account_id: int
-    stars: Optional[int]
-    moons: Optional[int]
-    demons: Optional[int]
-    diamonds: Optional[int]
-    rank: Optional[int]
-    creator_points: Optional[int]
-    secret_coins: Optional[int]
-    user_coins: Optional[int]
-    registered: Optional[bool]
-    mod_level: Optional[ModRank]
+    name: str = None
+    player_id: int = None
+    account_id: int = None
+    stars: Optional[int] = None
+    moons: Optional[int] = None
+    demons: Optional[int] = None
+    diamonds: Optional[int] = None
+    rank: Optional[int] = None
+    creator_points: Optional[int] = None
+    secret_coins: Optional[int] = None
+    user_coins: Optional[int] = None
+    registered: Optional[bool] = None
+    mod_level: Optional[ModRank] = None
 
-    primary_color_id: Optional[int]
-    secondary_color_id: Optional[int]
-    glow_color_id: Optional[int]
-    profile_icon_type: Optional[Gamemode]
+    primary_color_id: Optional[int] = None
+    secondary_color_id: Optional[int] = None
+    glow_color_id: Optional[int] = None
+    profile_icon_type: Optional[Gamemode] = None
     
-    youtube: Optional[str]
-    twitter: Optional[str]
+    youtube: Optional[str] = None
+    twitter: Optional[str] = None
     """i ain't calling it x"""
-    twitch: Optional[str]
+    twitch: Optional[str] = None
 
     @staticmethod
     def from_raw(raw_str: str) -> 'UserProfile':

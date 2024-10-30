@@ -7,12 +7,11 @@ A module containing all the classes and methods related to levels in Geometry Da
 from ..helpers import *
 from .enums import *
 from .cosmetics import *
-from typing import List, Optional, Union, Tuple, Any
+from typing import List, Optional, Union, Tuple
 from .song import Song, OfficialSong
 from datetime import datetime
 from dataclasses import dataclass
-from json import load
-from os import path
+from .entity import Entity
 
 # A dictionary containing all the names of gauntlets.
 GAUNTLETS = {
@@ -70,7 +69,7 @@ GAUNTLETS = {
 }
 
 @dataclass
-class Level:
+class Level(Entity):
     """
     A class representing a downloaded level in Geometry Dash.
     
@@ -124,34 +123,34 @@ class Level:
         The official song used in the level. Returns None if the level uses a custom song.
     """
     
-    id: Optional[int]
-    name: Optional[str]
-    description: Optional[str]
-    level_data: Optional[str]
-    version: Optional[int]
-    creator_player_id: Optional[int]
-    downloads: int
-    likes: Optional[int]
-    copyable: bool
-    length: 'Length'
-    requested_stars: Optional[int]
-    stars: Optional[int]
-    coins: int
-    custom_song_id: Union[int, None]
-    song_list_ids: List[int]
-    sfx_list_ids: List[int]
-    daily_id: Union[int, None]
-    copied_level_id: Optional[int]
-    low_detail_mode: bool
-    two_player_mode: bool
-    verified_coins: bool
-    in_gauntlet: bool
-    is_daily: bool
-    is_weekly: bool
-    rating: 'LevelRating'
-    difficulty: 'Difficulty'
-    level_password: Optional[str]
-    official_song: Optional[OfficialSong]
+    id: Optional[int] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    level_data: Optional[str] = None
+    version: Optional[int] = None
+    creator_player_id: Optional[int] = None
+    downloads: int = None
+    likes: Optional[int] = None
+    copyable: bool = None
+    length: 'Length' = None
+    requested_stars: Optional[int] = None
+    stars: Optional[int] = None
+    coins: int = None
+    custom_song_id: Union[int, None] = None
+    song_list_ids: List[int] = None
+    sfx_list_ids: List[int] = None
+    daily_id: Union[int, None] = None
+    copied_level_id: Optional[int] = None
+    low_detail_mode: bool = None
+    two_player_mode: bool = None
+    verified_coins: bool = None
+    in_gauntlet: bool = None
+    is_daily: bool = None
+    is_weekly: bool = None
+    rating: 'LevelRating' = None
+    difficulty: 'Difficulty' = None
+    level_password: Optional[str] = None
+    official_song: Optional[OfficialSong] = None
 
     @staticmethod
     def from_raw(raw_str: str) -> 'Level':
@@ -246,9 +245,9 @@ class LevelDisplay(Level):
         The custom song object of the level.
     """
 
-    creator_name: Optional[str]
-    creator_account_id: Optional[int]
-    song_data: 'Song'
+    creator_name: Optional[str] = None
+    creator_account_id: Optional[int] = None
+    song_data: 'Song' = None
 
     @staticmethod
     def from_parsed(parsed_str: dict) -> 'LevelDisplay':
@@ -304,7 +303,7 @@ class LevelDisplay(Level):
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class Comment:
+class Comment(Entity):
     """
     A class representing a comment in a level.
 
@@ -343,23 +342,23 @@ class Comment:
     author_icon_display_gamemode : Gamemode
         The gamemode the author chooses to display in their comment.
     """
-    level_id: int
-    content: str
-    likes: int
-    id: int
-    is_spam: bool
-    posted_ago: str
-    precentage: int
-    mod_level: ModRank
+    level_id: int = None
+    content: str = None
+    likes: int = None
+    id: int = None
+    is_spam: bool = None
+    posted_ago: str = None
+    precentage: int = None
+    mod_level: ModRank = None
 
-    author_player_id: int
-    author_account_id: int
-    author_name: str
-    author_primary_color_id: int
-    author_secondary_color_id: int
-    author_has_glow: bool
-    author_icon: Icon
-    author_icon_display_gamemode: Gamemode
+    author_player_id: int = None
+    author_account_id: int = None
+    author_name: str = None
+    author_primary_color_id: int = None
+    author_secondary_color_id: int = None
+    author_has_glow: bool = None
+    author_icon: Icon = None
+    author_icon_display_gamemode: Gamemode = None
 
     @staticmethod
     def from_raw(raw_str: str) -> 'Comment':
@@ -382,7 +381,7 @@ class Comment:
             author_player_id=int(comment_value.get("3", 0)),
             author_account_id=int(str(user_value.get("16", 0)).split("#")[0]),
             likes=int(comment_value.get("4", 0)),
-            comment_id=int(comment_value.get("6", 0)),
+            id=int(comment_value.get("6", 0)),
             is_spam=bool(int(comment_value.get("7", 0))),
             posted_ago=comment_value.get("9", None),
             precentage=int(comment_value.get("10", 0)),
@@ -402,7 +401,7 @@ class Comment:
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
 @dataclass
-class _ListLevel_:
+class _ListLevel_(Entity):
     """
     A class representing a list of levels. (Used for inheritance, not for API.)
     
@@ -412,9 +411,9 @@ class _ListLevel_:
     name : str
     level_ids : List[int]
     """
-    id: int
-    name: str
-    level_ids: List[int]
+    id: int = None
+    name: str = None
+    level_ids: List[int] = None
 
     async def get_display_info_all_levels(self) -> Tuple[LevelDisplay]:
         """
@@ -488,17 +487,17 @@ class LevelList(_ListLevel_):
         The minimum of levels required to complete the list. 
     """
 
-    description: str
-    difficulty: Difficulty
-    downloads: int
-    likes: int
-    is_rated: bool
-    upload_date: datetime
-    last_update_date: datetime
-    author_account_id: int
-    author_name: str
-    diamonds: int
-    minimum_levels: int
+    description: str = None
+    difficulty: Difficulty = None
+    downloads: int = None
+    likes: int = None
+    is_rated: bool = None
+    upload_date: datetime = None
+    last_update_date: datetime = None
+    author_account_id: int = None
+    author_name: str = None
+    diamonds: int = None
+    minimum_levels: int = None
 
     @staticmethod
     def from_raw(raw_str: str) -> 'LevelList':
@@ -555,11 +554,11 @@ class MapPack(_ListLevel_):
         The rgb color of the map pack's progress bar
     """
 
-    stars: int
-    coins: int
-    difficulty: Difficulty
-    text_rgb_color: List[int]
-    progress_bar_rgb_color: List[int]
+    stars: int = None
+    coins: int = None
+    difficulty: Difficulty = None
+    text_rgb_color: List[int] = None
+    progress_bar_rgb_color: List[int] = None
 
     @staticmethod
     def from_raw(raw_str: str) -> 'MapPack':
@@ -601,7 +600,7 @@ class Gauntlet(_ListLevel_):
     image_url : str
         The URL of the image (from gdbrowser.com)
     """
-    image_url: str
+    image_url: str = None
 
     @staticmethod
     def from_raw(raw_str: str) -> 'Gauntlet':

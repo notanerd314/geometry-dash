@@ -11,7 +11,7 @@ import base64
 import zlib
 import random
 from typing import List, Dict, Union
-from .models.enums import Difficulty, DemonDifficulty
+from .entities.enums import Difficulty, DemonDifficulty
 from .errors import *
 
 # Constants
