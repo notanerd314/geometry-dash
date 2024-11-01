@@ -17,6 +17,7 @@ OfficialSong.POLARGEIST
 ```
 
 # Installation and Information
+### *why the heck did i put that???? it's unfinished!!!!!*
 Install GDAPI via PyPI:
 
 ```bash
@@ -47,7 +48,7 @@ async def main():
 asyncio.run(main())
 ```
 
-- Fetching an user's profile
+- Fetching an user's profile:
 
 ```py
 import gd
@@ -60,7 +61,7 @@ async def main():
     # Name: notanerd1, Account ID: 24514763, Player ID: 218839712, Stars: 1477
 ```
 
-- Getting gauntlets
+- Getting gauntlets:
 ```py
 import gd
 import asyncio
