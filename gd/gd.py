@@ -1,3 +1,4 @@
+import colorama as color
 from .helpers import *
 from .errors import *
 from .entities.level import *
@@ -5,17 +6,34 @@ from .entities.song import *
 from .entities.user import *
 from datetime import timedelta
 from typing import Union, Tuple
-
 from hashlib import sha1
 
 _secret = "Wmfd2893gb7"
+_secret_login = "Wmfv3899gc9"
 
 # TODO: Organize methods into subclasses or something I don't even fucking know?
 # TODO: fuck my sanity
 
+def gjp(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
+    """
+    Convert a password to an encrypted password.
+
+    :param password: The password to be encrypted.
+    :type password: str
+    :param salt: The salt to use for encryption.
+    :type salt: str
+    :return: An encrypted password.
+    """
+    password += salt
+    hash = sha1(password.encode()).hexdigest()
+
+    return hash
+
 class Client:
     """
-    Client class for interacting with Geometry Dash.
+    Main client class for interacting with Geometry Dash. You can login here using `.login` and the client will save the credientals to be used for later purposes.
+
+    You can attach the client to an entity to interact with it without having trouble logging in again. Most entities uses `.add_client()` to attach a client.
 
     Example usage:
     ```
@@ -27,7 +45,50 @@ class Client:
     """
     def __init__(self) -> None:
         pass
+
+    def __str__(self) -> str:
+        return (
+            f"{color.Style.BRIGHT + color.Fore.LIGHTMAGENTA_EX}Client at {hex(id(self))}{color.Style.RESET_ALL}"
+            "\n"
+            "======================================="
+            "\n"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTBLUE_EX}ID: {color.Style.NORMAL}{id(self)}{color.Style.RESET_ALL}"
+            "\n"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTRED_EX}Hash: {color.Style.NORMAL}{self.__hash__()}{color.Style.RESET_ALL}"
+            "\n"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTGREEN_EX}Account ID: {color.Style.NORMAL}{None}{color.Style.RESET_ALL}"
+            "\n"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTCYAN_EX}Player ID: {color.Style.NORMAL}{None}{color.Style.RESET_ALL}"
+            "\n"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Encrypted Password: {color.Style.NORMAL}{None}{color.Style.RESET_ALL}"
+        )
     
+    async def login(self, name: str, password: str) -> None:
+        """
+        ### This function is incomplete and will return errors and confusion if you used.
+        Login account with given name and password (encrypted with `gjp()`)
+
+        :param name: The account name.
+        :type name: str
+        :param password: The account password (encrypted with `gjp()`).
+        :type password: str
+
+        :return: Account
+        """
+        udid = generate_udid()
+        data = {
+            "secret": _secret_login, 
+            "username": name, 
+            "password": password,
+            "udid": udid
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/accounts/loginGJAccount.php",
+            data=data
+        )
+        return response
+
     async def download_level(self, id: int) -> Level:
         """
         Downloads a specific level from the Geometry Dash servers using the provided ID.

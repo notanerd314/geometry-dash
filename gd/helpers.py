@@ -10,6 +10,7 @@ import aiohttp
 import base64
 import zlib
 import random
+from uuid import uuid4
 from typing import List, Dict, Union
 from .entities.enums import Difficulty, DemonDifficulty
 from .errors import *
@@ -20,6 +21,7 @@ SONG_THRESHOLD = 10000000
 BASE64_PADDING_CHAR = "="
 AW_CODE = "Aw=="
 DEFAULT_TIMEOUT = 60
+UDID_PREFIX = "S"
 
 # HTTP Helper Functions
 async def handle_response(response: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
@@ -48,6 +50,19 @@ async def send_get_request(decode: bool = True, **kwargs) -> bytes:
         return response_data
 
 # Encryption and Decryption Functions
+
+def generate_udid(
+    prefix: str = UDID_PREFIX, min_value: int = 100_000, max_value: int = 100_000_000
+) -> str:
+    return prefix + str(random.randrange(min_value, max_value))
+
+def generate_udid(start: int = 100_000, end: int = 100_000_000) -> str:
+    value = [str(random.randint(start, end)) for _ in range(3)]
+    return "S15" + ''.join(value)
+
+def generate_uuid() -> str:
+    return str(uuid4())
+
 def add_padding(data: str) -> str:
     """Add padding to base64-encoded data to make its length a multiple of 4."""
     return data + BASE64_PADDING_CHAR * ((4 - len(data) % 4) % 4)
@@ -235,6 +250,3 @@ def parse_comma_separated_int_list(key: str) -> List[int]:
         return [int(x) for x in key.split(",") if x.isdigit()]
     except AttributeError:
         return []
-
-def generate_udid(start: int = 100_000, end: int = 100_000_000) -> str:
-    return "S" + str(random.randrange(start, end))

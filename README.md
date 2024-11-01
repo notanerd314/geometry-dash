@@ -22,11 +22,12 @@ Install GDAPI via PyPI:
 ```bash
 $ python -m pip install gdapi
 ```
-**GDAPI** supports version 3.8 or greater officially.
+**GDAPI** supports Python version 3.7 or greater officially.
 
 The package requires the following dependencies:
 - aiohttp
 - aiofiles
+- colorama (For useless eye candy)
 
 # Usage
 - Fetching a Newgrounds/Music Library song then downloading it:
