@@ -6,7 +6,9 @@ from .entities.song import *
 from .entities.user import *
 from datetime import timedelta
 from typing import Union, Tuple
+
 from hashlib import sha1
+import base64
 
 _secret = "Wmfd2893gb7"
 _secret_login = "Wmfv3899gc9"
@@ -87,6 +89,9 @@ class Client:
 
         :return: Account
         """
+        if self.account:
+            raise LoginError("The client has already been logged in!")
+        
         data = {
             "secret": _secret_login, 
             "userName": name, 
@@ -122,6 +127,92 @@ class Client:
             password=password
         )
         return self.account
+
+    async def change_account(self, name: str, password: str) -> Account:
+        """
+        Logs out of the current account and then login another account.
+        """
+        if not self.account:
+            raise LoginError("The client is not logged in to change accounts! Use .login() instead.")
+        
+        await self.logout()
+        return await self.login(name, password)
+
+    def logout(self) -> None:
+        """
+        Logs out the current account.
+
+        :return: None
+        """
+        self.account = None
+
+    async def send_post(self, message: str) -> int:
+        """
+        Sends a post to the current account logged in.
+
+        :param message: The message to send.
+        :type message: str
+        :raises: ResponseError
+        :return: The post ID of the sent post.
+        """
+        if not self.account:
+            raise LoginError("The client is not logged in to post!")
+        
+        data = {
+            "secret": _secret,
+            "accountID": self.account.account_id,
+            "comment": base64.urlsafe_b64encode(message.encode()).decode(),
+            "gjp2": self.account.gjp2
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/uploadGJAccComment20.php",
+            data=data
+        )
+
+        return int(response)
+    
+    async def comment(self, message: str, level_id: int, percentage: int = 0) -> int:
+        """
+        Sends a comment to a level or list.
+
+        For lists, use a **negative ID.**
+
+        :param message: The message to send.
+        :type message: str
+        :param level_id: The ID of the level to comment on.
+        :type level_id: int
+        :param percentage: The percentage of the level completed, optional. Defaults to 0.
+        :type percentage: int
+        :return: The post ID of the sent comment.
+        """
+        if not self.account:
+            raise LoginError("The client is not logged in to comment!")
+        
+        data = {
+            "secret": _secret,
+            "accountID": self.account.account_id,
+            "levelID": level_id,
+            "userName": self.account.name,
+            "percent": percentage,
+            "comment": base64.urlsafe_b64encode(message.encode()).decode(),
+            "gjp2": self.account.gjp2,
+        }
+
+        data['chk'] = generate_chk(
+            values=[data['userName'], data['comment'], data['levelID'], data['percent']],
+            key=XorKey.COMMENT,
+            salt=CHKSalt.COMMENT
+        )
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/uploadGJComment21.php",
+            data=data
+        )
+
+        check_errors(response, CommentError, "Unable to post comment, maybe the level ID is wrong?")
+
+        return int(response)
 
     async def download_level(self, id: int) -> Level:
         """

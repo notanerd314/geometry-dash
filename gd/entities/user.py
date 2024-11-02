@@ -38,10 +38,15 @@ class Post:
         The ID of the author, or None if doesn't exist.
     """
     content: str = None
+    """The content of the post."""
     likes: int = None
+    """The number of likes of the post."""
     post_id: int = None
+    """The ID of the post."""
     posted_ago: str = None
+    """The time when the post was posted, e.g., '5 months'."""
     author_account_id: Union[int, None] = None
+    """The ID of the author, or None if it doesn't exist."""
 
     @staticmethod
     def from_raw(raw_str: str, account_id: int = None) -> 'Post':
@@ -68,6 +73,49 @@ class Post:
             )
         except Exception as e:
             raise ParseError(f"Failed to parse the data provided, error: {e}")
+        
+#* Classes representing stats
+@dataclass
+class DifficultyStats:
+    """
+    A class representing the non-demon stats of a level.
+    """
+    auto: int 
+    """The amount of auto levels beaten."""
+    easy: int 
+    """The amount of easy levels beaten."""
+    normal: int 
+    """The amount of normal levels beaten."""
+    hard: int 
+    """The amount of hard levels beaten."""
+    harder: int 
+    """The amount of harder levels beaten."""
+    insane: int 
+    """The amount of insane levels beaten."""
+    daily: int = None
+    """The amount of daily levels beaten."""
+    guantlet: int = None
+    """The amount of non-demon gauntlet levels beaten."""
+
+@dataclass
+class DemonStats:
+    """
+    A class representing the demon stats of a level.
+    """
+    easy: int 
+    """The amount of easy demon levels beaten."""
+    medium: int 
+    """The amount of medium demon levels beaten."""
+    hard: int 
+    """The amount of hard demon levels beaten."""
+    insane: int 
+    """The amount of insane demon levels beaten."""
+    extreme: int
+    """The amount of extreme demon levels beaten."""
+    weekly: int = None
+    """The amount of weekly levels beaten."""
+    guantlet: int = None
+    """The amount of demon gauntlet levels beaten."""
 
 @dataclass
 class Player(Entity):
@@ -102,12 +150,12 @@ class Player(Entity):
         If the user has registered.
     mod_level : Optional[ModRank]
         The mod level of the user.
-    primary_color_id : Optional[Color_id]
-        The primary color_id of the user's icon.
-    secondary_color_id : Optional[Color_id]
-        The secondary color_id of the user's icon.
-    glow_color_id : Optional[Color_id]
-        The glow color_id of the user's icon.
+    primary_color_id : Optional[int]
+        The primary color id of the user's icon.
+    secondary_color_id : Optional[int]
+        The secondary color id of the user's icon.
+    glow_color_id : Optional[int]
+        The glow color id of the user's icon.
     profile_icon_type : Optional[Gamemode]
         The gamemode that the user primarily chooses to display.
     youtube : Union[str, None]
@@ -116,31 +164,67 @@ class Player(Entity):
         The Twitter (or X) username of the user.
     twitch : Union[str, None]
         The Twitch username of the user.
+    classic_demon_stats : Optional[DemonStats]
+        The stats of classic demon levels beaten.
+    platformer_demon_stats: Optional[DemonStats]
+        The stats of platformer demon levels beaten.
+    classic_stats: Optional[DifficultyStats]
+        The stats of non-demon classic levels beaten.
+    platformer_stats: Optional[DifficultyStats]
+        The stats of platformer non-demon levels beaten.
     """
     name: str = None
+    """The name of the user."""
     player_id: int = None
+    """The player ID of the user."""
     account_id: int = None
+    """The account ID of the user."""
     stars: Optional[int] = None
+    """The amount of stars the user has."""
     moons: Optional[int] = None
+    """The amount of moons the user has."""
     demons: Optional[int] = None
+    """The amount of demons the user has beaten."""
     diamonds: Optional[int] = None
+    """The amount of diamonds the user has."""
     rank: Optional[int] = None
+    """The rank of the user in the leaderboard."""
     creator_points: Optional[int] = None
+    """The amount of creator points the user has."""
     secret_coins: Optional[int] = None
+    """The amount of secret coins the user has."""
     user_coins: Optional[int] = None
+    """The amount of user coins the user has."""
     registered: Optional[bool] = None
+    """If the user has registered."""
     mod_level: Optional[ModRank] = None
+    """The mod level of the user."""
 
     primary_color_id: Optional[int] = None
+    """The primary color id of the user's icon."""
     secondary_color_id: Optional[int] = None
+    """The secondary color id of the user's icon."""
     glow_color_id: Optional[int] = None
+    """The glow color id of the user's icon."""
     profile_icon_type: Optional[Gamemode] = None
-    
-    youtube: Optional[str] = None
-    twitter: Optional[str] = None
-    """i ain't calling it x"""
-    twitch: Optional[str] = None
+    """The gamemode that the user primarily chooses to display."""
 
+    youtube: Optional[str] = None
+    """The YouTube channel link of the user."""
+    twitter: Optional[str] = None
+    """The Twitter (or X) username of the user."""
+    twitch: Optional[str] = None
+    """The Twitch username of the user."""
+
+    classic_demon_stats: Optional[DemonStats] = None
+    """The stats of classic demon levels beaten."""
+    platformer_demon_stats: Optional[DemonStats] = None
+    """The stats of platformer demon levels beaten."""
+    classic_stats: Optional[DifficultyStats] = None
+    """The stats of non-demon classic levels beaten."""
+    platformer_stats: Optional[DifficultyStats] = None
+    """The stats of platformer non-demon levels beaten."""
+    
     @staticmethod
     def from_raw(raw_str: str) -> 'Player':
         """
@@ -151,6 +235,10 @@ class Player(Entity):
         :return: An instance of the Player class.                                     
         """
         parsed = parse_key_value_pairs(raw_str)
+        demon_stats = parsed.get('55', None)
+        normal_stats = parsed.get('56', None)
+        platformer_stats = parsed.get('57', None)
+
         try:
             return Player(
                 name=parsed.get('1', None),
@@ -174,7 +262,42 @@ class Player(Entity):
 
                 youtube=parsed.get('20', None) if parsed.get('20') != r"%%00" else None,
                 twitter=parsed.get('44'),
-                twitch=parsed.get('45')
+                twitch=parsed.get('45'),
+
+                classic_demon_stats=DemonStats(
+                    easy=demon_stats[0],
+                    medium=demon_stats[1],
+                    hard=demon_stats[2],
+                    insane=demon_stats[3],
+                    extreme=demon_stats[4],
+                    weekly=demon_stats[10],
+                    guantlet=demon_stats[11]
+                ) if demon_stats else None,
+                platformer_demon_stats=DemonStats(
+                    easy=demon_stats[5],
+                    medium=demon_stats[6],
+                    hard=demon_stats[7],
+                    insane=demon_stats[8],
+                    extreme=demon_stats[9]
+                ) if demon_stats else None,
+                classic_stats=DifficultyStats(
+                    auto=normal_stats[0],
+                    easy=normal_stats[1],
+                    normal=normal_stats[2],
+                    hard=normal_stats[3],
+                    harder=normal_stats[4],
+                    insane=normal_stats[5],
+                    daily=normal_stats[6],
+                    guantlet=normal_stats[7]
+                ),
+                platformer_stats=DifficultyStats(
+                    auto=platformer_stats[0],
+                    easy=platformer_stats[1],
+                    normal=platformer_stats[2],
+                    hard=platformer_stats[3],
+                    harder=platformer_stats[4],
+                    insane=platformer_stats[5]
+                )
             )
         except Exception as e:
             raise ParseError(f"Could not parse the data provided, error: {e}")
@@ -262,16 +385,5 @@ class Account:
         hash = sha1(encrypted_password.encode()).hexdigest()
         return hash
     
-    @property
-    def gjp(self) -> str:
-        """
-        Generate GJP hash from password.
-        """
-        encoded = xor(self.password.encode(), XorKey.GJP)
-        encoded_base64 = base64.b64encode(encoded.encode()).decode()
-        # Replace base64 characters for URL safety
-        encoded_base64 = encoded_base64.replace("+", "-").replace("/", "_")
-        return encoded_base64
-        
     def __repr__(self) -> str:
         return f"Account(account_id={self.account_id}, player_id={self.player_id}, name='{self.name}', password=********)"
