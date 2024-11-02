@@ -33,7 +33,10 @@ classifiers = [
 homepage = "https://github.com/notanerd314/gdapi"
 source = "https://github.com/notanerd314/gdapi"
 tracker = "https://github.com/notanerd314/gdapi/issues"
-documentation = "placeholder"
+
+[project.scripts]
+gd = "cli:main"
+requires-python = ">=3.7,<4.0"
 
 [project.classifiers]
 development-status = "Alpha"

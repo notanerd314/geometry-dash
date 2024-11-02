@@ -36,7 +36,7 @@ The package requires the following dependencies:
 
 __title__ = 'gdapi'
 __author__ = 'notanerd'
-__license__ = 'GPL-3.0'
+__license__ = 'MIT'
 __copyright__ = 'Copyright 2024 notanerd'
 __version__ = '1.0.0'
 
@@ -47,4 +47,4 @@ from .entities import *
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
-version_info = VersionInfo(major=1, minor=0, micro=0)
+version_info = VersionInfo(major=0, minor=1, micro=0)

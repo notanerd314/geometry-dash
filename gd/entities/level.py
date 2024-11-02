@@ -390,7 +390,7 @@ class Comment(Entity):
             author_name=user_value.get("1", ""),
             author_icon=Icon(
                 user_value.get("9", ""), gamemode=Gamemode(int(user_value.get("14", 0))), 
-                primary_color_id=int(user_value.get("10", 1)), secondary_color_id=int(user_value.get("11", 1))
+                primary_color_id=int(user_value.get("10", 1)), secondary_color_id=int(user_value.get("11", 1)), glow_color_id=None
             ),
             author_icon_display_gamemode=Gamemode(int(user_value.get("14", 0))),
             author_primary_color_id=int(user_value.get("10", 1)),

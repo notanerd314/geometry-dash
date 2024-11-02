@@ -10,13 +10,19 @@ from .level import Comment, LevelDisplay
 from typing import List, Optional, Union
 from dataclasses import dataclass
 from .entity import Entity
+from hashlib import sha1
+import colorama as color
+import base64
+
+color.init(autoreset=True)
 
 _secret = "Wmfd2893gb7"
+PASSWORD_SALT = "mI29fmAnxgTs"
 
 @dataclass
-class UserPost:
+class Post:
     """
-    A class representing a post from an account.
+    A class representing a post from a player.
 
     Attributes
     ----------
@@ -38,21 +44,22 @@ class UserPost:
     author_account_id: Union[int, None] = None
 
     @staticmethod
-    def from_raw(raw_str: str, account_id: int = None) -> 'UserPost':
+    def from_raw(raw_str: str, account_id: int = None) -> 'Post':
         """
-        A static method that converts the raw data from the server into a UserPost instance.
+        A static method that converts the raw data from the server into a Post instance.
 
         :param raw_str: The raw data from the server.
         :type raw_str: str
         :param account_id: The account ID of the user, optional if not provided.
+
         :type account_id: Union[int, None]
-        :return: A UserPost instance.
+        :return: A Post instance.
         """
         parsed = raw_str.split(":")
         comment_value = parse_key_value_pairs(parsed[0], '~')
 
         try:
-            return UserPost(
+            return Post(
                 content=decrypt_data(comment_value.get("2", "")),
                 likes=int(comment_value.get("4", 0)),
                 post_id=int(comment_value.get("6", 0)),
@@ -63,7 +70,7 @@ class UserPost:
             raise ParseError(f"Failed to parse the data provided, error: {e}")
 
 @dataclass
-class UserProfile(Entity):
+class Player(Entity):
     """
     A class representing an user's profile.
     
@@ -135,17 +142,17 @@ class UserProfile(Entity):
     twitch: Optional[str] = None
 
     @staticmethod
-    def from_raw(raw_str: str) -> 'UserProfile':
+    def from_raw(raw_str: str) -> 'Player':
         """
-        Parse the string data from the servers and returns an UserProfile instance.
+        Parse the string data from the servers and returns an Player instance.
 
         :param raw_str: The raw data from the server.
         :type raw_str: str
-        :return: An instance of the UserProfile class.                                     
+        :return: An instance of the Player class.                                     
         """
         parsed = parse_key_value_pairs(raw_str)
         try:
-            return UserProfile(
+            return Player(
                 name=parsed.get('1', None),
                 player_id=parsed.get('2', 0),
                 account_id=parsed.get('16', 0),
@@ -172,13 +179,13 @@ class UserProfile(Entity):
         except Exception as e:
             raise ParseError(f"Could not parse the data provided, error: {e}")
 
-    async def posts(self, page: int = 0) -> List[UserPost] | None:
+    async def posts(self, page: int = 0) -> List[Post] | None:
         """
         Load all posts from the user.
 
         :param page: The page number to load, default is 0.
         :type page: int
-        :return: A list of UserPost instances or None if the request failed.
+        :return: A list of Post instances or None if the request failed.
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
@@ -193,7 +200,7 @@ class UserProfile(Entity):
         parsed_res = response.split("#")[0]
         parsed_res = response.split("|")
         for post in parsed_res:
-            posts_list.append(UserPost.from_raw(post, self.account_id))
+            posts_list.append(Post.from_raw(post, self.account_id))
         return posts_list
         
     async def comments(self, page: int = 0, display_most_liked: bool = False) -> List[Comment]:
@@ -235,3 +242,36 @@ class UserProfile(Entity):
             return None
         
         return [LevelDisplay.from_raw(level_data) for level_data in response.split("#")[0].split("|")]
+
+@dataclass
+class Account:
+    """
+    Represents an account (not Player) on Geometry Dash.
+    """
+    account_id: int
+    player_id: int
+    name: Optional[str]
+    password: str
+
+    @property
+    def gjp2(self) -> str:
+        """
+        Generate GJP2 hash from password.
+        """
+        encrypted_password = self.password + PASSWORD_SALT
+        hash = sha1(encrypted_password.encode()).hexdigest()
+        return hash
+    
+    @property
+    def gjp(self) -> str:
+        """
+        Generate GJP hash from password.
+        """
+        encoded = xor(self.password.encode(), XorKey.GJP)
+        encoded_base64 = base64.b64encode(encoded.encode()).decode()
+        # Replace base64 characters for URL safety
+        encoded_base64 = encoded_base64.replace("+", "-").replace("/", "_")
+        return encoded_base64
+        
+    def __repr__(self) -> str:
+        return f"Account(account_id={self.account_id}, player_id={self.player_id}, name='{self.name}', password=********)"

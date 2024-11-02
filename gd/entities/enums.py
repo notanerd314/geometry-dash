@@ -139,7 +139,7 @@ class Gamemode(Enum):
     ROBOT = 5
     SPIDER = 6
     SWING = 7
-
+    JETPACK = 8
 
 class ColorPart(Enum):
     """

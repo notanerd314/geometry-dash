@@ -624,6 +624,11 @@ class Song:
         :return: An instance of the Song class.
         """
         parsed = parsed_str
+        link = unquote(parsed.get('10'))
+
+        if link == "CUSTOMURL":
+            link = f"https://geometrydashfiles.b-cdn.net/music/{parsed.get('1')}.ogg"
+
         return Song(
             id=int(parsed.get('1')),
             name=parsed.get('2'),
@@ -632,7 +637,7 @@ class Song:
             artist_verified=parsed.get('8') == 1,
             size=float(parsed.get('5', 0.0)),
             youtube_link=f"https://youtu.be/watch?v={parsed.get('6')}" if parsed.get("6") else None,
-            link=unquote(parsed.get("10", '')) if parsed.get("10") else None,
+            link=link,
             is_ncs=parsed.get('11') == 1,
             is_in_library=int(parsed.get('1')) >= 10000000
         )

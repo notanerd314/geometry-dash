@@ -1,6 +1,6 @@
 import colorama as color
 from .helpers import *
-from .errors import *
+from .exceptions import *
 from .entities.level import *
 from .entities.song import *
 from .entities.user import *
@@ -11,10 +11,9 @@ from hashlib import sha1
 _secret = "Wmfd2893gb7"
 _secret_login = "Wmfv3899gc9"
 
-# TODO: Organize methods into subclasses or something I don't even fucking know?
-# TODO: fuck my sanity
+#? Should I release this piece of shit after I am done with the login?
 
-def gjp(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
+def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
     """
     Convert a password to an encrypted password.
 
@@ -33,22 +32,26 @@ class Client:
     """
     Main client class for interacting with Geometry Dash. You can login here using `.login` and the client will save the credientals to be used for later purposes.
 
-    You can attach the client to an entity to interact with it without having trouble logging in again. Most entities uses `.add_client()` to attach a client.
+    You can attach the client to an entity to interact with it without having trouble logging in again. Most entities use `.add_client()` to attach a client.
 
     Example usage:
     ```
     >>> import gd
     >>> gd = gd.Client()
-    >>> level = gd.search_level("sigma") # Returns a list of LevelDisplay instances
+    >>> level = gd.search_level("sigma") # Returns a list of "LevelDisplay" instances
     [LevelDisplay(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
     ```
     """
+    account: Union[Account, None] = None
+    """The account logged in with the client."""
+
     def __init__(self) -> None:
         pass
 
     def __str__(self) -> str:
+        acc = self.account
         return (
-            f"{color.Style.BRIGHT + color.Fore.LIGHTMAGENTA_EX}Client at {hex(id(self))}{color.Style.RESET_ALL}"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTMAGENTA_EX}Client object at {hex(id(self))}{color.Style.RESET_ALL}"
             "\n"
             "======================================="
             "\n"
@@ -56,14 +59,23 @@ class Client:
             "\n"
             f"{color.Style.BRIGHT + color.Fore.LIGHTRED_EX}Hash: {color.Style.NORMAL}{self.__hash__()}{color.Style.RESET_ALL}"
             "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTGREEN_EX}Account ID: {color.Style.NORMAL}{None}{color.Style.RESET_ALL}"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTGREEN_EX}Is logged in: {color.Style.NORMAL}{self.logged_in}{color.Style.RESET_ALL}"
             "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTCYAN_EX}Player ID: {color.Style.NORMAL}{None}{color.Style.RESET_ALL}"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account Name: {color.Style.NORMAL}{acc.name if acc else None}{color.Style.RESET_ALL}"
             "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Encrypted Password: {color.Style.NORMAL}{None}{color.Style.RESET_ALL}"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account ID: {color.Style.NORMAL}{acc.account_id if acc else None}{color.Style.RESET_ALL}"
+            "\n"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Player ID: {color.Style.NORMAL}{acc.player_id if acc else None}{color.Style.RESET_ALL}"
+            "\n"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Encrypted Password: {color.Style.NORMAL}{acc.gjp2 if acc else None}{color.Style.RESET_ALL}"
         )
+
+    @property
+    def logged_in(self) -> bool:
+        """If the client has logged in or not."""
+        return bool(self.account)
     
-    async def login(self, name: str, password: str) -> None:
+    async def login(self, name: str, password: str) -> Account:
         """
         ### This function is incomplete and will return errors and confusion if you used.
         Login account with given name and password (encrypted with `gjp()`)
@@ -75,19 +87,41 @@ class Client:
 
         :return: Account
         """
-        udid = generate_udid()
         data = {
             "secret": _secret_login, 
-            "username": name, 
-            "password": password,
-            "udid": udid
+            "userName": name, 
+            "gjp2": gjp2(password),
+            "udid": "blah blah placeholder HAHAHHAH"
         }
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/accounts/loginGJAccount.php",
             data=data
         )
-        return response
+
+        match response:
+            case "-1":
+                raise LoginError
+                #? What should be the message
+            case "-8":
+                raise LoginError("User password must be at least 6 characters long")
+            case "-9":
+                raise LoginError("Username must be at least 3 characters long")
+            case "-11":
+                raise LoginError("Invalid credientals")
+            case "-12":
+                raise LoginError("Account has been disabled.")
+            case "-13":
+                raise LoginError("Invalid steam ID has passed.")
+            
+        account_id, player_id = parse_comma_separated_int_list(response)
+        self.account = Account(
+            account_id=account_id,
+            player_id=player_id,
+            name=name,
+            password=password
+        )
+        return self.account
 
     async def download_level(self, id: int) -> Level:
         """
@@ -269,10 +303,11 @@ class Client:
             url="http://www.boomlings.com/database/getGJSongInfo.php",
             data={'secret': _secret, "songID": id}
         )
-        check_errors(response, InvalidSongID, f"Invalid song ID {id}.")
+        check_errors(response, InvalidSongID, "")
+        
         return Song.from_raw(response)
 
-    async def search_user(self, query: Union[str, int], use_id: bool = False) -> UserProfile:
+    async def search_user(self, query: Union[str, int], use_id: bool = False) -> Player:
         """
         Get an user profile by account ID or name.
 
@@ -280,7 +315,7 @@ class Client:
         :type query: Union[str, int]
         :param use_id: If searches the user using the account ID.
         :type use_id: Optional[bool]
-        :return: A `UserProfile` instance containing the user's profile data.
+        :return: A `Player` instance containing the user's profile data.
         """
         
         if use_id:
@@ -292,7 +327,7 @@ class Client:
 
         response = await send_post_request(url=url, data=data)
         check_errors(response, InvalidAccountID, f"Invalid account name/ID {query}.")
-        return UserProfile.from_raw(response.split("#")[0])
+        return Player.from_raw(response.split("#")[0])
     
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
         """
@@ -314,7 +349,7 @@ class Client:
         check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
         return [Comment.from_raw(comment_data) for comment_data in response.split("|")]
     
-    async def get_user_posts(self, account_id: int, page: int = 0) -> Union[List[UserPost], None]:
+    async def get_user_posts(self, account_id: int, page: int = 0) -> Union[List[Post], None]:
         """
         Get an user's posts by Account ID.
 
@@ -322,7 +357,7 @@ class Client:
         :type account_id: int
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
-        :return: A list of `UserPost` instances or None if there are no posts.
+        :return: A list of `Post` instances or None if there are no posts.
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
@@ -337,7 +372,7 @@ class Client:
         parsed_res = response.split("#")[0]
         parsed_res = response.split("|")
         for post in parsed_res:
-            posts_list.append(UserPost.from_raw(post, account_id))
+            posts_list.append(Post.from_raw(post, account_id))
         return posts_list
         
     async def get_user_comments(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> Union[List[Comment], None]:
