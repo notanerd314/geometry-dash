@@ -15,36 +15,89 @@ Difficulty.EASY_DEMON
 "Hard map by Jax. 7813"
 >>> level.official_song
 OfficialSong.POLARGEIST
->>> level.raw_str # Original data returned from the servers
-"1:13519:2:The Nightmare:3:SGFyZCBtYXAgYnkgSmF4LiA3..."
 ```
 
-It can't do login functions yet but who fricking cares
-
 # Installation and Information
+### *why the heck did i put that???? it's unfinished!!!!!*
 Install GDAPI via PyPI:
 
 ```bash
 $ python -m pip install gdapi
 ```
-**GDAPI** supports version 3.8 or greater officially.
+**GDAPI** supports Python version 3.7 or greater officially.
 
 The package requires the following dependencies:
-- httpx
+- aiohttp
 - aiofiles
+- colorama (For useless eye candy)
+
+# Usage
+### Downloading a level:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> level = await client.download_level(13519)
+>>> level.name
+"The Nightmare"
+>>> level.difficulty
+<DemonDifficulty.EASY_DEMON: 3>
+>>> level.description
+"Hard map by Jax. 7813"
+>>> level.official_song
+<OfficialSong.POLARGEIST: 2>
+```
+
+### Fetching a song and downloading it:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> song = await client.get_song(1)
+>>> song.name
+"Chilled 1"
+>>> song.size
+0.07
+>>> song.link
+"http://audio.ngfiles.com/0/1_newgrounds_consin.mp3"
+>>> await song.download_to("chilled.mp3") # Download the song and name it "chilled.mp3" in the relative path.
+```
+
+### Getting the Music Library:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> library = await client.music_library()
+>>> library.version
+127
+>>> library.artists
+{10002716: Artist(id=10002716, name='Raul Ojamaa', website=None, youtube_channel_id=None),
+ 10002717: Artist(id=10002717, name='Malou', website=None, youtube_channel_id=None), ...}
+>>> library.tags
+{234: '8bit', 251: 'action', 239: 'ambiance', 246: 'ambient', 247: 'battle', 248: 'boss', 250: 'calm', 249: 'casual', ...}
+```
+
+### Login and comment:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> credientals = await client.login("notanerd1", "*********") # Password is hidden on purpose
+>>> credientals
+Account(account_id=24514763, player_id=218839712, name='notanerd1', password=********) # Hidden when printing the instance
+>>> comment_id = await client.comment("I am high", level_id=111663149, percentage=0) # Comment on the level with the percentage of 0
+2994273
+```
 """
 
-__title__ = 'gdapi'
-__author__ = 'notanerd'
-__license__ = 'MIT'
-__copyright__ = 'Copyright 2024 notanerd'
-__version__ = '1.0.0'
+__title__ = "gdapi"
+__author__ = "notanerd"
+__license__ = "MIT"
+__copyright__ = "Copyright 2024 notanerd"
+__version__ = "1.0.0"
 
 from collections import namedtuple
 
 from .gd import *
 from .entities import *
 
-VersionInfo = namedtuple('VersionInfo', 'major minor micro')
+VersionInfo = namedtuple("VersionInfo", "major minor micro")
 
 version_info = VersionInfo(major=0, minor=1, micro=0)

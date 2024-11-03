@@ -16,7 +16,8 @@ import base64
 _secret = "Wmfd2893gb7"
 _secret_login = "Wmfv3899gc9"
 
-#? Should I release this piece of shit after I am done with the login?
+# ? Should I release this piece of shit after I am done with the login?
+
 
 def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
     """
@@ -33,6 +34,7 @@ def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
 
     return hash
 
+
 def cooldown(seconds: SupportsInt):
     """
     A decorator for adding cooldown to functions, used to go against spamming.
@@ -41,6 +43,7 @@ def cooldown(seconds: SupportsInt):
     :type seconds: Union[int, float]
     :return: The decorated function with cooldown added.
     """
+
     def decorator(func):
         last_called = 0
 
@@ -50,13 +53,17 @@ def cooldown(seconds: SupportsInt):
             elapsed = time() - last_called
 
             if elapsed < seconds:
-                raise OnCooldown(f"This method is on cooldown for {seconds - elapsed:.3f}. Please try again later.")
-            
+                raise OnCooldown(
+                    f"This method is on cooldown for {seconds - elapsed:.3f}. Please try again later."
+                )
+
             last_called = time()
             return await func(*args, **kwargs)
 
         return wrapper
+
     return decorator
+
 
 class Client:
     """
@@ -72,6 +79,7 @@ class Client:
     [LevelDisplay(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
     ```
     """
+
     account: Union[Account, None] = None
     """The account logged in with the client."""
 
@@ -89,7 +97,7 @@ class Client:
             f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account Name: {color.Style.NORMAL}{account.name if account else None}{color.Style.RESET_ALL}",
             f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account ID: {color.Style.NORMAL}{account.account_id if account else None}{color.Style.RESET_ALL}",
             f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Player ID: {color.Style.NORMAL}{account.player_id if account else None}{color.Style.RESET_ALL}",
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Encrypted Password: {color.Style.NORMAL}{acc.gjp2 if account else None}{color.Style.RESET_ALL}"
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Encrypted Password: {color.Style.NORMAL}{account.gjp2 if account else None}{color.Style.RESET_ALL}",
         ]
         return "\n".join(info)
 
@@ -97,7 +105,7 @@ class Client:
     def logged_in(self) -> bool:
         """If the client has logged in or not."""
         return bool(self.account)
-    
+
     async def login(self, name: str, password: str) -> Account:
         """
         Login account with given name and password.
@@ -111,23 +119,23 @@ class Client:
         """
         if self.account:
             raise LoginError("The client has already been logged in!")
-        
+
         data = {
-            "secret": _secret_login, 
-            "userName": name, 
+            "secret": _secret_login,
+            "userName": name,
             "gjp2": gjp2(password),
-            "udid": "blah blah placeholder HAHAHHAH"
+            "udid": "blah blah placeholder HAHAHHAH",
         }
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/accounts/loginGJAccount.php",
-            data=data
+            data=data,
         )
 
         match response:
             case "-1":
                 raise LoginError
-                #? What should be the message
+                # ? What should be the message
             case "-8":
                 raise LoginError("User password must be at least 6 characters long")
             case "-9":
@@ -138,13 +146,10 @@ class Client:
                 raise LoginError("Account has been disabled.")
             case "-13":
                 raise LoginError("Invalid steam ID has passed.")
-            
+
         account_id, player_id = parse_comma_separated_int_list(response)
         self.account = Account(
-            account_id=account_id,
-            player_id=player_id,
-            name=name,
-            password=password
+            account_id=account_id, player_id=player_id, name=name, password=password
         )
         return self.account
 
@@ -163,8 +168,10 @@ class Client:
         :return: Account
         """
         if not self.account:
-            raise LoginError("The client is not logged in to change accounts! Use .login() instead.")
-        
+            raise LoginError(
+                "The client is not logged in to change accounts! Use .login() instead."
+            )
+
         self.logout()
         return await self.login(name, password)
 
@@ -190,21 +197,20 @@ class Client:
         """
         if not self.account:
             raise LoginError("The client is not logged in to post!")
-        
+
         data = {
             "secret": _secret,
             "accountID": self.account.account_id,
             "comment": base64.urlsafe_b64encode(message.encode()).decode(),
-            "gjp2": self.account.gjp2
+            "gjp2": self.account.gjp2,
         }
 
         response = await send_post_request(
-            url="http://www.boomlings.com/database/uploadGJAccComment20.php",
-            data=data
+            url="http://www.boomlings.com/database/uploadGJAccComment20.php", data=data
         )
 
         return int(response)
-    
+
     @cooldown(15)
     async def comment(self, message: str, level_id: int, percentage: int = 0) -> int:
         """
@@ -224,7 +230,7 @@ class Client:
         """
         if not self.account:
             raise LoginError("The client is not logged in to comment!")
-        
+
         data = {
             "secret": _secret,
             "accountID": self.account.account_id,
@@ -235,18 +241,26 @@ class Client:
             "gjp2": self.account.gjp2,
         }
 
-        data['chk'] = generate_chk(
-            values=[data['userName'], data['comment'], data['levelID'], data['percent']],
+        data["chk"] = generate_chk(
+            values=[
+                data["userName"],
+                data["comment"],
+                data["levelID"],
+                data["percent"],
+            ],
             key=XorKey.COMMENT,
-            salt=CHKSalt.COMMENT
+            salt=CHKSalt.COMMENT,
         )
 
         response = await send_post_request(
-            url="http://www.boomlings.com/database/uploadGJComment21.php",
-            data=data
+            url="http://www.boomlings.com/database/uploadGJComment21.php", data=data
         )
 
-        check_errors(response, CommentError, "Unable to post comment, maybe the level ID is wrong?")
+        check_errors(
+            response,
+            CommentError,
+            "Unable to post comment, maybe the level ID is wrong?",
+        )
 
         return int(response)
 
@@ -256,17 +270,17 @@ class Client:
         Downloads a specific level from the Geometry Dash servers using the provided ID.
 
         Cooldown is 3 seconds.
-        
+
         :param id: The ID of the level.
         :type id: int
         :return: A `Level` instance containing the downloaded level data.
         """
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")
-        
+
         response = await send_post_request(
-            url="http://www.boomlings.com/database/downloadGJLevel22.php", 
-            data={"levelID": id, "secret": _secret}
+            url="http://www.boomlings.com/database/downloadGJLevel22.php",
+            data={"levelID": id, "secret": _secret},
         )
 
         # Check if response is valid
@@ -275,7 +289,9 @@ class Client:
         return Level.from_raw(response)
 
     @cooldown(3)
-    async def download_daily_level(self, weekly: bool = False, time_left: bool = False) -> Union[Level, Tuple[Level, timedelta]]:
+    async def download_daily_level(
+        self, weekly: bool = False, time_left: bool = False
+    ) -> Union[Level, Tuple[Level, timedelta]]:
         """
         Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally.
 
@@ -291,25 +307,37 @@ class Client:
         """
         level_id = -2 if weekly else -1
         level = await self.download_level(level_id)
-        
+
         # Makes another response for time left.
         if time_left:
             daily_data: str = await send_post_request(
-                url="http://www.boomlings.com/database/getGJDailyLevel.php", 
-                data={"secret": _secret, "weekly": "1" if weekly else "0"}
+                url="http://www.boomlings.com/database/getGJDailyLevel.php",
+                data={"secret": _secret, "weekly": "1" if weekly else "0"},
             )
-            check_errors(daily_data, ResponseError, "Cannot get current time left for the daily/weekly level.")
+            check_errors(
+                daily_data,
+                ResponseError,
+                "Cannot get current time left for the daily/weekly level.",
+            )
             daily_data = daily_data.split("|")
             return level, timedelta(seconds=int(daily_data[1]))
 
         return level
 
     async def search_level(
-        self, query: str = "", page: int = 0, 
-        level_rating: LevelRating = None, length: Length = None,
-        difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
-        two_player_mode: bool = False, has_coins: bool = False, original: bool = False,
-        song_id: int = None, gd_world: bool = False, filter: SearchFilter = 0
+        self,
+        query: str = "",
+        page: int = 0,
+        level_rating: LevelRating = None,
+        length: Length = None,
+        difficulty: List[Difficulty] = None,
+        demon_difficulty: DemonDifficulty = None,
+        two_player_mode: bool = False,
+        has_coins: bool = False,
+        original: bool = False,
+        song_id: int = None,
+        gd_world: bool = False,
+        filter: SearchFilter = 0,
     ) -> List[LevelDisplay]:
         """
         Searches for levels matching the given query string and filters them.
@@ -348,35 +376,52 @@ class Client:
         :return: A list of `LevelDisplay` instances.
         """
         if filter == SearchFilter.FRIENDS and not self.account:
-            raise ValueError("Cannot filter by friends with an anonymous account. Please log in using `.login()`.")
-        
+            raise ValueError(
+                "Cannot filter by friends with an anonymous account. Please log in using `.login()`."
+            )
+
         # Standard data
         data = {
             "secret": _secret,
             "type": filter.value if isinstance(filter, SearchFilter) else filter,
             "page": page,
         }
-        
+
         # Level rating check
         if level_rating:
             match level_rating:
-                case LevelRating.NO_RATE: data["noStar"] = 1
-                case LevelRating.RATED: data["star"] = 1
-                case LevelRating.FEATURED: data["featured"] = 1
-                case LevelRating.EPIC: data["epic"] = 1
-                case LevelRating.MYTHIC: data["legendary"] = 1
-                case LevelRating.LEGENDARY: data["mythic"] = 1
-                case _: raise ValueError("Invalid level rating, are you sure that it's a LevelRating object?")
+                case LevelRating.NO_RATE:
+                    data["noStar"] = 1
+                case LevelRating.RATED:
+                    data["star"] = 1
+                case LevelRating.FEATURED:
+                    data["featured"] = 1
+                case LevelRating.EPIC:
+                    data["epic"] = 1
+                case LevelRating.MYTHIC:
+                    data["legendary"] = 1
+                case LevelRating.LEGENDARY:
+                    data["mythic"] = 1
+                case _:
+                    raise ValueError(
+                        "Invalid level rating, are you sure that it's a LevelRating object?"
+                    )
 
         # Difficulty and demon difficulty checks
         if difficulty:
             if Difficulty.DEMON in difficulty and len(difficulty) > 1:
-                raise ValueError("Difficulty.DEMON cannot be combined with other difficulties!")
-            data["diff"] = ",".join(str(determine_search_difficulty(diff)) for diff in difficulty)
+                raise ValueError(
+                    "Difficulty.DEMON cannot be combined with other difficulties!"
+                )
+            data["diff"] = ",".join(
+                str(determine_search_difficulty(diff)) for diff in difficulty
+            )
 
         if demon_difficulty:
             if difficulty != [Difficulty.DEMON]:
-                raise ValueError("Demon difficulty can only be used with Difficulty.DEMON!")
+                raise ValueError(
+                    "Demon difficulty can only be used with Difficulty.DEMON!"
+                )
             data["demonFilter"] = determine_search_difficulty(demon_difficulty)
 
         # Optional parameters
@@ -398,12 +443,21 @@ class Client:
         data.update({k: v for k, v in optional_params.items() if v is not None})
 
         # Do the response
-        search_data: str = await send_post_request(url="http://www.boomlings.com/database/getGJLevels21.php", data=data)
-        
-        check_errors(search_data, SearchLevelError, "Unable to fetch search results. Perhaps it doesn't exist after all?")
+        search_data: str = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevels21.php", data=data
+        )
+
+        check_errors(
+            search_data,
+            SearchLevelError,
+            "Unable to fetch search results. Perhaps it doesn't exist after all?",
+        )
 
         parsed_results = parse_search_results(search_data)
-        return [LevelDisplay.from_parsed(result).add_client(self) for result in parsed_results]
+        return [
+            LevelDisplay.from_parsed(result).add_client(self)
+            for result in parsed_results
+        ]
 
     @cooldown(10)
     async def music_library(self) -> MusicLibrary:
@@ -420,7 +474,7 @@ class Client:
 
         music_library = decrypt_data(response, "base64_decompress")
         return MusicLibrary.from_raw(music_library)
-    
+
     @cooldown(10)
     async def sfx_library(self) -> SoundEffectLibrary:
         """
@@ -449,10 +503,10 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
-            data={'secret': _secret, "songID": id}
+            data={"secret": _secret, "songID": id},
         )
         check_errors(response, InvalidSongID, "")
-        
+
         return Song.from_raw(response)
 
     async def search_user(self, query: Union[str, int], use_id: bool = False) -> Player:
@@ -465,18 +519,18 @@ class Client:
         :type use_id: Optional[bool]
         :return: A `Player` instance containing the user's profile data.
         """
-        
+
         if use_id:
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {'secret': _secret, "targetAccountID": query}
+            data = {"secret": _secret, "targetAccountID": query}
         else:
             url = "http://www.boomlings.com/database/getGJUsers20.php"
-            data = {'secret': _secret, "str": query}
+            data = {"secret": _secret, "str": query}
 
         response = await send_post_request(url=url, data=data)
         check_errors(response, InvalidAccountID, f"Invalid account name/ID {query}.")
         return Player.from_raw(response.split("#")[0])
-    
+
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
         """
         Get level's comments by level ID.
@@ -489,15 +543,17 @@ class Client:
         """
         if page < 0:
             raise ValueError("Page number must be non-negative.")
-        
+
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJComments21.php",
-            data={'secret': _secret, "levelID": level_id, "page": page}
+            data={"secret": _secret, "levelID": level_id, "page": page},
         )
         check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
         return [Comment.from_raw(comment_data) for comment_data in response.split("|")]
-    
-    async def get_user_posts(self, account_id: int, page: int = 0) -> Union[List[Post], None]:
+
+    async def get_user_posts(
+        self, account_id: int, page: int = 0
+    ) -> Union[List[Post], None]:
         """
         Get an user's posts by Account ID.
 
@@ -509,7 +565,7 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
-            data={'secret': _secret, "accountID": account_id, "page": page}
+            data={"secret": _secret, "accountID": account_id, "page": page},
         )
 
         check_errors(response, ResponseError, "Invalid account ID.")
@@ -522,11 +578,13 @@ class Client:
         for post in parsed_res:
             posts_list.append(Post.from_raw(post, account_id))
         return posts_list
-        
-    async def get_user_comments(self, player_id: int, page: int = 0, display_most_liked: bool = False) -> Union[List[Comment], None]:
+
+    async def get_user_comments(
+        self, player_id: int, page: int = 0, display_most_liked: bool = False
+    ) -> Union[List[Comment], None]:
         """
         Get an user's comments history by player ID.
-        
+
         :param player_id: The player ID to retrieve the comments history.
         :type player_id: int
         :param page: The page number for pagination. Defaults to 0.
@@ -537,15 +595,25 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
-            data={'secret': _secret, "userID": player_id, "page": page, "mode": int(display_most_liked)}
+            data={
+                "secret": _secret,
+                "userID": player_id,
+                "page": page,
+                "mode": int(display_most_liked),
+            },
         )
         check_errors(response, ResponseError, "Invalid account ID.")
         if not response.split("#")[0]:
             return None
-        
-        return [Comment.from_raw(comment_data) for comment_data in response.split("#")[0].split("|")]
-    
-    async def get_user_levels(self, player_id: int, page: int = 0) -> List[LevelDisplay]:
+
+        return [
+            Comment.from_raw(comment_data)
+            for comment_data in response.split("#")[0].split("|")
+        ]
+
+    async def get_user_levels(
+        self, player_id: int, page: int = 0
+    ) -> List[LevelDisplay]:
         """
         Get an user's levels by player ID.
 
@@ -558,14 +626,17 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={'secret': _secret, "type": 5, "page": page, "str": player_id}
+            data={"secret": _secret, "type": 5, "page": page, "str": player_id},
         )
 
         check_errors(response, ResponseError, f"Invalid account ID {self.account_id}.")
         if not response.split("#")[0]:
             return None
-        
-        return [LevelDisplay.from_raw(level_data) for level_data in response.split("#")[0].split("|")]
+
+        return [
+            LevelDisplay.from_raw(level_data)
+            for level_data in response.split("#")[0].split("|")
+        ]
 
     async def map_packs(self, page: int = 0) -> List[MapPack]:
         """
@@ -577,16 +648,18 @@ class Client:
             raise ValueError("Page must be a non-negative number.")
         elif page > 6:
             raise ValueError("Page limit is 6.")
-        
+
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJMapPacks21.php",
-            data={'secret': _secret, 'page': page}
+            data={"secret": _secret, "page": page},
         )
         check_errors(response, LoadError, "An error occurred when getting map packs.")
-        map_packs = response.split('#')[0].split("|")
+        map_packs = response.split("#")[0].split("|")
         return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
 
-    async def gauntlets(self, only_2_point_1: bool = True, include_ncs_gauntlets: bool = True) -> List[Gauntlet]:
+    async def gauntlets(
+        self, only_2_point_1: bool = True, include_ncs_gauntlets: bool = True
+    ) -> List[Gauntlet]:
         """
         Get the list of gauntlets objects.
 
@@ -596,25 +669,28 @@ class Client:
         :type include_ncs_gauntlets: bool
         :return: A list of `Gauntlet` instances.
         """
-        data = {'secret': _secret, 'special': int(only_2_point_1)}
+        data = {"secret": _secret, "special": int(only_2_point_1)}
         if include_ncs_gauntlets:
-            data['binaryVersion'] = 46
+            data["binaryVersion"] = 46
 
         response = await send_post_request(
-            url="http://www.boomlings.com/database/getGJGauntlets21.php",
-            data=data
+            url="http://www.boomlings.com/database/getGJGauntlets21.php", data=data
         )
 
         check_errors(response, LoadError, "An error occurred when getting gauntlets.")
-        guantlets = response.split('#')[0].split("|")
+        guantlets = response.split("#")[0].split("|")
         list_guantlets = [Gauntlet.from_raw(guantlet) for guantlet in guantlets]
 
         return list_guantlets
-    
+
     async def search_list(
-        self, query: str = None, filter: SearchFilter = 0, page: int = 0, 
-        difficulty: List[Difficulty] = None, demon_difficulty: DemonDifficulty = None,
-        only_rated: bool = False
+        self,
+        query: str = None,
+        filter: SearchFilter = 0,
+        page: int = 0,
+        difficulty: List[Difficulty] = None,
+        demon_difficulty: DemonDifficulty = None,
+        only_rated: bool = False,
     ) -> List[LevelList]:
         """
         Search for lists.
@@ -636,33 +712,43 @@ class Client:
         if filter == SearchFilter.FRIENDS and not self.account:
             raise ValueError("Only friends search is available when logged in.")
 
-        data = {
-            'secret': _secret, 'str': query, 'type': filter, "page": page
-        }
+        data = {"secret": _secret, "str": query, "type": filter, "page": page}
 
         if difficulty:
             if Difficulty.DEMON in difficulty and len(difficulty) > 1:
-                raise ValueError("Difficulty.DEMON cannot be combined with other difficulties!")
-            data["diff"] = ",".join(str(determine_search_difficulty(diff)) for diff in difficulty)
+                raise ValueError(
+                    "Difficulty.DEMON cannot be combined with other difficulties!"
+                )
+            data["diff"] = ",".join(
+                str(determine_search_difficulty(diff)) for diff in difficulty
+            )
 
         if demon_difficulty:
             if difficulty != [Difficulty.DEMON]:
-                raise ValueError("Demon difficulty can only be used with Difficulty.DEMON!")
+                raise ValueError(
+                    "Demon difficulty can only be used with Difficulty.DEMON!"
+                )
             data["demonFilter"] = determine_demon_search_difficulty(demon_difficulty)
 
         if only_rated:
             data["star"] = 1
 
-        if data['type'] == SearchFilter.FRIENDS:
+        if data["type"] == SearchFilter.FRIENDS:
             data["accountID"] = self.account.id
-            data['gjp2'] = self.account.gjp2
+            data["gjp2"] = self.account.gjp2
 
         response = await send_post_request(
-            url="http://www.boomlings.com/database/getGJLevelLists.php",
-            data=data
+            url="http://www.boomlings.com/database/getGJLevelLists.php", data=data
         )
 
-        check_errors(response, SearchLevelError, "An error occurred while searching lists, maybe it doesn't exist?")
+        check_errors(
+            response,
+            SearchLevelError,
+            "An error occurred while searching lists, maybe it doesn't exist?",
+        )
         response = response.split("#")[0]
-        
-        return [LevelList.from_raw(level_list_data) for level_list_data in response.split("|")]
+
+        return [
+            LevelList.from_raw(level_list_data)
+            for level_list_data in response.split("|")
+        ]

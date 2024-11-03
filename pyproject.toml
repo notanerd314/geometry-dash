@@ -26,7 +26,8 @@ classifiers = [
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Internet :: WWW/HTTP :: HTTP Clients"
+    "Topic :: Internet :: WWW/HTTP :: HTTP Clients",
+    "Development Status :: Alpha"  # Moved from the separate classifiers section
 ]
 
 [project.urls]
@@ -37,10 +38,3 @@ tracker = "https://github.com/notanerd314/gdapi/issues"
 [project.scripts]
 gd = "cli:main"
 requires-python = ">=3.7,<4.0"
-
-[project.classifiers]
-development-status = "Alpha"
-intended-audience = ["Developers"]
-
-[tool.setuptools.packages.find]
-where = ["src"]

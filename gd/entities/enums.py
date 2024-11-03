@@ -6,11 +6,13 @@ A module containing all enumerations of various things.
 
 from enum import IntEnum, Enum
 
+
 # Enum
 class Difficulty(Enum):
     """
     Enum representing the non-demon difficulty levels in Geometry Dash.
     """
+
     NA = 0
     """No difficulty."""
     EASY = 1
@@ -28,6 +30,7 @@ class Difficulty(Enum):
     AUTO = 7
     """Auto difficulty."""
 
+
 class DemonDifficulty(Enum):
     """
     Enum representing the demon difficulty levels in Geometry Dash.
@@ -37,6 +40,7 @@ class DemonDifficulty(Enum):
     - INSANE_DEMON (5): Insane Demon difficulty.
     - EXTREME_DEMON (6): Extreme Demon difficulty.
     """
+
     HARD_DEMON = 0
     """Hard demon."""
     EASY_DEMON = 3
@@ -47,6 +51,7 @@ class DemonDifficulty(Enum):
     """Insane demon."""
     EXTREME_DEMON = 6
     """Extreme demon."""
+
 
 class Length(IntEnum):
     """
@@ -59,7 +64,7 @@ class Length(IntEnum):
     - `XL` (4): Extra long level.
     - `PLATFORMER` (5): Platformer level type.
     """
-    
+
     TINY = 0
     """Tiny length."""
     SHORT = 1
@@ -85,7 +90,7 @@ class LevelRating(Enum):
     - `MYTHIC` (3): Mythic-rated level.
     - `LEGENDARY` (2): Legendary-rated level.
     """
-    
+
     NO_RATE = -2
     """No rating specified."""
     RATED = -1
@@ -108,7 +113,7 @@ class ModRank(IntEnum):
     - `MOD` (1): Moderator.
     - `ELDER_MOD` (2): Elder moderator.
     """
-    
+
     NONE = 0
     """Not a moderator."""
     MOD = 1
@@ -130,7 +135,7 @@ class Gamemode(Enum):
     - `SPIDER` (6): Spider mode.
     - `SWING` (7): Swingcopter mode.
     """
-    
+
     CUBE = 0
     SHIP = 1
     BALL = 2
@@ -141,6 +146,7 @@ class Gamemode(Enum):
     SWING = 7
     JETPACK = 8
 
+
 class ColorPart(Enum):
     """
     An **Enum** class representing icon color parts in Geometry Dash.
@@ -149,13 +155,14 @@ class ColorPart(Enum):
     - `SECONDARY` (2): Secondary color.
     - `GLOW` (3): Glow color.
     """
-    
+
     PRIMARY = 1
     """Primary icon color."""
     SECONDARY = 2
     """Secondary icon color."""
     GLOW = 3
     """Glow icon color."""
+
 
 class SearchFilter(IntEnum):
     """
