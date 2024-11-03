@@ -188,3 +188,5 @@ class SearchFilter(IntEnum):
     """Filter weekly levels."""
     LIST_SENT = 27
     """Filter lists sent by moderators."""
+    FRIENDS = 13
+    """Filter levels made by friends. (Login required)"""

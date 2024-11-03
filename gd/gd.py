@@ -5,7 +5,10 @@ from .entities.level import *
 from .entities.song import *
 from .entities.user import *
 from datetime import timedelta
-from typing import Union, Tuple
+from typing import Union, Tuple, SupportsInt
+
+from functools import wraps
+from time import time
 
 from hashlib import sha1
 import base64
@@ -29,6 +32,31 @@ def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
     hash = sha1(password.encode()).hexdigest()
 
     return hash
+
+def cooldown(seconds: SupportsInt):
+    """
+    A decorator for adding cooldown to functions, used to go against spamming.
+
+    :param seconds: The number of seconds to wait between function calls.
+    :type seconds: Union[int, float]
+    :return: The decorated function with cooldown added.
+    """
+    def decorator(func):
+        last_called = 0
+
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            nonlocal last_called
+            elapsed = time() - last_called
+
+            if elapsed < seconds:
+                raise OnCooldown(f"This method is on cooldown for {seconds - elapsed:.3f}. Please try again later.")
+            
+            last_called = time()
+            return await func(*args, **kwargs)
+
+        return wrapper
+    return decorator
 
 class Client:
     """
@@ -79,12 +107,11 @@ class Client:
     
     async def login(self, name: str, password: str) -> Account:
         """
-        ### This function is incomplete and will return errors and confusion if you used.
-        Login account with given name and password (encrypted with `gjp()`)
+        Login account with given name and password.
 
         :param name: The account name.
         :type name: str
-        :param password: The account password (encrypted with `gjp()`).
+        :param password: The account password.
         :type password: str
 
         :return: Account
@@ -128,14 +155,24 @@ class Client:
         )
         return self.account
 
+    @cooldown(10)
     async def change_account(self, name: str, password: str) -> Account:
         """
-        Logs out of the current account and then login another account.
+        An atomic way of logging out then logging in.
+
+        Cooldown is 10 seconds.
+
+        :param name: The account name.
+        :type name: str
+        :param password: The account password.
+        :type password: str
+
+        :return: Account
         """
         if not self.account:
             raise LoginError("The client is not logged in to change accounts! Use .login() instead.")
         
-        await self.logout()
+        self.logout()
         return await self.login(name, password)
 
     def logout(self) -> None:
@@ -146,9 +183,12 @@ class Client:
         """
         self.account = None
 
+    @cooldown(15)
     async def send_post(self, message: str) -> int:
         """
-        Sends a post to the current account logged in.
+        Sends an account comment to the account logged in.
+
+        Cooldown is 15 seconds.
 
         :param message: The message to send.
         :type message: str
@@ -172,11 +212,14 @@ class Client:
 
         return int(response)
     
+    @cooldown(15)
     async def comment(self, message: str, level_id: int, percentage: int = 0) -> int:
         """
         Sends a comment to a level or list.
 
         For lists, use a **negative ID.**
+
+        Cooldown is 15 seconds.
 
         :param message: The message to send.
         :type message: str
@@ -214,9 +257,12 @@ class Client:
 
         return int(response)
 
+    @cooldown(3)
     async def download_level(self, id: int) -> Level:
         """
         Downloads a specific level from the Geometry Dash servers using the provided ID.
+
+        Cooldown is 3 seconds.
         
         :param id: The ID of the level.
         :type id: int
@@ -235,11 +281,14 @@ class Client:
 
         return Level.from_raw(response)
 
+    @cooldown(3)
     async def download_daily_level(self, weekly: bool = False, time_left: bool = False) -> Union[Level, Tuple[Level, timedelta]]:
         """
         Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally.
 
         If `time_left` is set to True then returns a tuple containing the `Level` and the time left for the level.
+
+        Cooldown is 3 seconds.
 
         :param weekly: Whether to return the weekly or daily level. Defaults to False for daily.
         :type weekly: bool
@@ -276,6 +325,8 @@ class Client:
 
         **Note: `difficulty`, `length` and `query` does not work with `filter`!**
 
+        Cooldown is 2 seconds.
+
         :param query: The query for the search.
         :type query: Optional[str]
         :param page: The page number for the search. Defaults to 0.
@@ -303,6 +354,8 @@ class Client:
 
         :return: A list of `LevelDisplay` instances.
         """
+        if filter == SearchFilter.FRIENDS and not self.account:
+            raise ValueError("Cannot filter by friends with an anonymous account. Please log in using `.login()`.")
         
         # Standard data
         data = {
@@ -343,7 +396,9 @@ class Client:
             "coins": int(has_coins) if has_coins else None,
             "original": int(original) if original else None,
             "gdw": int(gd_world) if gd_world else None,
-            "str": query if query else None
+            "str": query if query else None,
+            "accountID": self.account.account_id if self.account else None,
+            "gjp2": self.account.gjp2 if self.account else None,
         }
 
         # Update data with non-None values from optional_params
@@ -357,9 +412,12 @@ class Client:
         parsed_results = parse_search_results(search_data)
         return [LevelDisplay.from_parsed(result).add_client(self) for result in parsed_results]
 
+    @cooldown(10)
     async def music_library(self) -> MusicLibrary:
         """
         Gets the current music library in RobTop's servers.
+
+        Cooldown is 10 seconds.
 
         :return: A `MusicLibrary` instance containing all the music library data.
         """
@@ -370,9 +428,12 @@ class Client:
         music_library = decrypt_data(response, "base64_decompress")
         return MusicLibrary.from_raw(music_library)
     
+    @cooldown(10)
     async def sfx_library(self) -> SoundEffectLibrary:
         """
         Gets the current Sound Effect library in RobTop's servers.
+
+        Cooldown is 10 seconds.
 
         :return: A `SoundEffectLibrary` instance containing all the SFX library data.
         """
@@ -382,9 +443,12 @@ class Client:
         sfx_library = decrypt_data(response, "base64_decompress")
         return SoundEffectLibrary.from_raw(sfx_library)
 
+    @cooldown(2)
     async def get_song(self, id: int) -> Song:
         """
         Gets song by ID, either from Newgrounds or the music library.
+
+        Cooldown is 2 seconds.
 
         :param id: The ID of the song. (Use ID larger than 10000000 to get the song from the library.)
         :type id: int
@@ -576,6 +640,9 @@ class Client:
         :type only_rated: bool
         :return: A list of `LevelList` instances.
         """
+        if filter == SearchFilter.FRIENDS and not self.account:
+            raise ValueError("Only friends search is available when logged in.")
+
         data = {
             'secret': _secret, 'str': query, 'type': filter, "page": page
         }
@@ -592,6 +659,10 @@ class Client:
 
         if only_rated:
             data["star"] = 1
+
+        if data['type'] == SearchFilter.FRIENDS:
+            data["accountID"] = self.account.id
+            data['gjp2'] = self.account.gjp2
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevelLists.php",

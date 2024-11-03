@@ -174,7 +174,7 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
         current_level['creator'] = {
             "playerID": creator_info[0] if creator_info else None,
             "playerName": creator_info[1] if creator_info else None,
-            "accountID": creator_info[2] if creator_info else None
+            "accountID": int(creator_info[2]) if creator_info else None
         }
     
     # Match each level's song data

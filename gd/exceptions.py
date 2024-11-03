@@ -51,6 +51,9 @@ class NotLoggedInError(Exception):
 class CommentError(Exception):
     pass
 
+class OnCooldown(Exception):
+    pass
+
 def check_errors(data: AnyStr, exception: Exception, text: str) -> None:
     """Helper function to check if the server returns -1 as a response. Raises the exception passed if it is."""
     if data == "-1":

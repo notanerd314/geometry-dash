@@ -31,50 +31,59 @@ The package requires the following dependencies:
 - colorama (For useless eye candy)
 
 # Usage
-- Fetching a Newgrounds/Music Library song then downloading it:
+### Downloading a level:
 ```py
-import gd
-import asyncio
-
-async def main():
-    client = gd.Client()
-    song = await client.get_song(803223)
-    print(f"Name: {song.title}, ID: {song.id}, Size: {song.size} MB.")
-    # Name: Xtrullor - Arcana, ID: 803223, Size: 8.81 MB.
-
-    await song.download_to("look_i_download_song.mp3")
-    # Downloads to the relative path.
-
-asyncio.run(main())
+>>> from gd import Client
+>>> client = Client()
+>>> level = await client.download_level(13519)
+>>> level.name
+"The Nightmare"
+>>> level.difficulty
+<DemonDifficulty.EASY_DEMON: 3>
+>>> level.description
+"Hard map by Jax. 7813"
+>>> level.official_song
+<OfficialSong.POLARGEIST: 2>
 ```
 
-- Fetching an user's profile:
-
+### Fetching a song and downloading it:
 ```py
-import gd
-import asyncio
-
-async def main():
-    client = gd.Client()
-    user = await client.search_user("notanerd1")
-    print(f"Name: {user.name}, Account ID: {user.account_id}, Player ID: {user.player_id}, Stars: {user.stars}")
-    # Name: notanerd1, Account ID: 24514763, Player ID: 218839712, Stars: 1477
+>>> from gd import Client
+>>> client = Client()
+>>> song = await client.get_song(1)
+>>> song.name
+"Chilled 1"
+>>> song.size
+0.07
+>>> song.link
+"http://audio.ngfiles.com/0/1_newgrounds_consin.mp3"
+>>> await song.download_to("chilled.mp3") # Download the song and name it "chilled.mp3" in the relative path.
 ```
 
-- Getting gauntlets:
+### Getting the Music Library:
 ```py
-import gd
-import asyncio
-
-async def main():
-    client = gd.Client()
-    gauntlets = await client.gauntlets()
-    print(gauntlets)
-    # [Gauntlet(id=1, name='Fire', level_ids=[27732941, 28200611, 27483789, 28225110, 27448202], image_url='https://gdbrowser.com/assets/gauntlets/fire.png'), Gauntlet(id=2, ...
-
-asyncio.run(main())
+>>> from gd import Client
+>>> client = Client()
+>>> library = await client.music_library()
+>>> library.version
+127
+>>> library.artists
+{10002716: Artist(id=10002716, name='Raul Ojamaa', website=None, youtube_channel_id=None),
+ 10002717: Artist(id=10002717, name='Malou', website=None, youtube_channel_id=None), ...}
+>>> library.tags
+{234: '8bit', 251: 'action', 239: 'ambiance', 246: 'ambient', 247: 'battle', 248: 'boss', 250: 'calm', 249: 'casual', ...}
 ```
 
+### Login and comment:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> credientals = await client.login("notanerd1", "*********") # Password is hidden on purpose
+>>> credientals
+Account(account_id=24514763, player_id=218839712, name='notanerd1', password=********) # Hidden when printing the instance
+>>> comment_id = await client.comment("I am high", level_id=111663149, percentage=0) # Comment on the level with the percentage of 0
+2994273
+```
 
 
 
