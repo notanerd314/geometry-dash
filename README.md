@@ -1,6 +1,6 @@
 # `gdapi`
 
-A lightweight and asyncronious API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
+A lightweight and asynchronous API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
 
 ```py
 >>> from gd import Client
@@ -78,12 +78,9 @@ The package requires the following dependencies:
 ```py
 >>> from gd import Client
 >>> client = Client()
->>> credientals = await client.login("notanerd1", "*********") # Password is hidden on purpose
+>>> credientals = await client.login("notanerd1", "*********") # Password is intentionally redacted for security reasons.
 >>> credientals
 Account(account_id=24514763, player_id=218839712, name='notanerd1', password=********) # Hidden when printing the instance
 >>> comment_id = await client.comment("I am high", level_id=111663149, percentage=0) # Comment on the level with the percentage of 0
 2994273
 ```
-
-
-

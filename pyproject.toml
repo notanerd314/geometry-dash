@@ -38,3 +38,9 @@ tracker = "https://github.com/notanerd314/gdapi/issues"
 [project.scripts]
 gd = "cli:main"
 requires-python = ">=3.7,<4.0"
+
+[tool.setuptools]
+packages = ["gd"]  # List your packages here if you want to specify manually
+
+[tool.setuptools.package-data]
+"gd" = ["*"]

@@ -413,12 +413,27 @@ class Player(Entity):
 class Account:
     """
     Represents an account (not Player) on Geometry Dash.
+
+    Attributes
+    ==========
+    account_id: int
+        Account ID associated with the accoount
+    player_id: int
+        Player ID associated with the account.
+    name: Optional[str]
+        Name of the account holder.
+    password: str
+        Plaintext password of the account.
     """
 
     account_id: int
+    """Account ID associated with the accoount."""
     player_id: int
+    """Player ID associated with the account."""
     name: Optional[str]
+    """Name of the account holder."""
     password: str
+    """Plaintext password of the account."""
 
     @property
     def gjp2(self) -> str:

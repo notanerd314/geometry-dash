@@ -74,8 +74,8 @@ class Client:
     Example usage:
     ```
     >>> import gd
-    >>> gd = gd.Client()
-    >>> level = gd.search_level("sigma") # Returns a list of "LevelDisplay" instances
+    >>> client = gd.Client()
+    >>> level = await client.search_level("sigma") # Returns a list of "LevelDisplay" instances
     [LevelDisplay(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
     ```
     """
@@ -141,7 +141,7 @@ class Client:
             case "-9":
                 raise LoginError("Username must be at least 3 characters long")
             case "-11":
-                raise LoginError("Invalid credientals")
+                raise LoginError("Invalid credentials")
             case "-12":
                 raise LoginError("Account has been disabled.")
             case "-13":

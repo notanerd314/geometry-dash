@@ -1,7 +1,7 @@
 """
 # `gdapi`
 
-A lightweight and asyncronious API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
+A lightweight and asynchronous API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
 
 ```py
 >>> from gd import Client
@@ -97,6 +97,7 @@ from collections import namedtuple
 
 from .gd import *
 from .entities import *
+from .exceptions import *
 
 VersionInfo = namedtuple("VersionInfo", "major minor micro")
 
