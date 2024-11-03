@@ -79,26 +79,19 @@ class Client:
         pass
 
     def __str__(self) -> str:
-        acc = self.account
-        return (
-            f"{color.Style.BRIGHT + color.Fore.LIGHTMAGENTA_EX}Client object at {hex(id(self))}{color.Style.RESET_ALL}"
-            "\n"
-            "======================================="
-            "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTBLUE_EX}ID: {color.Style.NORMAL}{id(self)}{color.Style.RESET_ALL}"
-            "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTRED_EX}Hash: {color.Style.NORMAL}{self.__hash__()}{color.Style.RESET_ALL}"
-            "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTGREEN_EX}Is logged in: {color.Style.NORMAL}{self.logged_in}{color.Style.RESET_ALL}"
-            "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account Name: {color.Style.NORMAL}{acc.name if acc else None}{color.Style.RESET_ALL}"
-            "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account ID: {color.Style.NORMAL}{acc.account_id if acc else None}{color.Style.RESET_ALL}"
-            "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Player ID: {color.Style.NORMAL}{acc.player_id if acc else None}{color.Style.RESET_ALL}"
-            "\n"
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Encrypted Password: {color.Style.NORMAL}{acc.gjp2 if acc else None}{color.Style.RESET_ALL}"
-        )
+        account = self.account
+        info = [
+            f"{color.Style.BRIGHT + color.Fore.LIGHTMAGENTA_EX}Client object at {hex(id(self))}{color.Style.RESET_ALL}",
+            "=======================================",
+            f"{color.Style.BRIGHT + color.Fore.LIGHTBLUE_EX}ID: {color.Style.NORMAL}{id(self)}{color.Style.RESET_ALL}",
+            f"{color.Style.BRIGHT + color.Fore.LIGHTRED_EX}Hash: {color.Style.NORMAL}{self.__hash__()}{color.Style.RESET_ALL}",
+            f"{color.Style.BRIGHT + color.Fore.LIGHTGREEN_EX}Is logged in: {color.Style.NORMAL}{self.logged_in}{color.Style.RESET_ALL}",
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account Name: {color.Style.NORMAL}{account.name if account else None}{color.Style.RESET_ALL}",
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account ID: {color.Style.NORMAL}{account.account_id if account else None}{color.Style.RESET_ALL}",
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Player ID: {color.Style.NORMAL}{account.player_id if account else None}{color.Style.RESET_ALL}",
+            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Encrypted Password: {color.Style.NORMAL}{acc.gjp2 if account else None}{color.Style.RESET_ALL}"
+        ]
+        return "\n".join(info)
 
     @property
     def logged_in(self) -> bool:
@@ -443,7 +436,7 @@ class Client:
         sfx_library = decrypt_data(response, "base64_decompress")
         return SoundEffectLibrary.from_raw(sfx_library)
 
-    @cooldown(2)
+    @cooldown(1)
     async def get_song(self, id: int) -> Song:
         """
         Gets song by ID, either from Newgrounds or the music library.
