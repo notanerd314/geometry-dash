@@ -37,7 +37,40 @@ def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
 
 def cooldown(seconds: SupportsInt):
     """
-    A decorator for adding cooldown to functions, used to go against spamming.
+    A decorator for applying cooldown to functions for each instance separately.
+
+    :param seconds: The number of seconds to wait between function calls.
+    :type seconds: Union[int, float]
+    :return: The decorated function with cooldown added per instance.
+    """
+
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            # Ensure each instance has its own last_called attribute
+            if not hasattr(self, "_last_called"):
+                self._last_called = {}
+
+            last_called = self._last_called.get(func, 0)
+            elapsed = time() - last_called
+
+            if elapsed < seconds:
+                raise OnCooldown(
+                    f"This method is on cooldown for {seconds - elapsed:.3f} seconds. Please try again later."
+                )
+
+            # Update the last_called time for this function in the instance
+            self._last_called[func] = time()
+            return await func(self, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def require_login(message: str = "You need to login before you can use this function!"):
+    """
+    A decorator for functions that need login.
 
     :param seconds: The number of seconds to wait between function calls.
     :type seconds: Union[int, float]
@@ -45,20 +78,15 @@ def cooldown(seconds: SupportsInt):
     """
 
     def decorator(func):
-        last_called = 0
-
         @wraps(func)
-        async def wrapper(*args, **kwargs):
-            nonlocal last_called
-            elapsed = time() - last_called
+        async def wrapper(self, *args, **kwargs):
+            # If the account no exist, piss them off
+            if not hasattr(self, "account"):
+                raise LoginError(message)
+            elif not self.account:
+                raise LoginError(message)
 
-            if elapsed < seconds:
-                raise OnCooldown(
-                    f"This method is on cooldown for {seconds - elapsed:.3f}. Please try again later."
-                )
-
-            last_called = time()
-            return await func(*args, **kwargs)
+            return await func(self, *args, **kwargs)
 
         return wrapper
 
@@ -184,6 +212,7 @@ class Client:
         self.account = None
 
     @cooldown(15)
+    @require_login
     async def send_post(self, message: str) -> int:
         """
         Sends an account comment to the account logged in.
@@ -212,6 +241,7 @@ class Client:
         return int(response)
 
     @cooldown(15)
+    @require_login
     async def comment(self, message: str, level_id: int, percentage: int = 0) -> int:
         """
         Sends a comment to a level or list.
@@ -228,9 +258,6 @@ class Client:
         :type percentage: int
         :return: The post ID of the sent comment.
         """
-        if not self.account:
-            raise LoginError("The client is not logged in to comment!")
-
         data = {
             "secret": _secret,
             "accountID": self.account.account_id,

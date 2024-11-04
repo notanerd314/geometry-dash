@@ -80,7 +80,7 @@ class Entity:
         self.clients.extend(clients)
         return self
 
-    def client(self, index: int) -> Union["Client", None]: # type: ignore
+    def client(self, index: int) -> Union["Client", None]:  # type: ignore
         """
         Get a client by it's index
 
@@ -90,5 +90,3 @@ class Entity:
         """
         if not self.clients:
             raise ValueError("No clients are attached to this object.")
-        
-        

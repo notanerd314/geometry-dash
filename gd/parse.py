@@ -8,6 +8,7 @@ from typing import List, Dict, Union
 from .entities.enums import Difficulty, DemonDifficulty
 from .decode import *
 
+
 def parse_key_value_pairs(
     text: str, separator: str = ":"
 ) -> Dict[str, Union[str, int, None]]:
