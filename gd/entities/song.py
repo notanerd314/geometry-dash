@@ -6,7 +6,7 @@ A module containing all the classes and methods related to songs in Geometry Das
 from urllib.parse import unquote
 from typing import Dict, Optional, List
 from datetime import timedelta
-from ..helpers import *
+from ..parse import *
 from dataclasses import dataclass, field
 from enum import Enum
 from aiofiles import open as aioopen

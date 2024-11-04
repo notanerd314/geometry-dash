@@ -4,7 +4,7 @@
 A module containing all the classes and methods related to levels in Geometry Dash.
 """
 
-from ..helpers import *
+from ..parse import *
 from .enums import *
 from .cosmetics import *
 from typing import List, Optional, Union, Tuple

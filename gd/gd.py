@@ -1,5 +1,5 @@
 import colorama as color
-from .helpers import *
+from .parse import *
 from .exceptions import *
 from .entities.level import *
 from .entities.song import *

@@ -3,7 +3,7 @@
 A module containing all the classes and methods related to users and accounts in Geometry Dash.
 """
 
-from ..helpers import *
+from ..parse import *
 from .enums import *
 from .cosmetics import *
 from .level import Comment, LevelDisplay

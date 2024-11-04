@@ -21,6 +21,8 @@ class Entity:
 
     clients: List["Client"] = field(default_factory=list)  # type: ignore
     """The list of clients attached to the object. Used for accounts login and interaction."""
+    main_client_index: int = 0
+    """The main client index to use in the list of clients, will be not used when the client index is specified."""
 
     def add_client(self, client: "Client") -> Self:  # type: ignore
         """
@@ -77,3 +79,16 @@ class Entity:
 
         self.clients.extend(clients)
         return self
+
+    def client(self, index: int) -> Union["Client", None]: # type: ignore
+        """
+        Get a client by it's index
+
+        :param index: The index of the client.
+        :type index: int
+        :return: Client
+        """
+        if not self.clients:
+            raise ValueError("No clients are attached to this object.")
+        
+        
