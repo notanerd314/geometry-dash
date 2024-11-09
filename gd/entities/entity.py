@@ -30,7 +30,8 @@ class Entity:
 
         :param client: The client you want to add.
         :type client: Client
-        :return: self
+        :return: The instance of the object itself.
+        :rtype: self
         """
         if not client:
             raise ValueError("client cannot be None or empty.")
@@ -42,8 +43,9 @@ class Entity:
         Remove a client to the attached clients list.
 
         :param client: The client instance or the client index you want to remove.
-        :type client: Union["Client", int]
-        :return: self
+        :type client: Union[Client, int]
+        :return: The instance of the object itself.
+        :rtype: self
         """
         if isinstance(client, int):
             self.clients.pop(client)
@@ -60,7 +62,8 @@ class Entity:
         """
         Clear all clients from the attached clients list.
 
-        :return: self
+        :return: The instance of the object itself.
+        :rtype: self
         """
         self.clients.clear()
         return self
@@ -71,7 +74,8 @@ class Entity:
 
         :param clients: List of clients to add.
         :type clients: List[Client]
-        :return: self
+        :return: The instance of the object itself.
+        :rtype: self
         """
 
         if not clients:
@@ -80,13 +84,28 @@ class Entity:
         self.clients.extend(clients)
         return self
 
-    def client(self, index: int) -> Union["Client", None]:  # type: ignore
+    def get_client(self, index: int) -> Union["Client", None]:  # type: ignore
         """
         Get a client by it's index
 
         :param index: The index of the client.
         :type index: int
-        :return: Client
+        :return: The client object or None.
+        :rtype: Union[:class:`gd.Client`, None]
         """
         if not self.clients:
             raise ValueError("No clients are attached to this object.")
+
+        try:
+            return self.clients[index]
+        except IndexError:
+            return
+
+    def client_logged_in(self) -> bool:
+        """
+        Check if at least one client is logged in.
+
+        :return: True if at least one client is logged in, False otherwise.
+        :rtype: bool
+        """
+        return any(client.logged_in for client in self.clients)

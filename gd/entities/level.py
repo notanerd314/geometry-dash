@@ -12,6 +12,7 @@ from .song import Song, OfficialSong
 from datetime import datetime
 from dataclasses import dataclass
 from .entity import Entity
+from ..helpers import *
 
 # A dictionary containing all the names of gauntlets.
 GAUNTLETS = {
@@ -233,6 +234,39 @@ class Level(Entity):
             return LevelRating.RATED
 
         return LevelRating.NO_RATE
+
+    async def comment(
+        self, message: str, percentage: int = 0, client_index: int = None
+    ) -> int:
+        """
+        Sends a comment to the level.
+
+        Cooldown is 15 seconds.
+
+        :param message: The message to send.
+        :type message: str
+        :param percentage: The percentage of the level completed, optional. Defaults to 0.
+        :type percentage: int
+        :param client_index: The client index to send the comment as, optional. Defaults to the priority (default: 0)
+        :type client_index: int
+        :raises: gd.CommentError
+        :return: The comment ID of the sent comment.
+        :rtype: int
+        """
+        if client_index is None:
+            client_index = self.main_client_index
+
+        try:
+            client = self.clients[client_index]
+        except IndexError:
+            raise IndexError(f"Client with index {client_index} not found.")
+
+        if not client.logged_in:
+            raise CommentError("Client is not logged in.")
+
+        return await client.comment(
+            message=message, level_id=self.id, percentage=percentage
+        )
 
 
 @dataclass

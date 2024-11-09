@@ -7,6 +7,7 @@ from urllib.parse import unquote
 from typing import Dict, Optional, List
 from datetime import timedelta
 from ..parse import *
+from ..helpers import *
 from dataclasses import dataclass, field
 from enum import Enum
 from aiofiles import open as aioopen
@@ -150,31 +151,25 @@ class MusicLibrary:
             except Exception as e:
                 raise ParseError(f"Cannot parse the data provided, error: {e}")
 
-        async def download_to(self, file: str = None, path: str = None) -> None:
+        async def download_to(self, path: str = None) -> None:
             """
-            A static method that converts a raw string from the servers to a `MusicLibraryArtist` instance.
+            Downloads the song to a specified path.
 
-            :param raw_str: The raw str returned from the servers.
-            :type raw_str: str
-            :return: A `MusicLibraryArtist` instance.
+            :param path: Full path to save the file, including filename. Defaults to current directory with ID as filename.
+            :type path: str
             """
 
-            if not file:
-                file = f"{self.id}.ogg"
-
-            if not file.endswith(".ogg"):
-                raise ValueError("file must end with .ogg!")
-
-            # Set the path to the current working directory if not specified
             if path is None:
-                path = os.getcwd()
+                path = os.path.join(os.getcwd(), f"{self.id}.ogg")
+            elif not path.endswith(".ogg"):
+                raise ValueError("Path must end with .ogg!")
 
             # Ensure the directory exists
-            os.makedirs(path, exist_ok=True)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
 
             try:
                 response = await send_get_request(decode=False, url=self.link)
-                async with aioopen(os.path.join(path, file), "wb") as file:
+                async with aioopen(path, "wb") as file:
                     await file.write(response)
             except Exception as e:
                 raise DownloadSongError(f"Error downloading song: {e}")
@@ -550,33 +545,25 @@ class SoundEffect:
             duration=timedelta(seconds=int(parsed[5]) // 100),
         )
 
-    async def download_to(self, file: str = None, path: str = None) -> None:
+    async def download_to(self, path: str = None) -> None:
         """
-        A method that downloads the song to a specific path location.
+        Downloads the song to a specified path.
 
-        :param file: The name of the file to save the song as. Default is the song ID.
-        :type file: Optional[str]
-        :param path: The path to save the song. Default is the current working directory.
-        :type path: Optional[str]
-        :raises DownloadSongError: If an error occurs during downloading the song.
-        :return: None
+        :param path: Full path to save the file, including filename. Defaults to current directory with ID as filename.
+        :type path: str
         """
-        if not file:
-            file = f"{self.id}.ogg"
 
-        if not file.endswith(".ogg"):
-            raise ValueError("file must end with .ogg!")
-
-        # Set the path to the current working directory if not specified
         if path is None:
-            path = os.getcwd()
+            path = os.path.join(os.getcwd(), f"{self.id}.ogg")
+        elif not path.endswith(".ogg"):
+            raise ValueError("Path must end with .ogg!")
 
         # Ensure the directory exists
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
         try:
             response = await send_get_request(decode=False, url=self.url)
-            async with aioopen(os.path.join(path, file), "wb") as file:
+            async with aioopen(path, "wb") as file:
                 await file.write(response)
         except Exception as e:
             raise DownloadSongError(f"Error downloading song: {e}")
@@ -669,30 +656,25 @@ class Song:
             is_in_library=int(parsed.get("1")) >= 10000000,
         )
 
-    async def download_to(self, file: str = None, path: str = None) -> None:
+    async def download_to(self, path: str = None) -> None:
         """
-        A method that downloads the song to a specific path location.
+        Downloads the song to a specified path.
 
-        :param file: The name of the file to save the song. Default is the song ID.
-        :type file: Optional[str]
-        :param path: The path to save the song. Default is the current working directory.
-        :type path: Optional[str]
-        :raises DownloadSongError: If an error occurs during downloading the song.
-        :return: None
+        :param path: Full path to save the file, including filename. Defaults to current directory with ID as filename.
+        :type path: str
         """
-        if not file:
-            file = f"{self.id}.mp3"
 
-        # Set the path to the current working directory if not specified
         if path is None:
-            path = os.getcwd()
+            path = os.path.join(os.getcwd(), f"{self.id}.ogg")
+        elif not path.endswith(".ogg"):
+            raise ValueError("Path must end with .ogg!")
 
         # Ensure the directory exists
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
         try:
             response = await send_get_request(decode=False, url=self.link)
-            async with aioopen(os.path.join(path, file), "wb") as file:
+            async with aioopen(path, "wb") as file:
                 await file.write(response)
         except Exception as e:
             raise DownloadSongError(f"Error downloading song: {e}")

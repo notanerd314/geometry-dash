@@ -11,8 +11,8 @@ from typing import List, Optional, Union
 from dataclasses import dataclass
 from .entity import Entity
 from hashlib import sha1
+from ..helpers import *
 import colorama as color
-import base64
 
 color.init(autoreset=True)
 
@@ -216,6 +216,8 @@ class Player(Entity):
     """The glow color id of the user's icon."""
     profile_icon_type: Optional[Gamemode] = None
     """The gamemode that the user primarily chooses to display."""
+    icons: IconSet = None
+    """The icon set of the user."""
 
     youtube: Optional[str] = None
     """The YouTube channel link of the user."""
@@ -247,6 +249,12 @@ class Player(Entity):
         normal_stats = parsed.get("56", None)
         platformer_stats = parsed.get("57", None)
 
+        primary_color = int(parsed.get("10", 0))
+        secondary_color = int(parsed.get("11", 0))
+        glow_color = (
+            int(parsed.get("51")) if parsed.get("51", None) is not None else None
+        )
+
         try:
             return Player(
                 name=parsed.get("1", None),
@@ -263,13 +271,9 @@ class Player(Entity):
                 registered=True if parsed.get("29") == 1 else False,
                 mod_level=ModRank(parsed.get("49", 0)),
                 profile_icon_type=Gamemode(parsed.get("14", 1)),
-                primary_color_id=int(parsed.get("10", 0)),
-                secondary_color_id=int(parsed.get("11", 0)),
-                glow_color_id=(
-                    int(parsed.get("51"))
-                    if parsed.get("51", None) is not None
-                    else None
-                ),
+                primary_color_id=primary_color,
+                secondary_color_id=secondary_color,
+                glow_color_id=glow_color,
                 youtube=parsed.get("20", None) if parsed.get("20") != r"%%00" else None,
                 twitter=parsed.get("44"),
                 twitch=parsed.get("45"),
@@ -297,23 +301,45 @@ class Player(Entity):
                     if demon_stats
                     else None
                 ),
-                classic_stats=DifficultyStats(
-                    auto=normal_stats[0],
-                    easy=normal_stats[1],
-                    normal=normal_stats[2],
-                    hard=normal_stats[3],
-                    harder=normal_stats[4],
-                    insane=normal_stats[5],
-                    daily=normal_stats[6],
-                    guantlet=normal_stats[7],
+                classic_stats=(
+                    DifficultyStats(
+                        auto=normal_stats[0],
+                        easy=normal_stats[1],
+                        normal=normal_stats[2],
+                        hard=normal_stats[3],
+                        harder=normal_stats[4],
+                        insane=normal_stats[5],
+                        daily=normal_stats[6],
+                        guantlet=normal_stats[7],
+                    )
+                    if normal_stats
+                    else None
                 ),
-                platformer_stats=DifficultyStats(
-                    auto=platformer_stats[0],
-                    easy=platformer_stats[1],
-                    normal=platformer_stats[2],
-                    hard=platformer_stats[3],
-                    harder=platformer_stats[4],
-                    insane=platformer_stats[5],
+                platformer_stats=(
+                    DifficultyStats(
+                        auto=platformer_stats[0],
+                        easy=platformer_stats[1],
+                        normal=platformer_stats[2],
+                        hard=platformer_stats[3],
+                        harder=platformer_stats[4],
+                        insane=platformer_stats[5],
+                    )
+                    if platformer_stats
+                    else None
+                ),
+                icons=IconSet.load(
+                    cube=parsed.get("21", 1),
+                    ship=parsed.get("22", 1),
+                    ball=parsed.get("23", 1),
+                    ufo=parsed.get("24", 1),
+                    wave=parsed.get("25", 1),
+                    robot=parsed.get("26", 1),
+                    spider=parsed.get("43", 1),
+                    swing=parsed.get("53", 1),
+                    jetpack=parsed.get("54", 1),
+                    primary_color=primary_color,
+                    secondary_color=secondary_color,
+                    glow_color=glow_color,
                 ),
             )
         except Exception as e:

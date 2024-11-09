@@ -4,9 +4,10 @@
 Helper script for parsing various responses.
 """
 
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any
 from .entities.enums import Difficulty, DemonDifficulty
 from .decode import *
+import ast
 
 
 def parse_key_value_pairs(
@@ -14,11 +15,9 @@ def parse_key_value_pairs(
 ) -> Dict[str, Union[str, int, None]]:
     """
     Parse key-value pairs from a separator-separated string. Example:
-
-    ```
+    ```plain
     1:25:2:65:3:okay
     ```
-
     The first column of the string is the key name, then the next column is the previous key's value then it repeats like a pattern.
 
     :param text: The string to parse.
@@ -26,6 +25,7 @@ def parse_key_value_pairs(
     :param separator: The separator to parse the string (Default is `:`)
     :type separator: str
     :return: A dictionary containing the parsed key-value pairs.
+    :rtype: Dict[str, Union[str, int, None]]
     """
     pairs = {}
     # Parse key-valye pairs
@@ -42,13 +42,14 @@ def unparse_key_value_pairs(
     parsed: Dict[str, Union[str, int]], separator: str = ":"
 ) -> str:
     """
-    Unparse key-value pairs into a separator-separated string. Basically `parse_key_value_pairs` but reversed.
+    Unparse key-value pairs into a separator-separated string.
 
     :param parsed: The dictionary containing the parsed key-value pairs.
     :type parsed: Dict[str, Union[str, int]]
     :param separator: The separator to unparse the string.
     :type separator: str
     :return: A string containing the unparsed key-value pairs.
+    :rtype: str
     """
 
     # Unparse the parsed
@@ -56,6 +57,14 @@ def unparse_key_value_pairs(
 
 
 def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
+    """
+    Parse level data from a string.
+
+    :param text: The string containing level data.
+    :type text: str
+    :return: A dictionary containing parsed level data.
+    :rtype: Dict[str, Union[str, int]]
+    """
     # Parsing the data
     parsed = parse_key_value_pairs(text)
 
@@ -70,6 +79,14 @@ def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
 
 
 def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
+    """
+    Parse search results from a response string.
+
+    :param text: The string containing search results.
+    :type text: str
+    :return: A list of dictionaries containing parsed level, creator, and song data.
+    :rtype: List[Dict[str, Union[Dict, str]]]
+    """
     # Split the text into individual level data, creator data, and song data.
     levels_data, creators_data, songs_data = (
         text.split("#")[0].split("|"),
@@ -116,19 +133,67 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
 
 
 def parse_user_data(text: str) -> Dict[str, Union[str, int]]:
+    """
+    Parse user data from a string.
+
+    :param text: The string containing user data.
+    :type text: str
+    :return: A dictionary containing parsed user data.
+    :rtype: Dict[str, Union[str, int]]
+    """
     # Literally parse_key_value_pairs lol
     return parse_key_value_pairs(text)
 
 
 def parse_comments_data(text: str) -> List[Dict[str, Union[str, int]]]:
+    """
+    Parse comments data from a string.
+
+    :param text: The string containing comments data.
+    :type text: str
+    :return: A list of dictionaries containing parsed comments.
+    :rtype: List[Dict[str, Union[str, int]]]
+    """
     # Parsing multiple comments, not 1 comment.
     items = text.split("|")
     return [{"comment": parse_key_value_pairs(item)} for item in items]
 
 
 def parse_song_data(song: str) -> Dict[str, Union[str, int]]:
+    """
+    Parse song data from a string.
+
+    :param song: The string containing song data.
+    :type song: str
+    :return: A dictionary containing parsed song data.
+    :rtype: Dict[str, Union[str, int]]
+    """
     # Literally parse_key_value_pairs again lol
     return parse_key_value_pairs(song.replace("~", ""), "|")
+
+
+def parse_str_literal(text: str) -> Any:
+    """
+    Parse a string into a literal.
+
+    :param text: The string to convert to a literal.
+    :type text: str
+    :return: A literal converted from a string.
+    :rtype: Any
+    """
+    return ast.literal_eval(text)
+
+
+def dict_syntax_to_tuple(text: str) -> str:
+    """
+    Converts dict syntax to tuple syntax.
+
+    :param text: The string to convert syntax.
+    :type text: str
+    :return: The result when sucessfully converted `{}` to `()`
+    :rtype: str
+    """
+    return text.replace("{", "(").replace("}", ")")
 
 
 # Difficulty Determination
@@ -153,14 +218,15 @@ def determine_difficulty(
     parsed: dict, return_demon_diff: bool = True
 ) -> Union[Difficulty, DemonDifficulty]:
     """
-    Determines the level's difficulty based on parsed data.
+    Determine the difficulty of a level based on parsed data.
 
-    Args:
-        parsed (dict): Parsed data from the server.
-        return_demon_diff (bool): Whether to return specific demon difficulty (if applicable).
-
-    Returns:
-        Union[Difficulty, DemonDifficulty]: Difficulty level or specific demon difficulty.
+    :param parsed: Parsed data from the server.
+    :type parsed: dict
+    :param return_demon_diff: Whether to return specific demon difficulty (if applicable).
+    :type return_demon_diff: bool
+    :return: Difficulty level or specific demon difficulty.
+    :rtype: Union[:class:`gd.entities.enums.Difficulty`, :class:`gd.entities.enums.DemonDifficulty`]
+    :raises ValueError: If the demon difficulty is invalid.
     """
     if return_demon_diff and parsed.get("17", False):
         # If it's a demon
@@ -189,13 +255,12 @@ def determine_search_difficulty(difficulty_obj: Difficulty) -> int:
     """
     Converts a Difficulty object to its corresponding integer value for search purposes.
 
-    Args:
-        difficulty_obj (Difficulty): The difficulty object.
-
-    Returns:
-        int: Integer representing the search difficulty.
+    :param difficulty_obj: The difficulty object.
+    :type difficulty_obj: :class:`gd.entities.enums.Difficulty`
+    :return: Integer representing the search difficulty.
+    :rtype: int
     """
-    _DIFFICULTY_ = {
+    DIFFICULTYMAP = {
         Difficulty.NA: -1,
         Difficulty.AUTO: -3,
         Difficulty.DEMON: -2,
@@ -206,11 +271,19 @@ def determine_search_difficulty(difficulty_obj: Difficulty) -> int:
         Difficulty.INSANE: 5,
     }
 
-    return _DIFFICULTY_.get(difficulty_obj, -1)
+    return DIFFICULTYMAP.get(difficulty_obj, -1)
 
 
 def determine_demon_search_difficulty(difficulty_obj: DemonDifficulty) -> int:
-    """Converts a DemonDifficulty object to its corresponding integer value."""
+    """
+    Converts a DemonDifficulty object to its corresponding integer value.
+
+    :param difficulty_obj: The demon difficulty object.
+    :type difficulty_obj: :class:`gd.entities.enums.DemonDifficulty`
+    :return: Integer representing the demon search difficulty.
+    :rtype: int
+    :raises ValueError: If the demon difficulty object type is invalid.
+    """
 
     # Convert the object to an interger value based on the search's enums.
     match difficulty_obj:
@@ -235,18 +308,37 @@ def determine_list_difficulty(
 ) -> Union[Difficulty, DemonDifficulty]:
     """
     Converts a raw integer difficulty value to its corresponding Difficulty or DemonDifficulty object.
+
+    :param raw_integer_difficulty: The raw integer difficulty value.
+    :type raw_integer_difficulty: int
+    :return: Corresponding Difficulty or DemonDifficulty object.
+    :rtype: Union[:class:`gd.entities.enums.Difficulty`, :class:`gd.entities.enums.DemonDifficulty`]
     """
     return _DIFFICULTY_.get(raw_integer_difficulty, Difficulty.NA)
 
 
 # Utility Functions
 def is_newgrounds(id: int) -> bool:
-    """Checks if a song ID is from Newgrounds."""
+    """
+    Checks if a song ID is from Newgrounds.
+
+    :param id: The song ID to check.
+    :type id: int
+    :return: True if the song ID is from Newgrounds, False otherwise.
+    :rtype: bool
+    """
     return id < START_ID_SONG_LIB
 
 
 def parse_comma_separated_int_list(key: str) -> List[int]:
-    """Split the string by `,` then turn it into a list of integers."""
+    """
+    Split the string by `,` then turn it into a list of integers.
+
+    :param key: The string containing comma-separated integers.
+    :type key: str
+    :return: A list of integers.
+    :rtype: List[int]
+    """
     try:
         return [int(x) for x in key.split(",") if x.isdigit()]
     except AttributeError:

@@ -5,10 +5,8 @@ from .entities.level import *
 from .entities.song import *
 from .entities.user import *
 from datetime import timedelta
-from typing import Union, Tuple, SupportsInt
-
-from functools import wraps
-from time import time
+from typing import Union, Tuple
+from .helpers import *
 
 from hashlib import sha1
 import base64
@@ -35,77 +33,26 @@ def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
     return hash
 
 
-def cooldown(seconds: SupportsInt):
-    """
-    A decorator for applying cooldown to functions for each instance separately.
-
-    :param seconds: The number of seconds to wait between function calls.
-    :type seconds: Union[int, float]
-    :return: The decorated function with cooldown added per instance.
-    """
-
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            # Ensure each instance has its own last_called attribute
-            if not hasattr(self, "_last_called"):
-                self._last_called = {}
-
-            last_called = self._last_called.get(func, 0)
-            elapsed = time() - last_called
-
-            if elapsed < seconds:
-                raise OnCooldown(
-                    f"This method is on cooldown for {seconds - elapsed:.3f} seconds. Please try again later."
-                )
-
-            # Update the last_called time for this function in the instance
-            self._last_called[func] = time()
-            return await func(self, *args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
-def require_login(message: str = "You need to login before you can use this function!"):
-    """
-    A decorator for functions that need login.
-
-    :param seconds: The number of seconds to wait between function calls.
-    :type seconds: Union[int, float]
-    :return: The decorated function with cooldown added.
-    """
-
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            # If the account no exist, piss them off
-            if not hasattr(self, "account"):
-                raise LoginError(message)
-            elif not self.account:
-                raise LoginError(message)
-
-            return await func(self, *args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
 class Client:
     """
+    gd.Client
+    =========
+
     Main client class for interacting with Geometry Dash. You can login here using `.login` and the client will save the credientals to be used for later purposes.
 
-    You can attach the client to an entity to interact with it without having trouble logging in again. Most entities use `.add_client()` to attach a client.
+    You can attach the client to an entity to use the account without having to log in again. Most entities use `.add_client()` to attach a client.
 
     Example usage:
-    ```
+    .. code-block::
     >>> import gd
     >>> client = gd.Client()
     >>> level = await client.search_level("sigma") # Returns a list of "LevelDisplay" instances
     [LevelDisplay(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
-    ```
+
+    Attributes
+    ==========
+    account : Union[Account, None]:
+        The account associated with this client. The default is None.
     """
 
     account: Union[Account, None] = None
@@ -143,7 +90,8 @@ class Client:
         :param password: The account password.
         :type password: str
 
-        :return: Account
+        :return: The Account instance
+        :rtype: :class:`gd.entities.Account`
         """
         if self.account:
             raise LoginError("The client has already been logged in!")
@@ -162,16 +110,19 @@ class Client:
 
         match response:
             case "-1":
-                raise LoginError
-                # ? What should be the message
+                raise LoginError(
+                    "Rubrub lazy so here's a generic error happy debugging"
+                )
             case "-8":
                 raise LoginError("User password must be at least 6 characters long")
             case "-9":
                 raise LoginError("Username must be at least 3 characters long")
             case "-11":
-                raise LoginError("Invalid credentials")
+                raise LoginError("Invalid credentials.")
             case "-12":
-                raise LoginError("Account has been disabled.")
+                raise LoginError(
+                    "Account has been disabled, you think you can login in it by using this module? :rofl:"
+                )
             case "-13":
                 raise LoginError("Invalid steam ID has passed.")
 
@@ -193,7 +144,8 @@ class Client:
         :param password: The account password.
         :type password: str
 
-        :return: Account
+        :return: The account instance
+        :rtype: :class:`gd.entities.Account`
         """
         if not self.account:
             raise LoginError(
@@ -208,11 +160,12 @@ class Client:
         Logs out the current account.
 
         :return: None
+        :rtype: None
         """
         self.account = None
 
     @cooldown(15)
-    @require_login
+    @require_login("You need to login before you can send a post!")
     async def send_post(self, message: str) -> int:
         """
         Sends an account comment to the account logged in.
@@ -221,8 +174,9 @@ class Client:
 
         :param message: The message to send.
         :type message: str
-        :raises: ResponseError
+        :raises: gd.ResponseError
         :return: The post ID of the sent post.
+        :rtype: int
         """
         if not self.account:
             raise LoginError("The client is not logged in to post!")
@@ -240,15 +194,15 @@ class Client:
 
         return int(response)
 
-    @cooldown(15)
-    @require_login
+    @cooldown(10)
+    @require_login("You need to login before you can comment!")
     async def comment(self, message: str, level_id: int, percentage: int = 0) -> int:
         """
         Sends a comment to a level or list.
 
         For lists, use a **negative ID.**
 
-        Cooldown is 15 seconds.
+        Cooldown is 10 seconds.
 
         :param message: The message to send.
         :type message: str
@@ -256,7 +210,9 @@ class Client:
         :type level_id: int
         :param percentage: The percentage of the level completed, optional. Defaults to 0.
         :type percentage: int
-        :return: The post ID of the sent comment.
+        :raises: gd.CommentError
+        :return: The comment ID of the sent comment.
+        :rtype: int
         """
         data = {
             "secret": _secret,
@@ -300,7 +256,9 @@ class Client:
 
         :param id: The ID of the level.
         :type id: int
+        :raises: gd.InvalidLevelID
         :return: A `Level` instance containing the downloaded level data.
+        :rtype: :class:`gd.entities.Level`
         """
         if not isinstance(id, int):
             raise ValueError("ID must be an int.")
@@ -313,7 +271,7 @@ class Client:
         # Check if response is valid
         check_errors(response, InvalidLevelID, f"Invalid level ID {id}.")
 
-        return Level.from_raw(response)
+        return Level.from_raw(response).add_client(self)
 
     @cooldown(3)
     async def download_daily_level(
@@ -330,7 +288,9 @@ class Client:
         :type weekly: bool
         :param time_left: Whether to return both the level and the time left for the level. Defaults to False.
         :type time_left: bool
+        :raises: gd.ResponseError
         :return: A `Level` instance containing the downloaded level data.
+        :rtype: :class:`gd.entities.Level`
         """
         level_id = -2 if weekly else -1
         level = await self.download_level(level_id)
@@ -339,7 +299,7 @@ class Client:
         if time_left:
             daily_data: str = await send_post_request(
                 url="http://www.boomlings.com/database/getGJDailyLevel.php",
-                data={"secret": _secret, "weekly": "1" if weekly else "0"},
+                data={"secret": _secret, "type": "1" if weekly else "0"},
             )
             check_errors(
                 daily_data,
@@ -400,7 +360,11 @@ class Client:
         :param filter: Filters the result by Magic, Recent, ...
         :type filter: Optional[Union[filter, str]]
 
+        :raises: gd.SearchLevelError
+        :raises: ValueError
+
         :return: A list of `LevelDisplay` instances.
+        :rtype: List[:class:`gd.entities.LevelDisplay`]
         """
         if filter == SearchFilter.FRIENDS and not self.account:
             raise ValueError(
@@ -494,6 +458,7 @@ class Client:
         Cooldown is 10 seconds.
 
         :return: A `MusicLibrary` instance containing all the music library data.
+        :rtype: :class:`gd.entities.song.MusicLibrary`
         """
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/music/musiclibrary_02.dat",
@@ -510,6 +475,7 @@ class Client:
         Cooldown is 10 seconds.
 
         :return: A `SoundEffectLibrary` instance containing all the SFX library data.
+        :rtype: :class:`gd.entities.song.SoundEffectLibrary`
         """
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/sfx/sfxlibrary.dat",
@@ -527,6 +493,8 @@ class Client:
         :param id: The ID of the song. (Use ID larger than 10000000 to get the song from the library.)
         :type id: int
         :return: A `Song` instance containing the song data.
+        :raises: gd.InvalidSongID
+        :rtype: :class:`gd.entities.song.Song`
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
@@ -544,7 +512,9 @@ class Client:
         :type query: Union[str, int]
         :param use_id: If searches the user using the account ID.
         :type use_id: Optional[bool]
+        :raises: gd.InvalidAccountID
         :return: A `Player` instance containing the user's profile data.
+        :rtype: :class:`gd.entities.user.Player`
         """
 
         if use_id:
@@ -566,7 +536,9 @@ class Client:
         :type level_id: int
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
+        :raises: gd.InvalidLevelID
         :return: A list of `Comment` instances.
+        :rtype: :class:`gd.entities.level.Comment`
         """
         if page < 0:
             raise ValueError("Page number must be non-negative.")
@@ -578,9 +550,7 @@ class Client:
         check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
         return [Comment.from_raw(comment_data) for comment_data in response.split("|")]
 
-    async def get_user_posts(
-        self, account_id: int, page: int = 0
-    ) -> Union[List[Post], None]:
+    async def get_user_posts(self, account_id: int, page: int = 0) -> List[Post]:
         """
         Get an user's posts by Account ID.
 
@@ -588,27 +558,31 @@ class Client:
         :type account_id: int
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
+        :raises: gd.InvalidAccountID
         :return: A list of `Post` instances or None if there are no posts.
+        :rtype: List[:class:`gd.entities.user.Post`]
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
             data={"secret": _secret, "accountID": account_id, "page": page},
         )
 
-        check_errors(response, ResponseError, "Invalid account ID.")
+        check_errors(response, InvalidAccountID, "Invalid account ID.")
         if not response.split("#")[0]:
             return None
 
         posts_list = []
         parsed_res = response.split("#")[0]
         parsed_res = response.split("|")
+
         for post in parsed_res:
             posts_list.append(Post.from_raw(post, account_id))
+
         return posts_list
 
     async def get_user_comments(
         self, player_id: int, page: int = 0, display_most_liked: bool = False
-    ) -> Union[List[Comment], None]:
+    ) -> List[Comment]:
         """
         Get an user's comments history by player ID.
 
@@ -618,7 +592,9 @@ class Client:
         :type page: int
         :param display_most_liked: Whether to display the most liked comments. Defaults to False.
         :type display_most_liked: bool
+        :raises: gd.InvalidAccountID
         :return: A list of `Comment` instances or None if no comments were found.
+        :rtype: List[:class:`gd.entities.level.Comment`]
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
@@ -629,7 +605,7 @@ class Client:
                 "mode": int(display_most_liked),
             },
         )
-        check_errors(response, ResponseError, "Invalid account ID.")
+        check_errors(response, InvalidAccountID, "Invalid account ID.")
         if not response.split("#")[0]:
             return None
 
@@ -649,6 +625,7 @@ class Client:
         :param page: The page number to load, default is 0.
         :type page: int
         :return: A list of LevelDisplay instances.
+        :rtype: List[:class:`gd.entities.level.LevelDisplay`]
         """
 
         response = await send_post_request(
@@ -656,7 +633,9 @@ class Client:
             data={"secret": _secret, "type": 5, "page": page, "str": player_id},
         )
 
-        check_errors(response, ResponseError, f"Invalid account ID {self.account_id}.")
+        check_errors(
+            response, InvalidAccountID, f"Invalid account ID {self.account_id}."
+        )
         if not response.split("#")[0]:
             return None
 
@@ -669,7 +648,11 @@ class Client:
         """
         Get the full list of map packs available (in a specific page).
 
+        :param page: The page number to load, default is 0.
+        :type page: int
+        :raises: gd.LoadError
         :return: A list of `MapPack` instances.
+        :rtype: List[:class:`gd.entities.level.MapPack`]
         """
         if page < 0:
             raise ValueError("Page must be a non-negative number.")
@@ -694,7 +677,9 @@ class Client:
         :type only_2_point_1: bool
         :param include_ncs_gauntlets: Whether to include NCS gauntlets to the list. Defaults to True.
         :type include_ncs_gauntlets: bool
+        :raises: gd.LoadError
         :return: A list of `Gauntlet` instances.
+        :rtype: List[:class:`gd.entities.level.Gauntlet`]
         """
         data = {"secret": _secret, "special": int(only_2_point_1)}
         if include_ncs_gauntlets:
@@ -734,7 +719,9 @@ class Client:
         :type demon_difficulty: DemonDifficulty
         :param only_rated: Filters only rated lists.
         :type only_rated: bool
+        :raises: gd.SearchLevelError
         :return: A list of `LevelList` instances.
+        :rtype: List[:class:`gd.entities.level.LevelList`]
         """
         if filter == SearchFilter.FRIENDS and not self.account:
             raise ValueError("Only friends search is available when logged in.")

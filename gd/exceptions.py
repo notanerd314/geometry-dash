@@ -81,6 +81,14 @@ class OnCooldown(Exception):
     pass
 
 
+class NoClients(Exception):
+    pass
+
+
+class DownloadIconError(Exception):
+    pass
+
+
 def check_errors(data: AnyStr, exception: Exception, text: str) -> None:
     """Helper function to check if the server returns -1 as a response. Raises the exception passed if it is."""
     if data == "-1":
