@@ -121,7 +121,7 @@ COLORS_LIST: Dict[int, int] = {
     "103": 0x66033E,
     "104": 0x470132,
     "105": 0xD2FF32,
-    "106": 0x76BDFF
+    "106": 0x76BDFF,
 }
 """A dictionary mapping all the color ids to their corresponding hex colors.
 
@@ -266,6 +266,7 @@ class Icon:
 
         return BytesIO(response)
 
+
 @dataclass
 class IconSet:
     """
@@ -379,7 +380,7 @@ class IconSet:
                 glow_color_id=glow_color,
             ),
         )
-    
+
     async def render_all(self, extension: str = "png") -> Dict[Gamemode, BytesIO]:
         """
         Renders all icons and returns a dict of BytesIO objects.
@@ -400,17 +401,17 @@ class IconSet:
     async def download_all_to(self, path: Union[str, Path] = None) -> None:
         """
         Downloads all icons to a specified path.
-        
+
         :param path: Full path to save the files, including directory.
         :type path: Union[str, Path]
         """
         # Ensure path is provided, if not, raise an error
         if path is None:
-            path = Path.cwd() 
-        
+            path = Path.cwd()
+
         # Convert path to a Path object if it's a string
         path = Path(path)
-        
+
         # Create the directory if it doesn't exist
         path.mkdir(parents=True, exist_ok=True)
 
@@ -420,8 +421,12 @@ class IconSet:
         # Loop through each gamemode and save the associated BytesIO object to a file
         for gamemode, icon in icons:
             # Construct the file path (e.g., "path/gamemode.png")
-            file_path = path / f"{gamemode.name.lower()}.png"  # You can use any extension here
+            file_path = (
+                path / f"{gamemode.name.lower()}.png"
+            )  # You can use any extension here
 
             # Write the BytesIO object to the file
             async with aiofiles.open(file_path, "wb") as file:
-                await file.write(icon.getvalue())  # .getvalue() gives the raw byte data from BytesIO
+                await file.write(
+                    icon.getvalue()
+                )  # .getvalue() gives the raw byte data from BytesIO
