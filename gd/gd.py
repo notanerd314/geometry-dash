@@ -118,6 +118,7 @@ from .entities.enums import (
     SearchFilter,
     DemonDifficulty,
     Difficulty,
+    SpecialLevel,
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from .entities.song import MusicLibrary, SoundEffectLibrary, Song
@@ -126,8 +127,6 @@ from .helpers import send_get_request, send_post_request, cooldown, require_logi
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
-
-# ? Should I release this piece of shit after I am done with the login?
 
 
 def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
@@ -151,8 +150,8 @@ class Client:
     gd.Client
     =========
 
-    Main client class for interacting with Geometry Dash. 
-    
+    Main client class for interacting with Geometry Dash.
+
     You can login here using `.login` to be used for functions that needed an account.
 
     Example usage:
@@ -403,8 +402,8 @@ class Client:
         return Level.from_raw(response).add_client(self)
 
     @cooldown(3)
-    async def download_daily_level(
-        self, weekly: bool = False, time_left: bool = False
+    async def download_special_level(
+        self, special: SpecialLevel, time_left: bool = False
     ) -> Union[Level, Tuple[Level, timedelta]]:
         """
         Downloads the daily or weekly level from the Geometry Dash servers.
@@ -419,14 +418,13 @@ class Client:
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
         """
-        level_id = -2 if weekly else -1
-        level = await self.download_level(level_id)
+        level = await self.download_level(special)
 
         # Makes another response for time left.
-        if time_left:
+        if time_left and special != SpecialLevel.EVENT:
             daily_data: str = await send_post_request(
                 url="http://www.boomlings.com/database/getGJDailyLevel.php",
-                data={"secret": SECRET, "type": "1" if weekly else "0"},
+                data={"secret": SECRET, "type": special},
             )
             check_errors(
                 daily_data,
@@ -484,8 +482,8 @@ class Client:
         :type song_id: Optional[int]
         :param gd_world: Filters level that is from Geometry Dash World.
         :type gd_world: Optional[bool]
-        :param filter: Filters the result by Magic, Recent, ...
-        :type filter: Optional[Union[filter, str]]
+        :param src_filter: Filters the result by Magic, Recent, ...
+        :type src_filter: Optional[Union[filter, str]]
 
         :raises: gd.SearchLevelError
         :raises: ValueError
@@ -493,7 +491,7 @@ class Client:
         :return: A list of `LevelDisplay` instances.
         :rtype: List[:class:`gd.entities.LevelDisplay`]
         """
-        if filter == SearchFilter.FRIENDS and self.logged_in:
+        if src_filter == SearchFilter.FRIENDS and self.logged_in:
             raise ValueError("Cannot filter by friends without being logged in.")
 
         # Standard data
@@ -848,7 +846,7 @@ class Client:
         :return: A list of `LevelList` instances.
         :rtype: List[:class:`gd.entities.level.LevelList`]
         """
-        if filter == SearchFilter.FRIENDS and not self.account:
+        if src_filter == SearchFilter.FRIENDS and not self.account:
             raise ValueError("Only friends search is available when logged in.")
 
         data = {"secret": SECRET, "str": query, "type": src_filter, "page": page}

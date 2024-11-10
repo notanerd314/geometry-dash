@@ -16,7 +16,7 @@ from .level import Comment, LevelDisplay
 from .entity import Entity
 from ..decode import decrypt_data
 from ..helpers import send_post_request
-from ..exceptions import (LoadError, check_errors)
+from ..exceptions import LoadError, check_errors
 
 color.init(autoreset=True)
 
@@ -257,91 +257,91 @@ class Player(Entity):
         )
 
         return Player(
-                name=parsed.get("1", None),
-                player_id=parsed.get("2", 0),
-                account_id=parsed.get("16", 0),
-                stars=parsed.get("3", 0),
-                moons=parsed.get("52", 0),
-                demons=parsed.get("4", 0),
-                diamonds=parsed.get("46"),
-                rank=parsed.get("30"),
-                creator_points=parsed.get("8", 0),
-                secret_coins=parsed.get("13", 0),
-                user_coins=parsed.get("17", 0),
-                registered=True if parsed.get("29") == 1 else False,
-                mod_level=ModRank(parsed.get("49", 0)),
-                profile_icon_type=Gamemode(parsed.get("14", 1)),
-                primary_color_id=primary_color,
-                secondary_color_id=secondary_color,
-                glow_color_id=glow_color,
-                youtube=parsed.get("20", None) if parsed.get("20") != r"%%00" else None,
-                twitter=parsed.get("44"),
-                twitch=parsed.get("45"),
-                classic_demon_stats=(
-                    DemonStats(
-                        easy=demon_stats[0],
-                        medium=demon_stats[1],
-                        hard=demon_stats[2],
-                        insane=demon_stats[3],
-                        extreme=demon_stats[4],
-                        weekly=demon_stats[10],
-                        guantlet=demon_stats[11],
-                    )
-                    if demon_stats
-                    else None
-                ),
-                platformer_demon_stats=(
-                    DemonStats(
-                        easy=demon_stats[5],
-                        medium=demon_stats[6],
-                        hard=demon_stats[7],
-                        insane=demon_stats[8],
-                        extreme=demon_stats[9],
-                    )
-                    if demon_stats
-                    else None
-                ),
-                classic_stats=(
-                    DifficultyStats(
-                        auto=normal_stats[0],
-                        easy=normal_stats[1],
-                        normal=normal_stats[2],
-                        hard=normal_stats[3],
-                        harder=normal_stats[4],
-                        insane=normal_stats[5],
-                        daily=normal_stats[6],
-                        guantlet=normal_stats[7],
-                    )
-                    if normal_stats
-                    else None
-                ),
-                platformer_stats=(
-                    DifficultyStats(
-                        auto=platformer_stats[0],
-                        easy=platformer_stats[1],
-                        normal=platformer_stats[2],
-                        hard=platformer_stats[3],
-                        harder=platformer_stats[4],
-                        insane=platformer_stats[5],
-                    )
-                    if platformer_stats
-                    else None
-                ),
-                icons=IconSet.load(
-                    cube=parsed.get("21", 1),
-                    ship=parsed.get("22", 1),
-                    ball=parsed.get("23", 1),
-                    ufo=parsed.get("24", 1),
-                    wave=parsed.get("25", 1),
-                    robot=parsed.get("26", 1),
-                    spider=parsed.get("43", 1),
-                    swing=parsed.get("53", 1),
-                    jetpack=parsed.get("54", 1),
-                    primary_color=primary_color,
-                    secondary_color=secondary_color,
-                    glow_color=glow_color,
-                ),
-            )
+            name=parsed.get("1", None),
+            player_id=parsed.get("2", 0),
+            account_id=parsed.get("16", 0),
+            stars=parsed.get("3", 0),
+            moons=parsed.get("52", 0),
+            demons=parsed.get("4", 0),
+            diamonds=parsed.get("46"),
+            rank=parsed.get("30"),
+            creator_points=parsed.get("8", 0),
+            secret_coins=parsed.get("13", 0),
+            user_coins=parsed.get("17", 0),
+            registered=True if parsed.get("29") == 1 else False,
+            mod_level=ModRank(parsed.get("49", 0)),
+            profile_icon_type=Gamemode(parsed.get("14", 1)),
+            primary_color_id=primary_color,
+            secondary_color_id=secondary_color,
+            glow_color_id=glow_color,
+            youtube=parsed.get("20", None) if parsed.get("20") != r"%%00" else None,
+            twitter=parsed.get("44"),
+            twitch=parsed.get("45"),
+            classic_demon_stats=(
+                DemonStats(
+                    easy=demon_stats[0],
+                    medium=demon_stats[1],
+                    hard=demon_stats[2],
+                    insane=demon_stats[3],
+                    extreme=demon_stats[4],
+                    weekly=demon_stats[10],
+                    guantlet=demon_stats[11],
+                )
+                if demon_stats
+                else None
+            ),
+            platformer_demon_stats=(
+                DemonStats(
+                    easy=demon_stats[5],
+                    medium=demon_stats[6],
+                    hard=demon_stats[7],
+                    insane=demon_stats[8],
+                    extreme=demon_stats[9],
+                )
+                if demon_stats
+                else None
+            ),
+            classic_stats=(
+                DifficultyStats(
+                    auto=normal_stats[0],
+                    easy=normal_stats[1],
+                    normal=normal_stats[2],
+                    hard=normal_stats[3],
+                    harder=normal_stats[4],
+                    insane=normal_stats[5],
+                    daily=normal_stats[6],
+                    guantlet=normal_stats[7],
+                )
+                if normal_stats
+                else None
+            ),
+            platformer_stats=(
+                DifficultyStats(
+                    auto=platformer_stats[0],
+                    easy=platformer_stats[1],
+                    normal=platformer_stats[2],
+                    hard=platformer_stats[3],
+                    harder=platformer_stats[4],
+                    insane=platformer_stats[5],
+                )
+                if platformer_stats
+                else None
+            ),
+            icons=IconSet.load(
+                cube=parsed.get("21", 1),
+                ship=parsed.get("22", 1),
+                ball=parsed.get("23", 1),
+                ufo=parsed.get("24", 1),
+                wave=parsed.get("25", 1),
+                robot=parsed.get("26", 1),
+                spider=parsed.get("43", 1),
+                swing=parsed.get("53", 1),
+                jetpack=parsed.get("54", 1),
+                primary_color=primary_color,
+                secondary_color=secondary_color,
+                glow_color=glow_color,
+            ),
+        )
 
     async def posts(self, page: int = 0) -> List[Post] | None:
         """

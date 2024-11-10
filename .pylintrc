@@ -1,2 +1,8 @@
 [MESSAGES CONTROL]
 disable=E0402
+
+[FORMAT]
+max-line-length=150
+
+[MASTER]
+ignore=tests

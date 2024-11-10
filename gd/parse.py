@@ -3,6 +3,7 @@
 
 Helper script for parsing various responses.
 """
+
 import ast
 from typing import List, Dict, Union, Any
 
@@ -14,8 +15,8 @@ def parse_key_value_pairs(
     text: str, separator: str = ":"
 ) -> Dict[str, Union[str, int, None]]:
     """
-    Parse key-value pairs from a separator-separated string. 
-    
+    Parse key-value pairs from a separator-separated string.
+
     Plain:
     ```
     1:25:2:65:3:okay
@@ -29,7 +30,7 @@ def parse_key_value_pairs(
         "3": "okay"
     }
     ```
-    
+
 
     :param text: The string to parse.
     :type text: str
@@ -38,6 +39,7 @@ def parse_key_value_pairs(
     :return: A dictionary containing the parsed key-value pairs.
     :rtype: Dict[str, Union[str, int, None]]
     """
+    text = text.split("#")[0]
     pairs = {}
     # Parse key-valye pairs
     for index in range(0, len(items := text.split(separator)), 2):
@@ -316,6 +318,7 @@ def determine_demon_search_difficulty(difficulty_obj: DemonDifficulty) -> int:
             )
 
     return result
+
 
 def determine_list_difficulty(
     raw_integer_difficulty: int,

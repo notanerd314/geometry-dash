@@ -197,3 +197,16 @@ class SearchFilter(IntEnum):
     """Filter lists sent by moderators."""
     FRIENDS = 13
     """Filter levels made by friends. (Login required)"""
+
+
+class SpecialLevel(IntEnum):
+    """
+    An **Enum** class representing special levels in Geometry Dash.
+    """
+
+    DAILY = -1
+    """Daily level."""
+    WEEKLY = -2
+    """Weekly level."""
+    EVENT = -3
+    """Event level."""

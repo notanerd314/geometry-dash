@@ -29,6 +29,7 @@ class XorKey(StrEnum):
     """
     An enum class for XOR keys, typically used for decryption/encryption.
     """
+
     LEVEL_PASSWORD = "26364"
     GJP = "37526"
     COMMENT = "29481"
@@ -38,6 +39,7 @@ class CHKSalt(StrEnum):
     """
     An enum class for salting, typically used for encryption.
     """
+
     LEVEL = "xI25fpAapCQg"
     COMMENT = "0xPT6iUrtws0J"
     LIKE = "ysg6pUrtjn0J"
@@ -59,7 +61,7 @@ def uuid4() -> str:
 def add_padding(data: str) -> str:
     """
     Add padding to base64-encoded data to make its length a multiple of 4.
-    
+
     :param data: The base64-encoded data to add padding to.
     :type data: str
     :return: The base64-encoded data with padding added.
@@ -119,9 +121,7 @@ def decrypt_data(
     raise ValueError("Invalid decrypt type!")
 
 
-def generate_chk(
-    values: List[Union[int, str]], key: str = "", salt: str = ""
-) -> str:
+def generate_chk(values: List[Union[int, str]], key: str = "", salt: str = "") -> str:
     """
     Generates chk data.
 

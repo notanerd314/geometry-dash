@@ -8,12 +8,13 @@ You typically don't want to use this module because it has limited documentation
 
 from functools import wraps
 from time import time
-
+from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Any, Union
 import asyncio
 
 import httpx
+import colorama
 
 from .exceptions import OnCooldown, LoginError
 
@@ -63,7 +64,9 @@ def cooldown(seconds: Union[int, float]):
             elapsed = time() - last_called
 
             if elapsed < seconds:
-                raise OnCooldown(f"This function is on cooldown for {seconds - elapsed:.3f}s.")
+                raise OnCooldown(
+                    f"This function is on cooldown for {seconds - elapsed:.3f}s."
+                )
 
             # Update the last_called time for this function in the instance
             self.last_called[func] = time()
@@ -156,3 +159,65 @@ async def aiorun(func: Callable, *args) -> Any:
     with ThreadPoolExecutor() as pool:
         result = await loop.run_in_executor(pool, func, *args)
     return result
+
+
+# Displaying
+def represent(classdict: dict, redact: list[str] = None) -> str:
+    """
+    Returns a string representation of a class.
+
+    :param classdict: The class dictionary to represent.
+    :type classdict: dict
+    :return: A string representation of the class.
+    :rtype: str
+    """
+    if redact is None:
+        redact = []
+
+    representation = []
+
+    for key, value in classdict.items():
+        key = colorama.Fore.YELLOW + key.replace("_", " ").title()
+
+        if len(str(value)) > 250:
+            value = f"{value[:250]}..."
+
+        if key in redact:
+            value = colorama.Fore.LIGHTRED_EX + "***********"
+        elif isinstance(value, str):
+            value = colorama.Fore.LIGHTGREEN_EX + f"'{value}'"
+        elif isinstance(value, bool):
+            if value:
+                value = colorama.Fore.GREEN + "True"
+            else:
+                value = colorama.Fore.RED + "False"
+        elif isinstance(
+            value,
+            (
+                float,
+                int,
+            ),
+        ):
+            value = colorama.Fore.CYAN + str(value)
+        elif value is None:
+            value = colorama.Fore.MAGENTA + "None"
+        elif isinstance(value, Enum):
+            value = (
+                colorama.Fore.RESET
+                + f"{value.__class__.__name__}."
+                + colorama.Fore.CYAN
+                + value.name
+            )
+        elif isinstance(
+            value,
+            (
+                list,
+                tuple,
+                dict,
+            ),
+        ):
+            value = colorama.Fore.RESET + str(value)
+
+        representation.append(f"{key}: {value}" + colorama.Fore.RESET)
+
+    return "\n".join(representation)

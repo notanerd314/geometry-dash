@@ -17,23 +17,12 @@ from ..parse import (
     parse_key_value_pairs,
     parse_search_results,
     determine_difficulty,
-    determine_list_difficulty
+    determine_list_difficulty,
 )
 from ..decode import decrypt_data
-from .enums import (
-    LevelRating,
-    ModRank,
-    Gamemode,
-    Length,
-    Difficulty
-)
+from .enums import LevelRating, ModRank, Gamemode, Length, Difficulty
 from .cosmetics import Icon
-from ..exceptions import (
-    ResponseError,
-    InvalidLevelID,
-    CommentError,
-    check_errors
-)
+from ..exceptions import ResponseError, InvalidLevelID, CommentError, check_errors
 
 # A dictionary containing all the names of gauntlets.
 GAUNTLETS = {
@@ -168,8 +157,9 @@ class Level(Entity):
     two_player_mode: bool = None
     verified_coins: bool = None
     in_gauntlet: bool = None
-    is_daily: bool = None
-    is_weekly: bool = None
+    is_daily: bool = False
+    is_weekly: bool = False
+    is_event: bool = False
     rating: "LevelRating" = None
     difficulty: "Difficulty" = None
     level_password: Optional[str] = None
@@ -199,40 +189,40 @@ class Level(Entity):
         """
         parsed = parsed_str
         return Level(
-                # raw_str=parsed_str,
-                id=parsed.get("1"),
-                name=parsed.get("2"),
-                description=parsed.get("3"),
-                level_data=parsed.get("4"),
-                version=parsed.get("5"),
-                creator_player_id=parsed.get("6"),
-                downloads=int(parsed.get("10", 0)),
-                likes=int(parsed.get("14")),
-                copyable=bool(parsed.get("27")),
-                length=Length(parsed.get("15")),
-                requested_stars=parsed.get("39"),
-                stars=parsed.get("18"),
-                coins=parsed.get("37", 0),
-                custom_song_id=parsed.get("35", None),
-                song_list_ids=parse_comma_separated_int_list(parsed.get("52")),
-                sfx_list_ids=parse_comma_separated_int_list(parsed.get("53")),
-                daily_id=parsed.get("41", None),
-                copied_level_id=parsed.get("30"),
-                low_detail_mode=bool(parsed.get("40")),
-                two_player_mode=bool(parsed.get("31")),
-                verified_coins=bool(parsed.get("38")),
-                in_gauntlet=bool(parsed.get("44")),
-                is_daily=0 <= parsed.get("41", -1) <= 100000,
-                is_weekly=parsed.get("41", -1) >= 100000,
-                rating=Level._determine_rating(parsed),
-                difficulty=determine_difficulty(parsed),
-                level_password=(
-                    None if isinstance(parsed.get("27"), bool) else parsed.get("27")
-                ),
-                official_song=(
-                    OfficialSong(parsed.get("12")) if parsed.get("12") else None
-                ),
-            )
+            # raw_str=parsed_str,
+            id=parsed.get("1"),
+            name=parsed.get("2"),
+            description=parsed.get("3"),
+            level_data=parsed.get("4"),
+            version=parsed.get("5"),
+            creator_player_id=parsed.get("6"),
+            downloads=int(parsed.get("10", 0)),
+            likes=int(parsed.get("14")),
+            copyable=bool(parsed.get("27")),
+            length=Length(parsed.get("15")),
+            requested_stars=parsed.get("39"),
+            stars=parsed.get("18"),
+            coins=parsed.get("37", 0),
+            custom_song_id=parsed.get("35", None),
+            song_list_ids=parse_comma_separated_int_list(parsed.get("52")),
+            sfx_list_ids=parse_comma_separated_int_list(parsed.get("53")),
+            daily_id=parsed.get("41", None),
+            copied_level_id=parsed.get("30"),
+            low_detail_mode=bool(parsed.get("40")),
+            two_player_mode=bool(parsed.get("31")),
+            verified_coins=bool(parsed.get("38")),
+            in_gauntlet=bool(parsed.get("44")),
+            is_daily=0 <= int(parsed.get("41", -1)) <= 100000,
+            is_weekly=int(parsed.get("41", -1)) >= 100000,
+            rating=Level._determine_rating(parsed),
+            difficulty=determine_difficulty(parsed),
+            level_password=(
+                None if isinstance(parsed.get("27"), bool) else parsed.get("27")
+            ),
+            official_song=(
+                OfficialSong(parsed.get("12")) if parsed.get("12") else None
+            ),
+        )
 
     @staticmethod
     def _determine_rating(parsed: dict) -> LevelRating:
@@ -323,39 +313,40 @@ class LevelDisplay(Level):
         )
 
         return LevelDisplay(
-                # raw_str=parsed_str['level'],
-                id=instance.id,
-                name=instance.name,
-                description=instance.description,
-                version=instance.version,
-                creator_player_id=instance.creator_player_id,
-                creator_account_id=creator_account_id,
-                downloads=instance.downloads,
-                likes=instance.likes,
-                copyable=instance.copyable,
-                length=instance.length,
-                requested_stars=instance.requested_stars,
-                stars=instance.stars,
-                coins=instance.coins,
-                custom_song_id=instance.custom_song_id,
-                copied_level_id=instance.copied_level_id,
-                two_player_mode=instance.two_player_mode,
-                verified_coins=instance.verified_coins,
-                in_gauntlet=instance.in_gauntlet,
-                is_daily=instance.is_daily,
-                is_weekly=instance.is_weekly,
-                rating=instance.rating,
-                difficulty=instance.difficulty,
-                creator_name=creator_name,
-                song_data=song_data,
-                level_data=None,
-                song_list_ids=instance.song_list_ids,
-                sfx_list_ids=instance.sfx_list_ids,
-                daily_id=instance.daily_id,
-                low_detail_mode=instance.low_detail_mode,
-                level_password=instance.level_password,
-                official_song=instance.official_song,
-            )
+            # raw_str=parsed_str['level'],
+            id=instance.id,
+            name=instance.name,
+            description=instance.description,
+            version=instance.version,
+            creator_player_id=instance.creator_player_id,
+            creator_account_id=creator_account_id,
+            downloads=instance.downloads,
+            likes=instance.likes,
+            copyable=instance.copyable,
+            length=instance.length,
+            requested_stars=instance.requested_stars,
+            stars=instance.stars,
+            coins=instance.coins,
+            custom_song_id=instance.custom_song_id,
+            copied_level_id=instance.copied_level_id,
+            two_player_mode=instance.two_player_mode,
+            verified_coins=instance.verified_coins,
+            in_gauntlet=instance.in_gauntlet,
+            is_daily=instance.is_daily,
+            is_weekly=instance.is_weekly,
+            rating=instance.rating,
+            difficulty=instance.difficulty,
+            creator_name=creator_name,
+            song_data=song_data,
+            level_data=None,
+            song_list_ids=instance.song_list_ids,
+            sfx_list_ids=instance.sfx_list_ids,
+            daily_id=instance.daily_id,
+            low_detail_mode=instance.low_detail_mode,
+            level_password=instance.level_password,
+            official_song=instance.official_song,
+        )
+
 
 @dataclass
 class Comment(Entity):
@@ -434,7 +425,7 @@ class Comment(Entity):
             level_id=int(comment_value.get("1", 0)),
             content=decrypt_data(comment_value.get("2", "")),
             author_player_id=int(comment_value.get("3", 0)),
-            author_account_id=int(user_value.get('16', 0)),
+            author_account_id=int(user_value.get("16", 0)),
             likes=int(comment_value.get("4", 0)),
             id=int(comment_value.get("6", 0)),
             is_spam=bool(int(comment_value.get("7", 0))),
@@ -641,13 +632,12 @@ class MapPack(ListLevels):
             stars=int(parsed.get("4", 0)),
             coins=int(parsed.get("5", 0)),
             difficulty=Difficulty(int(parsed.get("6", 0))),
-            text_rgb_color=tuple(
-                parse_comma_separated_int_list(parsed.get("7", ""))
-            ),
+            text_rgb_color=tuple(parse_comma_separated_int_list(parsed.get("7", ""))),
             progress_bar_rgb_color=tuple(
                 parse_comma_separated_int_list(parsed.get("8", ""))
             ),
         )
+
 
 @dataclass
 class Gauntlet(ListLevels):
@@ -684,7 +674,7 @@ class Gauntlet(ListLevels):
             id=parsed.get("1", 0),
             name=name,
             level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
-            image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png"
+            image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png",
         )
 
     async def get_display_info_all_levels(self) -> Tuple[LevelDisplay]:

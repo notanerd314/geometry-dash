@@ -14,8 +14,10 @@ from aiofiles import open as aioopen
 
 from ..parse import parse_song_data
 from ..helpers import send_get_request
+from .entity import GDObject
 
 # Music Library
+
 
 @dataclass
 class MusicLibrary:
@@ -40,7 +42,7 @@ class MusicLibrary:
     tags: Dict[int, str] = field(default_factory=dict)
 
     @dataclass
-    class Artist:
+    class Artist(GDObject):
         """
         A class representing an artist in the music library.
 
@@ -80,7 +82,7 @@ class MusicLibrary:
             )
 
     @dataclass
-    class Song:
+    class Song(GDObject):
         """
         A class representing a song in the music library.
 
@@ -309,7 +311,7 @@ class SoundEffectLibrary:
     sfx: List["SoundEffect"]
 
     @dataclass
-    class Folder:
+    class Folder(GDObject):
         """
         A class representing a folder in the SFX library.
 
@@ -342,7 +344,7 @@ class SoundEffectLibrary:
             )
 
     @dataclass
-    class Creator:
+    class Creator(GDObject):
         """
         A class representing a creator in the SFX library.
 
@@ -425,7 +427,9 @@ class SoundEffectLibrary:
 
         return None
 
-    def get_folder_by_id(self, folder_id: int) -> Union["SoundEffectLibrary.Folder", None]:
+    def get_folder_by_id(
+        self, folder_id: int
+    ) -> Union["SoundEffectLibrary.Folder", None]:
         """
         Get a folder by it's ID.
 
@@ -505,7 +509,7 @@ class SoundEffectLibrary:
 
 
 @dataclass
-class SoundEffect:
+class SoundEffect(GDObject):
     """
     A class representing a sound effect in the SFX library.
 
@@ -578,8 +582,9 @@ class SoundEffect:
 
 # Level song
 
+
 @dataclass
-class Song:
+class Song(GDObject):
     """
     A class representing a level song in the Geometry Dash level.
 

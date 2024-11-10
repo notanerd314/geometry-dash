@@ -227,10 +227,7 @@ class Icon:
         :type path: Union[str, Path]
         """
         if path is None:
-            path = (
-                Path.cwd()
-                / f"{self.gamemode.name.lower()}_{self.id}.png"
-            )
+            path = Path.cwd() / f"{self.gamemode.name.lower()}_{self.id}.png"
         elif not path.suffix in {".png", ".webp", ".jpg", ".jpeg", ".ico"}:
             raise ValueError(
                 "Path must end with .png, .webp, or another image extension!"
