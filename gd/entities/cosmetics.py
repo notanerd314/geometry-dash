@@ -5,14 +5,15 @@ The module containing all the classes and methods related to customization and i
 """
 
 from dataclasses import dataclass
-from .enums import Gamemode
-from ..helpers import *
-from ..exceptions import DownloadIconError
-from ..parse import parse_str_literal, dict_syntax_to_tuple
 from typing import Union, Dict
 from io import BytesIO
 from pathlib import Path
+import asyncio
+
 import aiofiles
+
+from .enums import Gamemode
+from ..helpers import send_get_request
 
 COLORS_LIST: Dict[int, int] = {
     "0": 0x7DFF00,
@@ -129,7 +130,7 @@ COLORS_LIST: Dict[int, int] = {
 """
 
 ICON_RENDERER = "https://gdicon.oat.zone/icon"
-USER_AGENT = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 Edg/131.0.0.0"
+USER_AGENT = ""
 GAMEMODE_MAP = {
     "CUBE": "player",
     "SHIP": "ship",
@@ -210,7 +211,9 @@ class Icon:
     @property
     def glow_color_hex(self) -> Union[int, None]:
         """
-        Returns the glow color ID as a hexadecimal color code if it exists, otherwise raise a `ValueError`.
+        Returns the glow color ID as a hexadecimal color code if it exists.
+
+        :raises: ValueError
         """
         if self.glow_color_id is None:
             raise ValueError("This icon has no glow color.")
@@ -220,18 +223,21 @@ class Icon:
         """
         Downloads the icon to a specified path.
 
-        :param path: Full path to save the file, including filename. Defaults to current directory with ID as filename.
+        :param path: Full path to save the file, including filename.
         :type path: Union[str, Path]
         """
         if path is None:
             path = (
                 Path.cwd()
-                / f"{self.gamemode.name.lower()}_{self.primary_color_id}_{self.secondary_color_id}_{self.glow_color_id}.png"
+                / f"{self.gamemode.name.lower()}_{self.id}.png"
             )
         elif not path.suffix in {".png", ".webp", ".jpg", ".jpeg", ".ico"}:
             raise ValueError(
                 "Path must end with .png, .webp, or another image extension!"
             )
+
+        if not isinstance(path, Path):
+            path = Path(path)
 
         # Ensure the directory exists
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -315,6 +321,34 @@ class IconSet:
         secondary_color: int = 0,
         glow_color: int = None,
     ) -> "IconSet":
+        """
+        A function to creator an user's icon set.
+
+        :param cube: Cube icon ID.
+        :type cube: int
+        :param ship: Ship icon ID.
+        :type ship: int
+        :param ball: Ball icon ID.
+        :type ball: int
+        :param ufo: UFO icon ID.
+        :type ufo: int
+        :param wave: Wave icon ID.
+        :type wave: int
+        :param robot: Robot icon ID.
+        :type robot: int
+        :param spider: Spider icon ID.
+        :type spider: int
+        :param swing: Swing icon ID.
+        :type swing: int
+        :param jetpack: Jetpack icon ID.
+        :type jetpack: int
+        :param primary_color: Primary color ID.
+        :type primary_color: int
+        :param secondary_color: Secondary color ID.
+        :type secondary_color: int
+        :param glow_color: Glow color ID.
+        :type glow_color: int
+        """
         return IconSet(
             cube=Icon(
                 id=cube,

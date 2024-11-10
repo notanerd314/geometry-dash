@@ -58,7 +58,7 @@ The package requires the following dependencies:
 0.07
 >>> song.link
 "http://audio.ngfiles.com/0/1_newgrounds_consin.mp3"
->>> await song.download_to("chilled.mp3") # Download the song and name it "chilled.mp3" in the relative path.
+>>> await song.download_to("chilled.mp3") # Download the song in the relative path
 ```
 
 ### Getting the Music Library:
@@ -72,17 +72,17 @@ The package requires the following dependencies:
 {10002716: Artist(id=10002716, name='Raul Ojamaa', website=None, youtube_channel_id=None),
  10002717: Artist(id=10002717, name='Malou', website=None, youtube_channel_id=None), ...}
 >>> library.tags
-{234: '8bit', 251: 'action', 239: 'ambiance', 246: 'ambient', 247: 'battle', 248: 'boss', 250: 'calm', 249: 'casual', ...}
+{234: '8bit', 251: 'action', 239: 'ambiance', 246: 'ambient', 247: 'battle', ...}
 ```
 
 ### Login and comment:
 ```py
 >>> from gd import Client
 >>> client = Client()
->>> credientals = await client.login("notanerd1", "*********") # Password is hidden on purpose
+>>> credientals = await client.login("notanerd1", "****") # Password is hidden for security
 >>> credientals
-Account(account_id=24514763, player_id=218839712, name='notanerd1', password=********) # Hidden when printing the instance
->>> comment_id = await client.comment("I am high", level_id=111663149, percentage=0) # Comment on the level with the percentage of 0
+Account(account_id=24514763, player_id=218839712, name='notanerd1', password=****)
+>>> comment_id = await client.comment("I am high", level_id=111663149, percentage=0)
 2994273
 ```
 """

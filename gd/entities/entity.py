@@ -22,7 +22,7 @@ class Entity:
     clients: List["Client"] = field(default_factory=list)  # type: ignore
     """The list of clients attached to the object. Used for accounts login and interaction."""
     main_client_index: int = 0
-    """The main client index to use in the list of clients, will be not used when the client index is specified."""
+    """The main client index to use in the list of clients."""
 
     def add_client(self, client: "Client") -> Self:  # type: ignore
         """

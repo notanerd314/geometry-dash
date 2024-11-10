@@ -3,22 +3,33 @@
 
 Helper script for parsing various responses.
 """
-
-from typing import List, Dict, Union, Any
-from .entities.enums import Difficulty, DemonDifficulty
-from .decode import *
 import ast
+from typing import List, Dict, Union, Any
+
+from .entities.enums import Difficulty, DemonDifficulty
+from .decode import decrypt_data, START_ID_SONG_LIB
 
 
 def parse_key_value_pairs(
     text: str, separator: str = ":"
 ) -> Dict[str, Union[str, int, None]]:
     """
-    Parse key-value pairs from a separator-separated string. Example:
-    ```plain
+    Parse key-value pairs from a separator-separated string. 
+    
+    Plain:
+    ```
     1:25:2:65:3:okay
     ```
-    The first column of the string is the key name, then the next column is the previous key's value then it repeats like a pattern.
+
+    Parsed:
+    ```
+    {
+        "1": "25",
+        "2": "65",
+        "3": "okay"
+    }
+    ```
+    
 
     :param text: The string to parse.
     :type text: str
@@ -94,7 +105,7 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
         text.split("#")[2].split("~:~"),
     )
 
-    # Parse each level data, creator data, and song data separately and add them to the parsed_levels list.
+    # The list of levels' data parsed.
     parsed_levels = [{"level": parse_level_data(level)} for level in levels_data]
 
     # Match each level's creator data
@@ -260,7 +271,7 @@ def determine_search_difficulty(difficulty_obj: Difficulty) -> int:
     :return: Integer representing the search difficulty.
     :rtype: int
     """
-    DIFFICULTYMAP = {
+    difficulty_map = {
         Difficulty.NA: -1,
         Difficulty.AUTO: -3,
         Difficulty.DEMON: -2,
@@ -271,7 +282,7 @@ def determine_search_difficulty(difficulty_obj: Difficulty) -> int:
         Difficulty.INSANE: 5,
     }
 
-    return DIFFICULTYMAP.get(difficulty_obj, -1)
+    return difficulty_map.get(difficulty_obj, -1)
 
 
 def determine_demon_search_difficulty(difficulty_obj: DemonDifficulty) -> int:
@@ -285,29 +296,32 @@ def determine_demon_search_difficulty(difficulty_obj: DemonDifficulty) -> int:
     :raises ValueError: If the demon difficulty object type is invalid.
     """
 
+    result = None
+
     # Convert the object to an interger value based on the search's enums.
     match difficulty_obj:
         case DemonDifficulty.EASY_DEMON:
-            return 1
+            result = 1
         case DemonDifficulty.MEDIUM_DEMON:
-            return 2
+            result = 2
         case DemonDifficulty.HARD_DEMON:
-            return 3
+            result = 3
         case DemonDifficulty.INSANE_DEMON:
-            return 4
+            result = 4
         case DemonDifficulty.EXTREME_DEMON:
-            return 5
+            result = 5
         case _:
             raise ValueError(
                 f"Invalid demon difficulty object type {type(difficulty_obj)}"
             )
 
+    return result
 
 def determine_list_difficulty(
     raw_integer_difficulty: int,
 ) -> Union[Difficulty, DemonDifficulty]:
     """
-    Converts a raw integer difficulty value to its corresponding Difficulty or DemonDifficulty object.
+    Converts a raw integer difficulty value to its Difficulty or DemonDifficulty object.
 
     :param raw_integer_difficulty: The raw integer difficulty value.
     :type raw_integer_difficulty: int
@@ -318,7 +332,7 @@ def determine_list_difficulty(
 
 
 # Utility Functions
-def is_newgrounds(id: int) -> bool:
+def is_newgrounds(song_id: int) -> bool:
     """
     Checks if a song ID is from Newgrounds.
 
@@ -327,7 +341,7 @@ def is_newgrounds(id: int) -> bool:
     :return: True if the song ID is from Newgrounds, False otherwise.
     :rtype: bool
     """
-    return id < START_ID_SONG_LIB
+    return song_id < START_ID_SONG_LIB
 
 
 def parse_comma_separated_int_list(key: str) -> List[int]:

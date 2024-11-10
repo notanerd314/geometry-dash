@@ -1,18 +1,131 @@
-import colorama as color
-from .parse import *
-from .exceptions import *
-from .entities.level import *
-from .entities.song import *
-from .entities.user import *
-from datetime import timedelta
-from typing import Union, Tuple
-from .helpers import *
+__doc__ = """
+# `gdapi`
 
+A lightweight and asynchronous API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
+
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> level = await client.download_level(13519)
+>>> level.name
+"The Nightmare"
+>>> level.difficulty
+Difficulty.EASY_DEMON
+>>> level.description
+"Hard map by Jax. 7813"
+>>> level.official_song
+OfficialSong.POLARGEIST
+```
+
+# Installation and Information
+### *why the heck did i put that???? it's unfinished!!!!!*
+Install GDAPI via PyPI:
+
+```bash
+$ python -m pip install gdapi
+```
+**GDAPI** supports Python version 3.7 or greater officially.
+
+The package requires the following dependencies:
+- aiohttp
+- aiofiles
+- colorama (For useless eye candy)
+
+# Usage
+### Downloading a level:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> level = await client.download_level(13519)
+>>> level.name
+"The Nightmare"
+>>> level.difficulty
+<DemonDifficulty.EASY_DEMON: 3>
+>>> level.description
+"Hard map by Jax. 7813"
+>>> level.official_song
+<OfficialSong.POLARGEIST: 2>
+```
+
+### Fetching a song and downloading it:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> song = await client.get_song(1)
+>>> song.name
+"Chilled 1"
+>>> song.size
+0.07
+>>> song.link
+"http://audio.ngfiles.com/0/1_newgrounds_consin.mp3"
+>>> await song.download_to("chilled.mp3") # Download the song and name it "chilled.mp3" in the relative path.
+```
+
+### Getting the Music Library:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> library = await client.music_library()
+>>> library.version
+127
+>>> library.artists
+{10002716: Artist(id=10002716, name='Raul Ojamaa', website=None, youtube_channel_id=None),
+ 10002717: Artist(id=10002717, name='Malou', website=None, youtube_channel_id=None), ...}
+>>> library.tags
+{234: '8bit', 251: 'action', 239: 'ambiance', 246: 'ambient', 247: 'battle', 248: 'boss', 250: 'calm', 249: 'casual', ...}
+```
+
+### Login and comment:
+```py
+>>> from gd import Client
+>>> client = Client()
+>>> credientals = await client.login("notanerd1", "*********") # Password is hidden on purpose
+>>> credientals
+Account(account_id=24514763, player_id=218839712, name='notanerd1', password=********) # Hidden when printing the instance
+>>> comment_id = await client.comment("I am high", level_id=111663149, percentage=0) # Comment on the level with the percentage of 0
+2994273
+```
+"""
+
+from datetime import timedelta
+from typing import Union, Tuple, List
 from hashlib import sha1
 import base64
 
-_secret = "Wmfd2893gb7"
-_secret_login = "Wmfv3899gc9"
+import colorama
+
+from .parse import (
+    parse_comma_separated_int_list,
+    determine_search_difficulty,
+    parse_search_results,
+    determine_demon_search_difficulty,
+)
+from .exceptions import (
+    check_errors,
+    LoginError,
+    CommentError,
+    ResponseError,
+    InvalidAccountID,
+    InvalidLevelID,
+    SearchLevelError,
+    InvalidSongID,
+    LoadError,
+)
+from .decode import CHKSalt, XorKey, generate_chk, decrypt_data
+from .entities.enums import (
+    Length,
+    LevelRating,
+    SearchFilter,
+    DemonDifficulty,
+    Difficulty,
+)
+from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
+from .entities.song import MusicLibrary, SoundEffectLibrary, Song
+from .entities.user import Account, Player, Post
+from .helpers import send_get_request, send_post_request, cooldown, require_login
+
+SECRET = "Wmfd2893gb7"
+LOGIN_SECRET = "Wmfv3899gc9"
 
 # ? Should I release this piece of shit after I am done with the login?
 
@@ -28,9 +141,9 @@ def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
     :return: An encrypted password.
     """
     password += salt
-    hash = sha1(password.encode()).hexdigest()
+    result = sha1(password.encode()).hexdigest()
 
-    return hash
+    return result
 
 
 class Client:
@@ -38,16 +151,16 @@ class Client:
     gd.Client
     =========
 
-    Main client class for interacting with Geometry Dash. You can login here using `.login` and the client will save the credientals to be used for later purposes.
-
-    You can attach the client to an entity to use the account without having to log in again. Most entities use `.add_client()` to attach a client.
+    Main client class for interacting with Geometry Dash. 
+    
+    You can login here using `.login` to be used for functions that needed an account.
 
     Example usage:
     .. code-block::
     >>> import gd
     >>> client = gd.Client()
     >>> level = await client.search_level("sigma") # Returns a list of "LevelDisplay" instances
-    [LevelDisplay(id=51657783, name='Sigma', description='Sigma', downloads=582753, likes=19492, ...), ...]
+    [LevelDisplay(id=51657783, name='Sigma', downloads=582753, likes=19492, ...), ...]
 
     Attributes
     ==========
@@ -63,16 +176,36 @@ class Client:
 
     def __str__(self) -> str:
         account = self.account
+
+        def color_format(text, color):
+            return f"{colorama.Style.BRIGHT + color}{text}{colorama.Style.RESET_ALL}"
+
         info = [
-            f"{color.Style.BRIGHT + color.Fore.LIGHTMAGENTA_EX}Client object at {hex(id(self))}{color.Style.RESET_ALL}",
+            color_format(
+                f"Client object at {hex(id(self))}", colorama.Fore.LIGHTMAGENTA_EX
+            ),
             "=======================================",
-            f"{color.Style.BRIGHT + color.Fore.LIGHTBLUE_EX}ID: {color.Style.NORMAL}{id(self)}{color.Style.RESET_ALL}",
-            f"{color.Style.BRIGHT + color.Fore.LIGHTRED_EX}Hash: {color.Style.NORMAL}{self.__hash__()}{color.Style.RESET_ALL}",
-            f"{color.Style.BRIGHT + color.Fore.LIGHTGREEN_EX}Is logged in: {color.Style.NORMAL}{self.logged_in}{color.Style.RESET_ALL}",
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account Name: {color.Style.NORMAL}{account.name if account else None}{color.Style.RESET_ALL}",
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Account ID: {color.Style.NORMAL}{account.account_id if account else None}{color.Style.RESET_ALL}",
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Player ID: {color.Style.NORMAL}{account.player_id if account else None}{color.Style.RESET_ALL}",
-            f"{color.Style.BRIGHT + color.Fore.LIGHTYELLOW_EX}Encrypted Password: {color.Style.NORMAL}{account.gjp2 if account else None}{color.Style.RESET_ALL}",
+            color_format(f"ID: {id(self)}", colorama.Fore.LIGHTBLUE_EX),
+            color_format(f"Hash: {self.__hash__()}", colorama.Fore.LIGHTRED_EX),
+            color_format(
+                f"Is logged in: {self.logged_in}", colorama.Fore.LIGHTGREEN_EX
+            ),
+            color_format(
+                f"Account Name: {account.name if account else None}",
+                colorama.Fore.LIGHTYELLOW_EX,
+            ),
+            color_format(
+                f"Account ID: {account.account_id if account else None}",
+                colorama.Fore.LIGHTYELLOW_EX,
+            ),
+            color_format(
+                f"Player ID: {account.player_id if account else None}",
+                colorama.Fore.LIGHTYELLOW_EX,
+            ),
+            color_format(
+                f"Encrypted Password: {account.gjp2 if account else None}",
+                colorama.Fore.LIGHTYELLOW_EX,
+            ),
         ]
         return "\n".join(info)
 
@@ -97,7 +230,7 @@ class Client:
             raise LoginError("The client has already been logged in!")
 
         data = {
-            "secret": _secret_login,
+            "secret": LOGIN_SECRET,
             "userName": name,
             "gjp2": gjp2(password),
             "udid": "blah blah placeholder HAHAHHAH",
@@ -110,9 +243,7 @@ class Client:
 
         match response:
             case "-1":
-                raise LoginError(
-                    "Rubrub lazy so here's a generic error happy debugging"
-                )
+                raise LoginError
             case "-8":
                 raise LoginError("User password must be at least 6 characters long")
             case "-9":
@@ -120,9 +251,7 @@ class Client:
             case "-11":
                 raise LoginError("Invalid credentials.")
             case "-12":
-                raise LoginError(
-                    "Account has been disabled, you think you can login in it by using this module? :rofl:"
-                )
+                raise LoginError("Account has been disabled.")
             case "-13":
                 raise LoginError("Invalid steam ID has passed.")
 
@@ -182,7 +311,7 @@ class Client:
             raise LoginError("The client is not logged in to post!")
 
         data = {
-            "secret": _secret,
+            "secret": SECRET,
             "accountID": self.account.account_id,
             "comment": base64.urlsafe_b64encode(message.encode()).decode(),
             "gjp2": self.account.gjp2,
@@ -215,7 +344,7 @@ class Client:
         :rtype: int
         """
         data = {
-            "secret": _secret,
+            "secret": SECRET,
             "accountID": self.account.account_id,
             "levelID": level_id,
             "userName": self.account.name,
@@ -248,7 +377,7 @@ class Client:
         return int(response)
 
     @cooldown(3)
-    async def download_level(self, id: int) -> Level:
+    async def download_level(self, level_id: int) -> Level:
         """
         Downloads a specific level from the Geometry Dash servers using the provided ID.
 
@@ -260,16 +389,16 @@ class Client:
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
         """
-        if not isinstance(id, int):
+        if not isinstance(level_id, int):
             raise ValueError("ID must be an int.")
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/downloadGJLevel22.php",
-            data={"levelID": id, "secret": _secret},
+            data={"levelID": level_id, "secret": SECRET},
         )
 
         # Check if response is valid
-        check_errors(response, InvalidLevelID, f"Invalid level ID {id}.")
+        check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
 
         return Level.from_raw(response).add_client(self)
 
@@ -278,15 +407,13 @@ class Client:
         self, weekly: bool = False, time_left: bool = False
     ) -> Union[Level, Tuple[Level, timedelta]]:
         """
-        Downloads the daily or weekly level from the Geometry Dash servers. You can return the time left for the level optionally.
-
-        If `time_left` is set to True then returns a tuple containing the `Level` and the time left for the level.
+        Downloads the daily or weekly level from the Geometry Dash servers.
 
         Cooldown is 3 seconds.
 
         :param weekly: Whether to return the weekly or daily level. Defaults to False for daily.
         :type weekly: bool
-        :param time_left: Whether to return both the level and the time left for the level. Defaults to False.
+        :param time_left: If return a tuple containing the `Level` and the time left for the level.
         :type time_left: bool
         :raises: gd.ResponseError
         :return: A `Level` instance containing the downloaded level data.
@@ -299,7 +426,7 @@ class Client:
         if time_left:
             daily_data: str = await send_post_request(
                 url="http://www.boomlings.com/database/getGJDailyLevel.php",
-                data={"secret": _secret, "type": "1" if weekly else "0"},
+                data={"secret": SECRET, "type": "1" if weekly else "0"},
             )
             check_errors(
                 daily_data,
@@ -324,7 +451,7 @@ class Client:
         original: bool = False,
         song_id: int = None,
         gd_world: bool = False,
-        filter: SearchFilter = 0,
+        src_filter: SearchFilter = 0,
     ) -> List[LevelDisplay]:
         """
         Searches for levels matching the given query string and filters them.
@@ -366,15 +493,15 @@ class Client:
         :return: A list of `LevelDisplay` instances.
         :rtype: List[:class:`gd.entities.LevelDisplay`]
         """
-        if filter == SearchFilter.FRIENDS and not self.account:
-            raise ValueError(
-                "Cannot filter by friends with an anonymous account. Please log in using `.login()`."
-            )
+        if filter == SearchFilter.FRIENDS and self.logged_in:
+            raise ValueError("Cannot filter by friends without being logged in.")
 
         # Standard data
         data = {
-            "secret": _secret,
-            "type": filter.value if isinstance(filter, SearchFilter) else filter,
+            "secret": SECRET,
+            "type": (
+                src_filter.value if isinstance(src_filter, SearchFilter) else src_filter
+            ),
             "page": page,
         }
 
@@ -484,13 +611,13 @@ class Client:
         return SoundEffectLibrary.from_raw(sfx_library)
 
     @cooldown(1)
-    async def get_song(self, id: int) -> Song:
+    async def get_song(self, song_id: int) -> Song:
         """
         Gets song by ID, either from Newgrounds or the music library.
 
         Cooldown is 2 seconds.
 
-        :param id: The ID of the song. (Use ID larger than 10000000 to get the song from the library.)
+        :param id: The ID of the song.
         :type id: int
         :return: A `Song` instance containing the song data.
         :raises: gd.InvalidSongID
@@ -498,7 +625,7 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
-            data={"secret": _secret, "songID": id},
+            data={"secret": SECRET, "songID": song_id},
         )
         check_errors(response, InvalidSongID, "")
 
@@ -519,10 +646,10 @@ class Client:
 
         if use_id:
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {"secret": _secret, "targetAccountID": query}
+            data = {"secret": SECRET, "targetAccountID": query}
         else:
             url = "http://www.boomlings.com/database/getGJUsers20.php"
-            data = {"secret": _secret, "str": query}
+            data = {"secret": SECRET, "str": query}
 
         response = await send_post_request(url=url, data=data)
         check_errors(response, InvalidAccountID, f"Invalid account name/ID {query}.")
@@ -545,7 +672,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJComments21.php",
-            data={"secret": _secret, "levelID": level_id, "page": page},
+            data={"secret": SECRET, "levelID": level_id, "page": page},
         )
         check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
         return [Comment.from_raw(comment_data) for comment_data in response.split("|")]
@@ -564,7 +691,7 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
-            data={"secret": _secret, "accountID": account_id, "page": page},
+            data={"secret": SECRET, "accountID": account_id, "page": page},
         )
 
         check_errors(response, InvalidAccountID, "Invalid account ID.")
@@ -599,7 +726,7 @@ class Client:
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={
-                "secret": _secret,
+                "secret": SECRET,
                 "userID": player_id,
                 "page": page,
                 "mode": int(display_most_liked),
@@ -630,12 +757,11 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={"secret": _secret, "type": 5, "page": page, "str": player_id},
+            data={"secret": SECRET, "type": 5, "page": page, "str": player_id},
         )
 
-        check_errors(
-            response, InvalidAccountID, f"Invalid account ID {self.account_id}."
-        )
+        check_errors(response, InvalidAccountID, f"Invalid account ID {player_id}.")
+
         if not response.split("#")[0]:
             return None
 
@@ -656,33 +782,32 @@ class Client:
         """
         if page < 0:
             raise ValueError("Page must be a non-negative number.")
-        elif page > 6:
+
+        if page > 6:
             raise ValueError("Page limit is 6.")
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJMapPacks21.php",
-            data={"secret": _secret, "page": page},
+            data={"secret": SECRET, "page": page},
         )
         check_errors(response, LoadError, "An error occurred when getting map packs.")
         map_packs = response.split("#")[0].split("|")
         return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
 
-    async def gauntlets(
-        self, only_2_point_1: bool = True, include_ncs_gauntlets: bool = True
-    ) -> List[Gauntlet]:
+    async def gauntlets(self, not_2_2: bool = True, ncs: bool = True) -> List[Gauntlet]:
         """
         Get the list of gauntlets objects.
 
-        :param only_2_point_1: Whether to get ONLY the 2.1 guantlets or both 2.2 and 2.1. Defaults to True.
-        :type only_2_point_1: bool
-        :param include_ncs_gauntlets: Whether to include NCS gauntlets to the list. Defaults to True.
-        :type include_ncs_gauntlets: bool
+        :param not_2_2: Whether to get ONLY the 2.1 guantlets or both versions.
+        :type not_2_2: bool
+        :param ncs: Whether to include NCS gauntlets to the list. Defaults to True.
+        :type ncs: bool
         :raises: gd.LoadError
         :return: A list of `Gauntlet` instances.
         :rtype: List[:class:`gd.entities.level.Gauntlet`]
         """
-        data = {"secret": _secret, "special": int(only_2_point_1)}
-        if include_ncs_gauntlets:
+        data = {"secret": SECRET, "special": int(not not_2_2)}
+        if ncs:
             data["binaryVersion"] = 46
 
         response = await send_post_request(
@@ -698,7 +823,7 @@ class Client:
     async def search_list(
         self,
         query: str = None,
-        filter: SearchFilter = 0,
+        src_filter: SearchFilter = 0,
         page: int = 0,
         difficulty: List[Difficulty] = None,
         demon_difficulty: DemonDifficulty = None,
@@ -726,7 +851,7 @@ class Client:
         if filter == SearchFilter.FRIENDS and not self.account:
             raise ValueError("Only friends search is available when logged in.")
 
-        data = {"secret": _secret, "str": query, "type": filter, "page": page}
+        data = {"secret": SECRET, "str": query, "type": src_filter, "page": page}
 
         if difficulty:
             if Difficulty.DEMON in difficulty and len(difficulty) > 1:
@@ -748,7 +873,7 @@ class Client:
             data["star"] = 1
 
         if data["type"] == SearchFilter.FRIENDS:
-            data["accountID"] = self.account.id
+            data["accountID"] = self.account.account_id
             data["gjp2"] = self.account.gjp2
 
         response = await send_post_request(

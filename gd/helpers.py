@@ -1,11 +1,21 @@
+__doc__ = """
+# gd.helpers
+
+A module containing all helper functions for the module.
+
+You typically don't want to use this module because it has limited documentation and confusing to use.
+"""
+
 from functools import wraps
-from typing import Union
-from .exceptions import OnCooldown, LoginError
 from time import time
-from typing import Callable, Any
+
 from concurrent.futures import ThreadPoolExecutor
-import httpx
+from typing import Callable, Any, Union
 import asyncio
+
+import httpx
+
+from .exceptions import OnCooldown, LoginError
 
 
 # Decorators for Client, Cooldown, and Login Logic
@@ -46,19 +56,17 @@ def cooldown(seconds: Union[int, float]):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
             # Ensure each instance has its own last_called attribute
-            if not hasattr(self, "_last_called"):
-                self._last_called = {}
+            if not hasattr(self, "last_called"):
+                self.last_called = {}
 
-            last_called = self._last_called.get(func, 0)
+            last_called = self.last_called.get(func, 0)
             elapsed = time() - last_called
 
             if elapsed < seconds:
-                raise OnCooldown(
-                    f"This method is on cooldown for {seconds - elapsed:.3f} seconds. Please try again later."
-                )
+                raise OnCooldown(f"This function is on cooldown for {seconds - elapsed:.3f}s.")
 
             # Update the last_called time for this function in the instance
-            self._last_called[func] = time()
+            self.last_called[func] = time()
             return await func(self, *args, **kwargs)
 
         return wrapper
@@ -129,8 +137,8 @@ async def send_get_request(decode: bool = True, **kwargs) -> Union[str, bytes]:
 
     if decode:
         return response_data.decode()
-    else:
-        return response_data
+
+    return response_data
 
 
 async def aiorun(func: Callable, *args) -> Any:

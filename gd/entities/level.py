@@ -4,15 +4,36 @@
 A module containing all the classes and methods related to levels in Geometry Dash.
 """
 
-from ..parse import *
-from .enums import *
-from .cosmetics import *
 from typing import List, Optional, Union, Tuple
-from .song import Song, OfficialSong
 from datetime import datetime
 from dataclasses import dataclass
+
+from .song import Song, OfficialSong
 from .entity import Entity
-from ..helpers import *
+from ..helpers import send_post_request
+from ..parse import (
+    parse_level_data,
+    parse_comma_separated_int_list,
+    parse_key_value_pairs,
+    parse_search_results,
+    determine_difficulty,
+    determine_list_difficulty
+)
+from ..decode import decrypt_data
+from .enums import (
+    LevelRating,
+    ModRank,
+    Gamemode,
+    Length,
+    Difficulty
+)
+from .cosmetics import Icon
+from ..exceptions import (
+    ResponseError,
+    InvalidLevelID,
+    CommentError,
+    check_errors
+)
 
 # A dictionary containing all the names of gauntlets.
 GAUNTLETS = {
@@ -177,8 +198,7 @@ class Level(Entity):
         :return: A Level object created from the parsed data.
         """
         parsed = parsed_str
-        try:
-            return Level(
+        return Level(
                 # raw_str=parsed_str,
                 id=parsed.get("1"),
                 name=parsed.get("2"),
@@ -213,8 +233,6 @@ class Level(Entity):
                     OfficialSong(parsed.get("12")) if parsed.get("12") else None
                 ),
             )
-        except Exception as e:
-            raise ParseError(f"Could not parse the data provided, error: {e}")
 
     @staticmethod
     def _determine_rating(parsed: dict) -> LevelRating:
@@ -245,9 +263,9 @@ class Level(Entity):
 
         :param message: The message to send.
         :type message: str
-        :param percentage: The percentage of the level completed, optional. Defaults to 0.
+        :param percentage: The percentage of the level completed. Defaults to 0.
         :type percentage: int
-        :param client_index: The client index to send the comment as, optional. Defaults to the priority (default: 0)
+        :param client_index: The client index to send the comment as. Defaults to the priority.
         :type client_index: int
         :raises: gd.CommentError
         :return: The comment ID of the sent comment.
@@ -256,10 +274,7 @@ class Level(Entity):
         if client_index is None:
             client_index = self.main_client_index
 
-        try:
-            client = self.clients[client_index]
-        except IndexError:
-            raise IndexError(f"Client with index {client_index} not found.")
+        client = self.clients[client_index]
 
         if not client.logged_in:
             raise CommentError("Client is not logged in.")
@@ -272,7 +287,7 @@ class Level(Entity):
 @dataclass
 class LevelDisplay(Level):
     """
-    A class representing a level displayed in the search results in Geometry Dash. It's inherited from `Level`.
+    A class representing a level displayed in the search results in Geometry Dash.
 
     Attributes
     ----------
@@ -307,8 +322,7 @@ class LevelDisplay(Level):
             else None
         )
 
-        try:
-            return LevelDisplay(
+        return LevelDisplay(
                 # raw_str=parsed_str['level'],
                 id=instance.id,
                 name=instance.name,
@@ -342,9 +356,6 @@ class LevelDisplay(Level):
                 level_password=instance.level_password,
                 official_song=instance.official_song,
             )
-        except Exception as e:
-            raise ParseError(f"Could not parse the data provided, error: {e}")
-
 
 @dataclass
 class Comment(Entity):
@@ -416,42 +427,39 @@ class Comment(Entity):
         """
 
         parsed = raw_str.split(":")
-        user_value = parse_key_value_pairs(parsed[1], "~")
-        comment_value = parse_key_value_pairs(parsed[0], "~")
+        user_value = parse_key_value_pairs(parsed[1], "~").split("#")[0]
+        comment_value = parse_key_value_pairs(parsed[0], "~").split("#")[0]
 
-        try:
-            return Comment(
-                level_id=int(comment_value.get("1", 0)),
-                content=decrypt_data(comment_value.get("2", "")),
-                author_player_id=int(comment_value.get("3", 0)),
-                author_account_id=int(str(user_value.get("16", 0)).split("#")[0]),
-                likes=int(comment_value.get("4", 0)),
-                id=int(comment_value.get("6", 0)),
-                is_spam=bool(int(comment_value.get("7", 0))),
-                posted_ago=comment_value.get("9", None),
-                precentage=int(comment_value.get("10", 0)),
-                mod_level=ModRank(int(comment_value.get("11", 0))),
-                author_name=user_value.get("1", ""),
-                author_icon=Icon(
-                    user_value.get("9", ""),
-                    gamemode=Gamemode(int(user_value.get("14", 0))),
-                    primary_color_id=int(user_value.get("10", 1)),
-                    secondary_color_id=int(user_value.get("11", 1)),
-                    glow_color_id=None,
-                ),
-                author_icon_display_gamemode=Gamemode(int(user_value.get("14", 0))),
-                author_primary_color_id=int(user_value.get("10", 1)),
-                author_secondary_color_id=int(user_value.get("11", 1)),
-                author_has_glow=bool(int(user_value.get("15", 0))),
-            )
-        except Exception as e:
-            raise ParseError(f"Could not parse the data provided, error: {e}")
+        return Comment(
+            level_id=int(comment_value.get("1", 0)),
+            content=decrypt_data(comment_value.get("2", "")),
+            author_player_id=int(comment_value.get("3", 0)),
+            author_account_id=int(user_value.get('16', 0)),
+            likes=int(comment_value.get("4", 0)),
+            id=int(comment_value.get("6", 0)),
+            is_spam=bool(int(comment_value.get("7", 0))),
+            posted_ago=comment_value.get("9", None),
+            precentage=int(comment_value.get("10", 0)),
+            mod_level=ModRank(int(comment_value.get("11", 0))),
+            author_name=user_value.get("1", ""),
+            author_icon=Icon(
+                user_value.get("9", ""),
+                gamemode=Gamemode(int(user_value.get("14", 0))),
+                primary_color_id=int(user_value.get("10", 1)),
+                secondary_color_id=int(user_value.get("11", 1)),
+                glow_color_id=None,
+            ),
+            author_icon_display_gamemode=Gamemode(int(user_value.get("14", 0))),
+            author_primary_color_id=int(user_value.get("10", 1)),
+            author_secondary_color_id=int(user_value.get("11", 1)),
+            author_has_glow=bool(int(user_value.get("15", 0))),
+        )
 
 
 @dataclass
-class _ListLevel_(Entity):
+class ListLevels(Entity):
     """
-    A class representing a list of levels. (Used for inheritance, not for API.)
+    A class representing a list of levels. (Not to be confused with LevelList)
 
     Attributes
     ----------
@@ -466,18 +474,22 @@ class _ListLevel_(Entity):
 
     async def get_display_info_all_levels(self) -> Tuple[LevelDisplay]:
         """
-        A coroutine method that fetches and returns all the levels in the level list with their display information.
+        A method that gets all the levels in the list with their display information.
 
         :return: A tuple of LevelDisplay objects.
         """
         str_ids = ",".join([str(level) for level in self.levels_id])
+
         search_raw = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
             data={"secret": "Wmfd2893gb7", "str": str_ids, "type": 10},
         )
+
         check_errors(search_raw, ResponseError, "Unable to load all the levels.")
+
         search_parsed = parse_search_results(search_raw)
         level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
+
         return level_list
 
     async def download_level(self, index: int) -> Level:
@@ -505,7 +517,7 @@ class _ListLevel_(Entity):
 
 
 @dataclass
-class LevelList(_ListLevel_):
+class LevelList(ListLevels):
     """
     A class representing a list.
 
@@ -563,29 +575,26 @@ class LevelList(_ListLevel_):
         :return: A LevelList object created from the raw data.
         """
         parsed = parse_key_value_pairs(raw_str)
-        try:
-            return LevelList(
-                id=int(parsed.get("1", 0)),
-                name=parsed.get("2", ""),
-                level_ids=parse_comma_separated_int_list(parsed.get("51", "")),
-                description=decrypt_data(parsed.get("3", "")),
-                difficulty=determine_list_difficulty(parsed.get("7", None)),
-                downloads=int(parsed.get("10", 0)),
-                likes=int(parsed.get("14", 0)),
-                is_rated=True if parsed.get("19") else False,
-                upload_date=datetime.fromtimestamp(int(parsed.get("28", 0))),
-                last_update_date=datetime.fromtimestamp(int(parsed.get("29", 0))),
-                author_account_id=int(parsed.get("49", 0)),
-                author_name=parsed.get("50", ""),
-                diamonds=int(parsed.get("55", 0)),
-                minimum_levels=int(parsed.get("56", 0)),
-            )
-        except Exception as e:
-            raise ParseError(f"Could not parse the data provided, error: {e}")
+        return LevelList(
+            id=int(parsed.get("1", 0)),
+            name=parsed.get("2", ""),
+            level_ids=parse_comma_separated_int_list(parsed.get("51", "")),
+            description=decrypt_data(parsed.get("3", "")),
+            difficulty=determine_list_difficulty(parsed.get("7", None)),
+            downloads=int(parsed.get("10", 0)),
+            likes=int(parsed.get("14", 0)),
+            is_rated=True if parsed.get("19") else False,
+            upload_date=datetime.fromtimestamp(int(parsed.get("28", 0))),
+            last_update_date=datetime.fromtimestamp(int(parsed.get("29", 0))),
+            author_account_id=int(parsed.get("49", 0)),
+            author_name=parsed.get("50", ""),
+            diamonds=int(parsed.get("55", 0)),
+            minimum_levels=int(parsed.get("56", 0)),
+        )
 
 
 @dataclass
-class MapPack(_ListLevel_):
+class MapPack(ListLevels):
     """
     A class representing a map pack.
 
@@ -625,27 +634,23 @@ class MapPack(_ListLevel_):
         :return: A MapPack object created from the raw data.
         """
         parsed = parse_key_value_pairs(raw_str)
-        try:
-            return MapPack(
-                id=int(parsed.get("1", 0)),
-                name=parsed.get("2", ""),
-                level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
-                stars=int(parsed.get("4", 0)),
-                coins=int(parsed.get("5", 0)),
-                difficulty=Difficulty(int(parsed.get("6", 0))),
-                text_rgb_color=tuple(
-                    parse_comma_separated_int_list(parsed.get("7", ""))
-                ),
-                progress_bar_rgb_color=tuple(
-                    parse_comma_separated_int_list(parsed.get("8", ""))
-                ),
-            )
-        except Exception as e:
-            raise ParseError(f"Could not parse the data provided, error: {e}")
-
+        return MapPack(
+            id=int(parsed.get("1", 0)),
+            name=parsed.get("2", ""),
+            level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
+            stars=int(parsed.get("4", 0)),
+            coins=int(parsed.get("5", 0)),
+            difficulty=Difficulty(int(parsed.get("6", 0))),
+            text_rgb_color=tuple(
+                parse_comma_separated_int_list(parsed.get("7", ""))
+            ),
+            progress_bar_rgb_color=tuple(
+                parse_comma_separated_int_list(parsed.get("8", ""))
+            ),
+        )
 
 @dataclass
-class Gauntlet(_ListLevel_):
+class Gauntlet(ListLevels):
     """
     A class representing a gauntlet.
 
@@ -674,19 +679,17 @@ class Gauntlet(_ListLevel_):
         """
         parsed: dict = parse_key_value_pairs(raw_str)
         name: str = GAUNTLETS[str(parsed.get("1"))]
-        try:
-            return Gauntlet(
-                id=parsed.get("1", 0),
-                name=name,
-                level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
-                image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png",
-            )
-        except Exception as e:
-            raise ParseError(f"Could not parse the data provided, error: {e}")
+
+        return Gauntlet(
+            id=parsed.get("1", 0),
+            name=name,
+            level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
+            image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png"
+        )
 
     async def get_display_info_all_levels(self) -> Tuple[LevelDisplay]:
         """
-        A coroutine method that fetches and returns all the levels in the gauntlet with their display information.
+        A method that gets all the levels in the gauntlet with their display information.
 
         :return: A tuple of LevelDisplay objects.
         """

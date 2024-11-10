@@ -4,17 +4,18 @@ A module containing all the classes and methods related to songs in Geometry Das
 """
 
 from urllib.parse import unquote
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Union
 from datetime import timedelta
-from ..parse import *
-from ..helpers import *
-from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
+from dataclasses import dataclass, field
+
 from aiofiles import open as aioopen
-import os
+
+from ..parse import parse_song_data
+from ..helpers import send_get_request
 
 # Music Library
-
 
 @dataclass
 class MusicLibrary:
@@ -63,23 +64,20 @@ class MusicLibrary:
         @staticmethod
         def from_raw(raw_str: str) -> "MusicLibrary.Artist":
             """
-            A static method that converts a raw string from the servers to a `MusicLibraryArtist` instance.
+            A static method that creates a `MusicLibrary.Artist` object from raw data.
 
             :param raw_str: The raw str returned from the servers.
             :type raw_str: str
             :return: A `MusicLibraryArtist` instance.
             """
 
-            try:
-                parsed = raw_str.strip().split(",")
-                return MusicLibrary.Artist(
-                    id=int(parsed[0]),
-                    name=parsed[1],
-                    website=unquote(parsed[2]) if parsed[2].strip() else None,
-                    youtube_channel_id=parsed[3] if parsed[3].strip() else None,
-                )
-            except Exception as e:
-                raise ParseError(f"Cannot parse the data provided, error: {e}")
+            parsed = raw_str.strip().split(",")
+            return MusicLibrary.Artist(
+                id=int(parsed[0]),
+                name=parsed[1],
+                website=unquote(parsed[2]) if parsed[2].strip() else None,
+                youtube_channel_id=parsed[3] if parsed[3].strip() else None,
+            )
 
     @dataclass
     class Song:
@@ -117,11 +115,11 @@ class MusicLibrary:
         @staticmethod
         def from_raw(
             raw_str: str,
-            artists_list: Dict[int, "MusicLibrary.Artist"] = {},
+            artists_list: Dict[int, "MusicLibrary.Artist"],
             tags_list: Dict[int, str] = None,
         ) -> "MusicLibrary.Song":
             """
-            A static method that converts a raw string from the servers to a `MusicLibrarySong` instance.
+            A static method that converts raw string to a `MusicLibrary.Song` instance.
 
             :param raw_str: The raw str returned from the servers.
             :type raw_str: str
@@ -130,49 +128,47 @@ class MusicLibrary:
             :return: An instance of a MusicLibrarySong.
             """
 
-            try:
-                parsed = raw_str.strip().split(",")
+            parsed = raw_str.strip().split(",")
 
-                artist_id = int(parsed[2]) if parsed[2].strip().isdigit() else None
-                raw_song_tag_list = [tag for tag in parsed[5].split(".") if tag]
-                song_tag_list = {tags_list.get(int(tag)) for tag in raw_song_tag_list}
+            artist_id = int(parsed[2]) if parsed[2].strip().isdigit() else None
+            raw_song_tag_list = [tag for tag in parsed[5].split(".") if tag]
+            song_tag_list = {tags_list.get(int(tag)) for tag in raw_song_tag_list}
 
-                return MusicLibrary.Song(
-                    id=int(parsed[0]),
-                    name=parsed[1],
-                    artist=artists_list.get(artist_id),
-                    tags=song_tag_list,
-                    size=float(parsed[3]),
-                    duration_seconds=timedelta(seconds=int(parsed[4])),
-                    is_ncs=parsed[6] == "1",
-                    link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
-                    external_link=f"https://{unquote(parsed[8])}",
-                )
-            except Exception as e:
-                raise ParseError(f"Cannot parse the data provided, error: {e}")
+            return MusicLibrary.Song(
+                id=int(parsed[0]),
+                name=parsed[1],
+                artist=artists_list.get(artist_id),
+                tags=song_tag_list,
+                size=float(parsed[3]),
+                duration_seconds=timedelta(seconds=int(parsed[4])),
+                is_ncs=parsed[6] == "1",
+                link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
+                external_link=f"https://{unquote(parsed[8])}",
+            )
 
-        async def download_to(self, path: str = None) -> None:
+        async def download_to(self, path: Union[str, Path] = None) -> None:
             """
             Downloads the song to a specified path.
 
-            :param path: Full path to save the file, including filename. Defaults to current directory with ID as filename.
+            :param path: Full path to save the file, including filename.
             :type path: str
             """
 
             if path is None:
-                path = os.path.join(os.getcwd(), f"{self.id}.ogg")
-            elif not path.endswith(".ogg"):
-                raise ValueError("Path must end with .ogg!")
+                path = Path.cwd() / f"{self.id}.ogg"
+
+            if not isinstance(path, Path):
+                path = Path(path)
+
+            if not path.suffix:
+                raise ValueError("Path must end with an extension!")
 
             # Ensure the directory exists
-            os.makedirs(os.path.dirname(path), exist_ok=True)
+            path.parent.mkdir(parents=True, exist_ok=True)
 
-            try:
-                response = await send_get_request(decode=False, url=self.link)
-                async with aioopen(path, "wb") as file:
-                    await file.write(response)
-            except Exception as e:
-                raise DownloadSongError(f"Error downloading song: {e}")
+            response = await send_get_request(decode=False, url=self.link)
+            async with aioopen(path, "wb") as file:
+                await file.write(response)
 
     @staticmethod
     def from_raw(raw_str: str) -> "MusicLibrary":
@@ -241,16 +237,16 @@ class MusicLibrary:
                 return song
         return None
 
-    def get_song_by_id(self, id: int) -> Song | None:
+    def get_song_by_id(self, song_id: int) -> Song | None:
         """
         Get a song by it's ID.
 
-        :param id: The ID of the song.
-        :type id: int
+        :param song_id: The ID of the song.
+        :type song_id: int
         :return: A `MusicLibrarySong` instance if found, otherwise None.
         """
         for song in self.songs.values():
-            if id == song.id:
+            if song_id == song.id:
                 return song
         return None
 
@@ -363,13 +359,21 @@ class SoundEffectLibrary:
 
         @staticmethod
         def from_raw(raw_str: str) -> "SoundEffectLibrary.Creator":
+            """
+            A static method that creates a SoundEffectLibrary.Creator from raw data.
+
+            :param raw_str: The raw data of the creator.
+            :type raw_str: str
+            :return: An instance of the SoundEffectLibrary.Creator class.
+            :rtype: SoundEffectLibrary.Creator
+            """
             parsed = raw_str.strip().split(",")
             return SoundEffectLibrary.Creator(name=parsed[0], url=unquote(parsed[1]))
 
     @staticmethod
     def from_raw(raw_str: str) -> "SoundEffectLibrary":
         """
-        A static method that converts the raw data returned from the servers to a SoundEffectLibrary instance.
+        A static method that converts raw data to a SoundEffectLibrary instance.
 
         :param raw_str: The raw data returned from the servers.
         :type raw_str: str
@@ -378,6 +382,8 @@ class SoundEffectLibrary:
         parsed = raw_str.strip().split("|")
         parsed_sfx = parsed[0].split(";")
         parsed_creators = parsed[1].split(";")
+
+        version_name = None
 
         # Check if the entity is a folder or a sound effect and sorts them.
         folders = []
@@ -419,30 +425,30 @@ class SoundEffectLibrary:
 
         return None
 
-    def get_folder_by_id(self, id: int) -> Union["SoundEffectLibrary.Folder", None]:
+    def get_folder_by_id(self, folder_id: int) -> Union["SoundEffectLibrary.Folder", None]:
         """
         Get a folder by it's ID.
 
-        :param id: The ID of the folder.
-        :type id: int
+        :param folder_id: The ID of the folder.
+        :type folder_id: int
         :return: A SoundEffectLibrary.Folder class, if not found, returns NoneType.
         """
         for folder in self.folders:
-            if folder.id == id:
+            if folder.id == folder_id:
                 return folder
 
         return None
 
-    def get_sfx_by_id(self, id: int) -> Union["SoundEffect", None]:
+    def get_sfx_by_id(self, sfx_id: int) -> Union["SoundEffect", None]:
         """
         Get a sound effect by it's ID.
 
-        :param id: The ID of the sound effect.
-        :type id: int
+        :param sfx_id: The ID of the sound effect.
+        :type sfx_id: int
         :return: A SoundEffect class, if not found, returns NoneType.
         """
         for sfx in self.sfx:
-            if sfx.id == id:
+            if sfx.id == sfx_id:
                 return sfx
 
         return None
@@ -545,32 +551,32 @@ class SoundEffect:
             duration=timedelta(seconds=int(parsed[5]) // 100),
         )
 
-    async def download_to(self, path: str = None) -> None:
+    async def download_to(self, path: Union[str, Path] = None) -> None:
         """
         Downloads the song to a specified path.
 
-        :param path: Full path to save the file, including filename. Defaults to current directory with ID as filename.
+        :param path: Full path to save the file, including filename.
         :type path: str
         """
 
         if path is None:
-            path = os.path.join(os.getcwd(), f"{self.id}.ogg")
-        elif not path.endswith(".ogg"):
-            raise ValueError("Path must end with .ogg!")
+            path = Path.cwd() / f"{self.id}.ogg"
+
+        if not isinstance(path, Path):
+            path = Path(path)
+
+        if not path.suffix:
+            raise ValueError("Path must end with an extension!")
 
         # Ensure the directory exists
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
 
-        try:
-            response = await send_get_request(decode=False, url=self.url)
-            async with aioopen(path, "wb") as file:
-                await file.write(response)
-        except Exception as e:
-            raise DownloadSongError(f"Error downloading song: {e}")
+        response = await send_get_request(decode=False, url=self.url)
+        async with aioopen(path, "wb") as file:
+            await file.write(response)
 
 
 # Level song
-
 
 @dataclass
 class Song:
@@ -656,28 +662,29 @@ class Song:
             is_in_library=int(parsed.get("1")) >= 10000000,
         )
 
-    async def download_to(self, path: str = None) -> None:
+    async def download_to(self, path: Union[str, Path] = None) -> None:
         """
         Downloads the song to a specified path.
 
-        :param path: Full path to save the file, including filename. Defaults to current directory with ID as filename.
+        :param path: Full path to save the file, including filename.
         :type path: str
         """
 
         if path is None:
-            path = os.path.join(os.getcwd(), f"{self.id}.ogg")
-        elif not path.endswith(".ogg"):
-            raise ValueError("Path must end with .ogg!")
+            path = Path.cwd() / f"{self.id}.mp3"
+
+        if not isinstance(path, Path):
+            path = Path(path)
+
+        if not path.suffix:
+            raise ValueError("Path must end with an extension!")
 
         # Ensure the directory exists
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
 
-        try:
-            response = await send_get_request(decode=False, url=self.link)
-            async with aioopen(path, "wb") as file:
-                await file.write(response)
-        except Exception as e:
-            raise DownloadSongError(f"Error downloading song: {e}")
+        response = await send_get_request(decode=False, url=self.link)
+        async with aioopen(path, "wb") as file:
+            await file.write(response)
 
 
 class OfficialSong(Enum):

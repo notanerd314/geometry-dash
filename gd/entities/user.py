@@ -3,20 +3,24 @@
 A module containing all the classes and methods related to users and accounts in Geometry Dash.
 """
 
-from ..parse import *
-from .enums import *
-from .cosmetics import *
-from .level import Comment, LevelDisplay
 from typing import List, Optional, Union
 from dataclasses import dataclass
-from .entity import Entity
 from hashlib import sha1
-from ..helpers import *
+
 import colorama as color
+
+from ..parse import parse_key_value_pairs
+from .enums import Gamemode, ModRank
+from .cosmetics import IconSet
+from .level import Comment, LevelDisplay
+from .entity import Entity
+from ..decode import decrypt_data
+from ..helpers import send_post_request
+from ..exceptions import (LoadError, check_errors)
 
 color.init(autoreset=True)
 
-_secret = "Wmfd2893gb7"
+SECRET = "Wmfd2893gb7"
 PASSWORD_SALT = "mI29fmAnxgTs"
 
 
@@ -65,16 +69,13 @@ class Post:
         parsed = raw_str.split(":")
         comment_value = parse_key_value_pairs(parsed[0], "~")
 
-        try:
-            return Post(
-                content=decrypt_data(comment_value.get("2", "")),
-                likes=int(comment_value.get("4", 0)),
-                post_id=int(comment_value.get("6", 0)),
-                posted_ago=comment_value.get("9", None),
-                author_account_id=account_id,
-            )
-        except Exception as e:
-            raise ParseError(f"Failed to parse the data provided, error: {e}")
+        return Post(
+            content=decrypt_data(comment_value.get("2", "")),
+            likes=int(comment_value.get("4", 0)),
+            post_id=int(comment_value.get("6", 0)),
+            posted_ago=comment_value.get("9", None),
+            author_account_id=account_id,
+        )
 
 
 # * Classes representing stats
@@ -255,8 +256,7 @@ class Player(Entity):
             int(parsed.get("51")) if parsed.get("51", None) is not None else None
         )
 
-        try:
-            return Player(
+        return Player(
                 name=parsed.get("1", None),
                 player_id=parsed.get("2", 0),
                 account_id=parsed.get("16", 0),
@@ -342,8 +342,6 @@ class Player(Entity):
                     glow_color=glow_color,
                 ),
             )
-        except Exception as e:
-            raise ParseError(f"Could not parse the data provided, error: {e}")
 
     async def posts(self, page: int = 0) -> List[Post] | None:
         """
@@ -355,13 +353,13 @@ class Player(Entity):
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
-            data={"secret": _secret, "accountID": self.account_id, "page": page},
+            data={"secret": SECRET, "accountID": self.account_id, "page": page},
         )
 
         check_errors(
             response,
             LoadError,
-            f"Something wrong had happened when fetching the user's posts.",
+            "Something wrong had happened when fetching the user's posts.",
         )
         if not response.split("#")[0]:
             return None
@@ -381,14 +379,14 @@ class Player(Entity):
 
         :param page: The page number to load, default is 0.
         :type page: int
-        :param display_most_liked: If True, display most liked comments, otherwise display newest comments.
+        :param display_most_liked: If sort by most liked, else sort recent.
         :type display_most_liked: bool
         :return: A list of Comment instances.
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={
-                "secret": _secret,
+                "secret": SECRET,
                 "userID": self.player_id,
                 "page": page,
                 "mode": int(display_most_liked),
@@ -397,7 +395,7 @@ class Player(Entity):
         check_errors(
             response,
             LoadError,
-            f"Something wrong had happened when fetching the user's comments.",
+            "Something wrong had happened when fetching the user's comments.",
         )
         if not response.split("#")[0]:
             return None
@@ -418,13 +416,13 @@ class Player(Entity):
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={"secret": _secret, "type": 5, "page": page, "str": self.player_id},
+            data={"secret": SECRET, "type": 5, "page": page, "str": self.player_id},
         )
 
         check_errors(
             response,
             LoadError,
-            f"Something wrong had happened when fetching the user's levels.",
+            "Something wrong had happened when fetching the user's levels.",
         )
         if not response.split("#")[0]:
             return None
@@ -467,8 +465,5 @@ class Account:
         Generate GJP2 hash from password.
         """
         encrypted_password = self.password + PASSWORD_SALT
-        hash = sha1(encrypted_password.encode()).hexdigest()
-        return hash
-
-    def __repr__(self) -> str:
-        return f"Account(account_id={self.account_id}, player_id={self.player_id}, name='{self.name}', password=********)"
+        gjp = sha1(encrypted_password.encode()).hexdigest()
+        return gjp
