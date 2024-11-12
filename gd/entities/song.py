@@ -14,7 +14,6 @@ from aiofiles import open as aioopen
 
 from ..parse import parse_song_data
 from ..helpers import send_get_request
-from .entity import GDObject
 
 # Music Library
 
@@ -42,7 +41,7 @@ class MusicLibrary:
     tags: Dict[int, str] = field(default_factory=dict)
 
     @dataclass
-    class Artist(GDObject):
+    class Artist:
         """
         A class representing an artist in the music library.
 
@@ -66,7 +65,7 @@ class MusicLibrary:
         @staticmethod
         def from_raw(raw_str: str) -> "MusicLibrary.Artist":
             """
-            A static method that creates a `MusicLibrary.Artist` object from raw data.
+            A static method that creates a `MusicLibrary.Artist`  from raw data.
 
             :param raw_str: The raw str returned from the servers.
             :type raw_str: str
@@ -82,7 +81,7 @@ class MusicLibrary:
             )
 
     @dataclass
-    class Song(GDObject):
+    class Song:
         """
         A class representing a song in the music library.
 
@@ -311,7 +310,7 @@ class SoundEffectLibrary:
     sfx: List["SoundEffect"]
 
     @dataclass
-    class Folder(GDObject):
+    class Folder:
         """
         A class representing a folder in the SFX library.
 
@@ -344,7 +343,7 @@ class SoundEffectLibrary:
             )
 
     @dataclass
-    class Creator(GDObject):
+    class Creator:
         """
         A class representing a creator in the SFX library.
 
@@ -393,6 +392,9 @@ class SoundEffectLibrary:
         for entity in parsed_sfx:
             is_folder = entity.strip().split(",")[2:3] == ["1"]
 
+            if not entity:
+                continue
+
             if is_folder:
                 folder = SoundEffectLibrary.Folder.from_raw(entity)
                 if folder.id == 1:
@@ -400,8 +402,8 @@ class SoundEffectLibrary:
                 else:
                     folders.append(folder)
             else:
-                sfx_object = SoundEffect.from_raw(entity)
-                sfx.append(sfx_object)
+                sfx_ = SoundEffect.from_raw(entity)
+                sfx.append(sfx_)
 
         creators = [
             SoundEffectLibrary.Creator.from_raw(creator)
@@ -509,7 +511,7 @@ class SoundEffectLibrary:
 
 
 @dataclass
-class SoundEffect(GDObject):
+class SoundEffect:
     """
     A class representing a sound effect in the SFX library.
 
@@ -539,7 +541,7 @@ class SoundEffect(GDObject):
     @staticmethod
     def from_raw(raw_str: str) -> "SoundEffect":
         """
-        A static method that converts the raw data from the servers into a SFX object.
+        A static method that converts the raw data from the servers into a SFX .
 
         :param raw_str: The raw data from the servers.
         :type raw_str: str
@@ -584,7 +586,7 @@ class SoundEffect(GDObject):
 
 
 @dataclass
-class Song(GDObject):
+class Song:
     """
     A class representing a level song in the Geometry Dash level.
 
@@ -626,7 +628,7 @@ class Song(GDObject):
     @staticmethod
     def from_raw(raw_str: str) -> "Song":
         """
-        A static method that converts the raw data from the servers into a Song object.
+        A static method that converts the raw data from the servers into a Song .
 
         :param raw_str: The raw data from the servers.
         :type raw_str: str
@@ -638,7 +640,7 @@ class Song(GDObject):
     @staticmethod
     def from_parsed(parsed_str: Dict) -> "Song":
         """
-        A static method that converts the parsed string into a Song object.
+        A static method that converts the parsed string into a Song .
 
         :param parsed_str: The parsed string from the servers.
         :type parsed_str: str

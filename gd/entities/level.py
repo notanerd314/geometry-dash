@@ -10,19 +10,17 @@ from dataclasses import dataclass
 
 from .song import Song, OfficialSong
 from .entity import Entity
-from ..helpers import send_post_request
+from ..helpers import require_client
 from ..parse import (
     parse_level_data,
     parse_comma_separated_int_list,
     parse_key_value_pairs,
-    parse_search_results,
     determine_difficulty,
     determine_list_difficulty,
 )
 from ..decode import decrypt_data
-from .enums import LevelRating, ModRank, Gamemode, Length, Difficulty
+from .enums import LevelRating, ModRank, Gamemode, Length, Difficulty, SearchFilter
 from .cosmetics import Icon
-from ..exceptions import ResponseError, InvalidLevelID, CommentError, check_errors
 
 # A dictionary containing all the names of gauntlets.
 GAUNTLETS = {
@@ -236,15 +234,18 @@ class Level(Entity):
 
         if parsed.get("42", 0) >= 1:
             return LevelRating(parsed.get("42"))
-        elif parsed.get("19", 0) >= 1:
+
+        if parsed.get("19", 0) >= 1:
             return LevelRating.FEATURED
-        elif parsed.get("18", 0) != 0:
+
+        if parsed.get("18", 0) != 0:
             return LevelRating.RATED
 
         return LevelRating.NO_RATE
 
+    @require_client()
     async def comment(
-        self, message: str, percentage: int = 0, client_index: int = None
+        self, message: str, percentage: int = 0, client: int = None
     ) -> int:
         """
         Sends a comment to the level.
@@ -261,14 +262,6 @@ class Level(Entity):
         :return: The comment ID of the sent comment.
         :rtype: int
         """
-        if client_index is None:
-            client_index = self.main_client_index
-
-        client = self.clients[client_index]
-
-        if not client.logged_in:
-            raise CommentError("Client is not logged in.")
-
         return await client.comment(
             message=message, level_id=self.id, percentage=percentage
         )
@@ -418,8 +411,8 @@ class Comment(Entity):
         """
 
         parsed = raw_str.split(":")
-        user_value = parse_key_value_pairs(parsed[1], "~").split("#")[0]
-        comment_value = parse_key_value_pairs(parsed[0], "~").split("#")[0]
+        user_value = parse_key_value_pairs(parsed[1], "~")
+        comment_value = parse_key_value_pairs(parsed[0], "~")
 
         return Comment(
             level_id=int(comment_value.get("1", 0)),
@@ -463,7 +456,8 @@ class ListLevels(Entity):
     name: str = None
     level_ids: List[int] = None
 
-    async def get_display_info_all_levels(self) -> Tuple[LevelDisplay]:
+    @require_client()
+    async def levels(self, client: int = None) -> Tuple[LevelDisplay]:
         """
         A method that gets all the levels in the list with their display information.
 
@@ -471,19 +465,12 @@ class ListLevels(Entity):
         """
         str_ids = ",".join([str(level) for level in self.levels_id])
 
-        search_raw = await send_post_request(
-            url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={"secret": "Wmfd2893gb7", "str": str_ids, "type": 10},
+        return await client.search_level(
+            query=str_ids, src_filter=SearchFilter.LIST_OF_LEVELS
         )
 
-        check_errors(search_raw, ResponseError, "Unable to load all the levels.")
-
-        search_parsed = parse_search_results(search_raw)
-        level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
-
-        return level_list
-
-    async def download_level(self, index: int) -> Level:
+    @require_client()
+    async def download_level(self, index: int, client: int = None) -> Level:
         """
         A coroutine method that downloads a level from the level list based on the index.
 
@@ -492,19 +479,10 @@ class ListLevels(Entity):
         :return: A Level object representing the downloaded level.
         """
         if index < 0 or index >= len(self.levels_id):
-            raise IndexError("Invalid level index, index limit is 4.")
+            raise IndexError("Invalid level index.")
 
         level_id = self.levels_id[index]
-        download_raw = await send_post_request(
-            url="http://www.boomlings.com/database/downloadGJLevel22.php",
-            data={"secret": "Wmfd2893gb7", "levelID": level_id},
-        )
-        check_errors(
-            download_raw,
-            InvalidLevelID,
-            "Can't download the level provided, maybe a mix up with the IDs",
-        )
-        return Level.from_raw(download_raw)
+        return await client.download_level(level_id=level_id)
 
 
 @dataclass
@@ -574,7 +552,7 @@ class LevelList(ListLevels):
             difficulty=determine_list_difficulty(parsed.get("7", None)),
             downloads=int(parsed.get("10", 0)),
             likes=int(parsed.get("14", 0)),
-            is_rated=True if parsed.get("19") else False,
+            is_rated=bool(parsed.get("19")),
             upload_date=datetime.fromtimestamp(int(parsed.get("28", 0))),
             last_update_date=datetime.fromtimestamp(int(parsed.get("29", 0))),
             author_account_id=int(parsed.get("49", 0)),
@@ -676,19 +654,3 @@ class Gauntlet(ListLevels):
             level_ids=parse_comma_separated_int_list(parsed.get("3", "")),
             image_url=f"https://gdbrowser.com/assets/gauntlets/{name.lower().replace(" ", "_")}.png",
         )
-
-    async def get_display_info_all_levels(self) -> Tuple[LevelDisplay]:
-        """
-        A method that gets all the levels in the gauntlet with their display information.
-
-        :return: A tuple of LevelDisplay objects.
-        """
-        search_raw = await send_post_request(
-            url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={"secret": "Wmfd2893gb7", "gauntlet": self.id},
-        )
-        check_errors(search_raw, ResponseError, "Unable to load all the levels.")
-        search_parsed = parse_search_results(search_raw)
-        level_list = [LevelDisplay.from_dict(level) for level in search_parsed]
-
-        return level_list

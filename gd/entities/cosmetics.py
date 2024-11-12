@@ -427,7 +427,7 @@ class IconSet:
         )
 
         # Zip gamemodes with their corresponding icon BytesIO object
-        return {gamemode: icon for gamemode, icon in zip(self.all_icons.keys(), icons)}
+        return dict(zip(self.all_icons.keys(), icons))
 
     async def download_all_to(self, path: Union[str, Path] = None) -> None:
         """

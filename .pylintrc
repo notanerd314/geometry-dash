@@ -1,8 +1,11 @@
 [MESSAGES CONTROL]
-disable=E0402
+disable=E0402,R0902
 
 [FORMAT]
 max-line-length=150
 
 [MASTER]
-ignore=tests
+ignore=tests.py
+
+[DESIGN]
+max-args=20

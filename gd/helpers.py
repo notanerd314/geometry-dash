@@ -8,20 +8,19 @@ You typically don't want to use this module because it has limited documentation
 
 from functools import wraps
 from time import time
-from enum import Enum
-from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Any, Union
-import asyncio
+from typing import Union
 
 import httpx
-import colorama
 
 from .exceptions import OnCooldown, LoginError
+
+MAX_LENGTH = 15
 
 
 # Decorators for Client, Cooldown, and Login Logic
 def require_client(
     error_message: str = "At least one client must be attached in order to use this function.",
+    login: bool = False,
 ):
     """
     A decorator for functions that require a client.
@@ -35,8 +34,32 @@ def require_client(
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
+            # Safely get the client from kwargs or use default logic
+            client = kwargs.get("client", None)
+
             if not self.clients:
-                raise ValueError(error_message)
+                raise ValueError(
+                    error_message
+                )  # Raise an error if no clients are attached
+
+            # If no client was passed, use the main client index
+            if client is None:
+                client = self.main_client_index
+
+            # Ensure `client` is a valid instance (in case it's an index)
+            if isinstance(client, int):
+                if client >= len(self.clients) or client < 0:
+                    raise ValueError("Invalid client index.")
+                client = self.clients[client]
+
+            # Check if client is logged in (if required)
+            if login and not client.logged_in:
+                raise LoginError("The client chosen is not logged in.")
+
+            # Update kwargs with the correct client if modified
+            kwargs["client"] = client
+
+            # Now call the original async function and await it
             return await func(self, *args, **kwargs)
 
         return wrapper
@@ -142,82 +165,3 @@ async def send_get_request(decode: bool = True, **kwargs) -> Union[str, bytes]:
         return response_data.decode()
 
     return response_data
-
-
-async def aiorun(func: Callable, *args) -> Any:
-    """
-    Runs a function without blocking the event thread.
-
-    :param func: The function to run.
-    :type func: Callable
-    :param *args: The arguments to pass to the function.
-    :return: The result of the function.
-    :rtype: Any
-    """
-    loop = asyncio.get_event_loop()
-    # Use ThreadPoolExecutor to offload the blocking I/O
-    with ThreadPoolExecutor() as pool:
-        result = await loop.run_in_executor(pool, func, *args)
-    return result
-
-
-# Displaying
-def represent(classdict: dict, redact: list[str] = None) -> str:
-    """
-    Returns a string representation of a class.
-
-    :param classdict: The class dictionary to represent.
-    :type classdict: dict
-    :return: A string representation of the class.
-    :rtype: str
-    """
-    if redact is None:
-        redact = []
-
-    representation = []
-
-    for key, value in classdict.items():
-        key = colorama.Fore.YELLOW + key.replace("_", " ").title()
-
-        if len(str(value)) > 250:
-            value = f"{value[:250]}..."
-
-        if key in redact:
-            value = colorama.Fore.LIGHTRED_EX + "***********"
-        elif isinstance(value, str):
-            value = colorama.Fore.LIGHTGREEN_EX + f"'{value}'"
-        elif isinstance(value, bool):
-            if value:
-                value = colorama.Fore.GREEN + "True"
-            else:
-                value = colorama.Fore.RED + "False"
-        elif isinstance(
-            value,
-            (
-                float,
-                int,
-            ),
-        ):
-            value = colorama.Fore.CYAN + str(value)
-        elif value is None:
-            value = colorama.Fore.MAGENTA + "None"
-        elif isinstance(value, Enum):
-            value = (
-                colorama.Fore.RESET
-                + f"{value.__class__.__name__}."
-                + colorama.Fore.CYAN
-                + value.name
-            )
-        elif isinstance(
-            value,
-            (
-                list,
-                tuple,
-                dict,
-            ),
-        ):
-            value = colorama.Fore.RESET + str(value)
-
-        representation.append(f"{key}: {value}" + colorama.Fore.RESET)
-
-    return "\n".join(representation)

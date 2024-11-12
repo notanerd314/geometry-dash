@@ -183,6 +183,8 @@ class SearchFilter(IntEnum):
     """Sort top lists."""
     MAGIC = 7
     """Sort to magic."""
+    LIST_OF_LEVELS = 10
+    """Get the display information for levels. (Seperated by a comma)"""
     AWARDED = 11
     """Sort to recently rated."""
     HALL_OF_FAME = 16

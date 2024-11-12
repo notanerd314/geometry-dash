@@ -15,8 +15,7 @@ from .cosmetics import IconSet
 from .level import Comment, LevelDisplay
 from .entity import Entity
 from ..decode import decrypt_data
-from ..helpers import send_post_request
-from ..exceptions import LoadError, check_errors
+from ..helpers import require_client
 
 color.init(autoreset=True)
 
@@ -25,7 +24,7 @@ PASSWORD_SALT = "mI29fmAnxgTs"
 
 
 @dataclass
-class Post:
+class Post(Entity):
     """
     A class representing a post from a player.
 
@@ -268,7 +267,7 @@ class Player(Entity):
             creator_points=parsed.get("8", 0),
             secret_coins=parsed.get("13", 0),
             user_coins=parsed.get("17", 0),
-            registered=True if parsed.get("29") == 1 else False,
+            registered=parsed.get("29") == 1,
             mod_level=ModRank(parsed.get("49", 0)),
             profile_icon_type=Gamemode(parsed.get("14", 1)),
             primary_color_id=primary_color,
@@ -343,36 +342,22 @@ class Player(Entity):
             ),
         )
 
-    async def posts(self, page: int = 0) -> List[Post] | None:
+    @require_client()
+    async def posts(self, page: int = 0, client: int = None) -> List[Post] | None:
         """
         Load all posts from the user.
 
         :param page: The page number to load, default is 0.
         :type page: int
+        :param client: The client index to use in the attached clients list. Defaults to 0.
+        :type client: int
         :return: A list of Post instances or None if the request failed.
         """
-        response = await send_post_request(
-            url="http://www.boomlings.com/database/getGJAccountComments20.php",
-            data={"secret": SECRET, "accountID": self.account_id, "page": page},
-        )
+        return await client.get_user_posts(self.player_id, page)
 
-        check_errors(
-            response,
-            LoadError,
-            "Something wrong had happened when fetching the user's posts.",
-        )
-        if not response.split("#")[0]:
-            return None
-
-        posts_list = []
-        parsed_res = response.split("#")[0]
-        parsed_res = response.split("|")
-        for post in parsed_res:
-            posts_list.append(Post.from_raw(post, self.account_id))
-        return posts_list
-
+    @require_client()
     async def comments(
-        self, page: int = 0, display_most_liked: bool = False
+        self, page: int = 0, display_most_liked: bool = False, client: int = None
     ) -> List[Comment]:
         """
         Get user's comments history.
@@ -383,29 +368,10 @@ class Player(Entity):
         :type display_most_liked: bool
         :return: A list of Comment instances.
         """
-        response = await send_post_request(
-            url="http://www.boomlings.com/database/getGJCommentHistory.php",
-            data={
-                "secret": SECRET,
-                "userID": self.player_id,
-                "page": page,
-                "mode": int(display_most_liked),
-            },
-        )
-        check_errors(
-            response,
-            LoadError,
-            "Something wrong had happened when fetching the user's comments.",
-        )
-        if not response.split("#")[0]:
-            return None
+        return await client.get_user_comments(self.player_id, page, display_most_liked)
 
-        return [
-            Comment.from_raw(comment_data)
-            for comment_data in response.split("#")[0].split("|")
-        ]
-
-    async def levels(self, page: int = 0) -> List[LevelDisplay]:
+    @require_client()
+    async def levels(self, page: int = 0, client: int = None) -> List[LevelDisplay]:
         """
         Get user's levels.
 
@@ -414,23 +380,7 @@ class Player(Entity):
         :return: A list of LevelDisplay instances.
         """
 
-        response = await send_post_request(
-            url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={"secret": SECRET, "type": 5, "page": page, "str": self.player_id},
-        )
-
-        check_errors(
-            response,
-            LoadError,
-            "Something wrong had happened when fetching the user's levels.",
-        )
-        if not response.split("#")[0]:
-            return None
-
-        return [
-            LevelDisplay.from_raw(level_data)
-            for level_data in response.split("#")[0].split("|")
-        ]
+        return await client.get_user_levels(self.player_id, page)
 
 
 @dataclass
@@ -462,7 +412,7 @@ class Account:
     @property
     def gjp2(self) -> str:
         """
-        Generate GJP2 hash from password.
+        Generate GJP2 hash from password. (Recommended for 2.2s)
         """
         encrypted_password = self.password + PASSWORD_SALT
         gjp = sha1(encrypted_password.encode()).hexdigest()

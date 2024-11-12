@@ -6,21 +6,10 @@ A file containing all the entity classes to inherit from.
 
 from typing import List, Self, Union
 from dataclasses import dataclass, field
-from ..helpers import represent
 
 
 @dataclass
-class GDObject:
-    """
-    An abstract class representing an object. Used only for inheritance.
-    """
-
-    def __str__(self) -> str:
-        return represent(self.__dict__)
-
-
-@dataclass
-class Entity(GDObject):
+class Entity:
     """
     An abstract class representing an entity. Used only for inheritance.
 
@@ -110,7 +99,7 @@ class Entity(GDObject):
         try:
             return self.clients[index]
         except IndexError:
-            return
+            pass
 
     def client_logged_in(self) -> bool:
         """

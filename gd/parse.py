@@ -4,11 +4,10 @@
 Helper script for parsing various responses.
 """
 
-import ast
-from typing import List, Dict, Union, Any
+from typing import List, Dict, Union
 
 from .entities.enums import Difficulty, DemonDifficulty
-from .decode import decrypt_data, START_ID_SONG_LIB
+from .decode import START_ID_SONG_LIB, base64_decompress, base64_urlsafe_decode
 
 
 def parse_key_value_pairs(
@@ -82,10 +81,12 @@ def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
     parsed = parse_key_value_pairs(text)
 
     # Decrypt specific values
-    parsed["4"] = decrypt_data(parsed.get("4"), "base64_decompress")
-    parsed["3"] = decrypt_data(parsed.get("3"))
+    parsed["4"] = base64_decompress(parsed.get("4"))
+    parsed["3"] = base64_urlsafe_decode(parsed.get("3"))
     parsed["27"] = (
-        decrypt_data(parsed.get("27")) if parsed.get("27") not in [None, "0"] else None
+        base64_urlsafe_decode(parsed.get("27"))
+        if parsed.get("27") not in [None, "0"]
+        else None
     )
 
     return parsed
@@ -181,32 +182,8 @@ def parse_song_data(song: str) -> Dict[str, Union[str, int]]:
     :return: A dictionary containing parsed song data.
     :rtype: Dict[str, Union[str, int]]
     """
-    # Literally parse_key_value_pairs again lol
+    # Literally parse_key_value_pairs again lol, i'm so funni!!!!!
     return parse_key_value_pairs(song.replace("~", ""), "|")
-
-
-def parse_str_literal(text: str) -> Any:
-    """
-    Parse a string into a literal.
-
-    :param text: The string to convert to a literal.
-    :type text: str
-    :return: A literal converted from a string.
-    :rtype: Any
-    """
-    return ast.literal_eval(text)
-
-
-def dict_syntax_to_tuple(text: str) -> str:
-    """
-    Converts dict syntax to tuple syntax.
-
-    :param text: The string to convert syntax.
-    :type text: str
-    :return: The result when sucessfully converted `{}` to `()`
-    :rtype: str
-    """
-    return text.replace("{", "(").replace("}", ")")
 
 
 # Difficulty Determination

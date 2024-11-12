@@ -8,7 +8,6 @@ This module has limited documentation and is not intended to be used directly.
 
 import base64
 import zlib
-import uuid
 from typing import List, Union
 from hashlib import sha1
 from enum import StrEnum
@@ -48,16 +47,6 @@ class CHKSalt(StrEnum):
     LEADERBOARD = "yPg6pUrtWn0J"
 
 
-def uuid4() -> str:
-    """
-    Generate a random UUID.
-
-    :return: A random UUID as a string.
-    :rtype: str
-    """
-    return str(uuid.uuid4())
-
-
 def add_padding(data: str) -> str:
     """
     Add padding to base64-encoded data to make its length a multiple of 4.
@@ -70,9 +59,9 @@ def add_padding(data: str) -> str:
     return data + "=" * ((4 - len(data) % 4) % 4)
 
 
-def xor(input_bytes: bytes, key: str) -> str:
+def cyclic_xor(input_bytes: bytes, key: str) -> str:
     """
-    XOR encrypt/decrypt
+    Cyclic XOR encrypt/decrypt
 
     :param input_bytes: The bytes to XOR encrypt/decrypt.
     :type input_bytes: bytes
@@ -88,37 +77,47 @@ def xor(input_bytes: bytes, key: str) -> str:
     )
 
 
-def decrypt_data(
-    encrypted: Union[str, bytes], decrypt_type: str = "base64", xor_key: str = None
-) -> Union[str, None]:
+def xor_singular(input_bytes: bytes, key: str) -> str:
     """
-    **THIS FUNCTION WILL BE REVOKED**
+    Singular XOR encrypt/decrypt
 
-    Decrypt data based on the specified decrypt type.
+    :param input_bytes: The bytes to XOR encrypt/decrypt.
+    :type input_bytes: bytes
+    :param key: The XOR key to use (single byte).
+    :type key: str
 
-    :param encrypted: The encrypted data to decrypt.
-    :type encrypted: Union[str, bytes]
-    :param decrypt_type: The type of decryption to use.
-    :type decrypt_type: str
-    :param xor_key: The XOR key to use for XOR decryption.
-    :type xor_key: str
-    :return: The decrypted data as a string or None if the decryption failed.
-    :rtype: Union[str, None]
+    :return: The XOR-encrypted/decrypted data as a string.
+    :rtype: str
     """
-    if not encrypted:
-        return None
+    key_byte = ord(
+        key[0]
+    )  # Get the first byte of the key (key should be a single character)
+    return "".join(chr(byte ^ key_byte) for byte in input_bytes)
 
-    if decrypt_type == "base64_decompress":
-        decoded_data = base64.urlsafe_b64decode(add_padding(encrypted))
-        return zlib.decompress(decoded_data, 15 | 32).decode()
 
-    if decrypt_type == "xor":
-        return xor(base64.b64decode(encrypted), xor_key)
+def base64_urlsafe_decode(encrypted: str) -> str:
+    """
+    Decode base64-encoded data with padding and URL-safe encoding.
 
-    if decrypt_type == "base64":
-        return base64.urlsafe_b64decode(add_padding(encrypted)).decode()
+    :param encrypted: The base64-encoded data to decode.
+    :type encrypted: str
+    :return: The decoded base64-encoded data.
+    :rtype: str
+    """
+    return base64.urlsafe_b64decode(add_padding(encrypted)).decode()
 
-    raise ValueError("Invalid decrypt type!")
+
+def base64_decompress(encrypted: str) -> str:
+    """
+    Decode a base64 encoded string then decompress it with zlib.
+
+    :param encrypted: The base64-encoded string to decompress.
+    :type encrypted: str
+    :return: The decompressed data as a string.
+    :rtype: str
+    """
+    decoded_data = base64.urlsafe_b64decode(add_padding(encrypted))
+    return zlib.decompress(decoded_data, 15 | 32).decode()
 
 
 def generate_chk(values: List[Union[int, str]], key: str = "", salt: str = "") -> str:
@@ -139,6 +138,6 @@ def generate_chk(values: List[Union[int, str]], key: str = "", salt: str = "") -
     combined_str = "".join(map(str, values))
 
     hashed = sha1(combined_str.encode()).hexdigest()
-    xored = xor(hashed.encode(), key)
+    xored = cyclic_xor(hashed.encode(), key)
 
     return base64.urlsafe_b64encode(xored.encode()).decode()

@@ -111,7 +111,7 @@ from .exceptions import (
     InvalidSongID,
     LoadError,
 )
-from .decode import CHKSalt, XorKey, generate_chk, decrypt_data
+from .decode import CHKSalt, XorKey, generate_chk, base64_decompress
 from .entities.enums import (
     Length,
     LevelRating,
@@ -494,82 +494,60 @@ class Client:
         if src_filter == SearchFilter.FRIENDS and self.logged_in:
             raise ValueError("Cannot filter by friends without being logged in.")
 
-        # Standard data
+        # Initialize data
         data = {
             "secret": SECRET,
             "type": (
                 src_filter.value if isinstance(src_filter, SearchFilter) else src_filter
             ),
             "page": page,
-        }
-
-        # Level rating check
-        if level_rating:
-            match level_rating:
-                case LevelRating.NO_RATE:
-                    data["noStar"] = 1
-                case LevelRating.RATED:
-                    data["star"] = 1
-                case LevelRating.FEATURED:
-                    data["featured"] = 1
-                case LevelRating.EPIC:
-                    data["epic"] = 1
-                case LevelRating.MYTHIC:
-                    data["legendary"] = 1
-                case LevelRating.LEGENDARY:
-                    data["mythic"] = 1
-                case _:
-                    raise ValueError(
-                        "Invalid level rating, are you sure that it's a LevelRating object?"
+            **{  # Level rating check
+                "noStar": 1 if level_rating == LevelRating.NO_RATE else None,
+                "star": 1 if level_rating == LevelRating.RATED else None,
+                "featured": 1 if level_rating == LevelRating.FEATURED else None,
+                "epic": 1 if level_rating == LevelRating.EPIC else None,
+                "legendary": 1 if level_rating == LevelRating.MYTHIC else None,
+                "mythic": 1 if level_rating == LevelRating.LEGENDARY else None,
+            },
+            **{  # Difficulty and demon difficulty checks
+                "diff": (
+                    ",".join(
+                        str(determine_search_difficulty(diff)) for diff in difficulty
                     )
-
-        # Difficulty and demon difficulty checks
-        if difficulty:
-            if Difficulty.DEMON in difficulty and len(difficulty) > 1:
-                raise ValueError(
-                    "Difficulty.DEMON cannot be combined with other difficulties!"
-                )
-            data["diff"] = ",".join(
-                str(determine_search_difficulty(diff)) for diff in difficulty
-            )
-
-        if demon_difficulty:
-            if difficulty != [Difficulty.DEMON]:
-                raise ValueError(
-                    "Demon difficulty can only be used with Difficulty.DEMON!"
-                )
-            data["demonFilter"] = determine_search_difficulty(demon_difficulty)
-
-        # Optional parameters
-        if song_id:
-            data.update({"customSong": 1, "song": song_id})
-
-        optional_params = {
-            "length": length.value if length else None,
-            "twoPlayer": int(two_player_mode) if two_player_mode else None,
-            "coins": int(has_coins) if has_coins else None,
-            "original": int(original) if original else None,
-            "gdw": int(gd_world) if gd_world else None,
-            "str": query if query else None,
-            "accountID": self.account.account_id if self.account else None,
-            "gjp2": self.account.gjp2 if self.account else None,
+                    if difficulty
+                    else None
+                ),
+                "demonFilter": (
+                    determine_search_difficulty(demon_difficulty)
+                    if demon_difficulty and difficulty == [Difficulty.DEMON]
+                    else None
+                ),
+            },
+            **{  # Optional parameters
+                "customSong": 1 if song_id else None,
+                "song": song_id,
+                "length": length.value if length else None,
+                "twoPlayer": int(two_player_mode) if two_player_mode else None,
+                "coins": int(has_coins) if has_coins else None,
+                "original": int(original) if original else None,
+                "gdw": int(gd_world) if gd_world else None,
+                "str": query or None,
+                "accountID": self.account.account_id if self.account else None,
+                "gjp2": self.account.gjp2 if self.account else None,
+            },
         }
 
-        # Update data with non-None values from optional_params
-        data.update({k: v for k, v in optional_params.items() if v is not None})
+        # Remove None values
+        data = {k: v for k, v in data.items() if v is not None}
 
-        # Do the response
-        search_data: str = await send_post_request(
+        # Perform search
+        search_data = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php", data=data
         )
 
-        check_errors(
-            search_data,
-            SearchLevelError,
-            "Unable to fetch search results. Perhaps it doesn't exist after all?",
-        )
-
+        check_errors(search_data, SearchLevelError, "Unable to fetch search results.")
         parsed_results = parse_search_results(search_data)
+
         return [
             LevelDisplay.from_parsed(result).add_client(self)
             for result in parsed_results
@@ -589,7 +567,7 @@ class Client:
             url="https://geometrydashfiles.b-cdn.net/music/musiclibrary_02.dat",
         )
 
-        music_library = decrypt_data(response, "base64_decompress")
+        music_library = base64_decompress(response)
         return MusicLibrary.from_raw(music_library)
 
     @cooldown(10)
@@ -605,7 +583,7 @@ class Client:
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/sfx/sfxlibrary.dat",
         )
-        sfx_library = decrypt_data(response, "base64_decompress")
+        sfx_library = base64_decompress(response)
         return SoundEffectLibrary.from_raw(sfx_library)
 
     @cooldown(1)
@@ -651,7 +629,7 @@ class Client:
 
         response = await send_post_request(url=url, data=data)
         check_errors(response, InvalidAccountID, f"Invalid account name/ID {query}.")
-        return Player.from_raw(response.split("#")[0])
+        return Player.from_raw(response.split("#")[0]).add_client(self)
 
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
         """
@@ -673,7 +651,10 @@ class Client:
             data={"secret": SECRET, "levelID": level_id, "page": page},
         )
         check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
-        return [Comment.from_raw(comment_data) for comment_data in response.split("|")]
+        return [
+            Comment.from_raw(comment_data).add_client(self)
+            for comment_data in response.split("|")
+        ]
 
     async def get_user_posts(self, account_id: int, page: int = 0) -> List[Post]:
         """
@@ -701,7 +682,7 @@ class Client:
         parsed_res = response.split("|")
 
         for post in parsed_res:
-            posts_list.append(Post.from_raw(post, account_id))
+            posts_list.append(Post.from_raw(post, account_id).add_client(self))
 
         return posts_list
 
@@ -730,12 +711,12 @@ class Client:
                 "mode": int(display_most_liked),
             },
         )
-        check_errors(response, InvalidAccountID, "Invalid account ID.")
+        check_errors(response, InvalidAccountID, "Invalid player ID.")
         if not response.split("#")[0]:
             return None
 
         return [
-            Comment.from_raw(comment_data)
+            Comment.from_raw(comment_data).add_client(self)
             for comment_data in response.split("#")[0].split("|")
         ]
 
@@ -764,7 +745,7 @@ class Client:
             return None
 
         return [
-            LevelDisplay.from_raw(level_data)
+            LevelDisplay.from_raw(level_data).add_client(self)
             for level_data in response.split("#")[0].split("|")
         ]
 
@@ -790,7 +771,10 @@ class Client:
         )
         check_errors(response, LoadError, "An error occurred when getting map packs.")
         map_packs = response.split("#")[0].split("|")
-        return [MapPack.from_raw(map_pack_data) for map_pack_data in map_packs]
+        return [
+            MapPack.from_raw(map_pack_data).add_client(self)
+            for map_pack_data in map_packs
+        ]
 
     async def gauntlets(self, not_2_2: bool = True, ncs: bool = True) -> List[Gauntlet]:
         """
@@ -814,7 +798,9 @@ class Client:
 
         check_errors(response, LoadError, "An error occurred when getting gauntlets.")
         guantlets = response.split("#")[0].split("|")
-        list_guantlets = [Gauntlet.from_raw(guantlet) for guantlet in guantlets]
+        list_guantlets = [
+            Gauntlet.from_raw(guantlet).add_client(self) for guantlet in guantlets
+        ]
 
         return list_guantlets
 
@@ -886,6 +872,6 @@ class Client:
         response = response.split("#")[0]
 
         return [
-            LevelList.from_raw(level_list_data)
+            LevelList.from_raw(level_list_data).add_client(self)
             for level_list_data in response.split("|")
         ]
