@@ -9,11 +9,14 @@ from datetime import timedelta
 from enum import Enum
 from pathlib import Path
 from dataclasses import dataclass, field
+from io import BytesIO
 
 from aiofiles import open as aioopen
 
 from ..parse import parse_song_data
 from ..helpers import send_get_request
+
+__all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song", "OfficialSong"]
 
 # Music Library
 
@@ -147,6 +150,14 @@ class MusicLibrary:
                 external_link=f"https://{unquote(parsed[8])}",
             )
 
+        async def content(self) -> BytesIO:
+            """
+            Gets the song content and returns it as a BytesIO object.
+            """
+            response = await send_get_request(url=self.link)
+
+            return BytesIO(response.content)
+
         async def download_to(self, path: Union[str, Path] = None) -> None:
             """
             Downloads the song to a specified path.
@@ -167,9 +178,9 @@ class MusicLibrary:
             # Ensure the directory exists
             path.parent.mkdir(parents=True, exist_ok=True)
 
-            response = await send_get_request(decode=False, url=self.link)
+            response = await self.content()
             async with aioopen(path, "wb") as file:
-                await file.write(response)
+                await file.write(response.getvalue())
 
     @staticmethod
     def from_raw(raw_str: str) -> "MusicLibrary":
@@ -557,6 +568,14 @@ class SoundEffect:
             duration=timedelta(seconds=int(parsed[5]) // 100),
         )
 
+    async def content(self) -> BytesIO:
+        """
+        Gets the song content and returns it as a BytesIO object.
+        """
+        response = await send_get_request(url=self.url)
+
+        return BytesIO(response.content)
+
     async def download_to(self, path: Union[str, Path] = None) -> None:
         """
         Downloads the song to a specified path.
@@ -577,9 +596,9 @@ class SoundEffect:
         # Ensure the directory exists
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        response = await send_get_request(decode=False, url=self.url)
+        response = await self.content()
         async with aioopen(path, "wb") as file:
-            await file.write(response)
+            await file.write(response.getvalue())
 
 
 # Level song
@@ -669,6 +688,14 @@ class Song:
             is_in_library=int(parsed.get("1")) >= 10000000,
         )
 
+    async def content(self) -> BytesIO:
+        """
+        Gets the song content and returns it as a BytesIO object.
+        """
+        response = await send_get_request(url=self.link)
+
+        return BytesIO(response.content)
+
     async def download_to(self, path: Union[str, Path] = None) -> None:
         """
         Downloads the song to a specified path.
@@ -689,9 +716,9 @@ class Song:
         # Ensure the directory exists
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        response = await send_get_request(decode=False, url=self.link)
+        response = await self.content()
         async with aioopen(path, "wb") as file:
-            await file.write(response)
+            await file.write(response.getvalue())
 
 
 class OfficialSong(Enum):

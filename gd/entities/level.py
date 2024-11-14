@@ -18,9 +18,11 @@ from ..parse import (
     determine_difficulty,
     determine_list_difficulty,
 )
-from ..decode import decrypt_data
+from ..decode import base64_urlsafe_decode
 from .enums import LevelRating, ModRank, Gamemode, Length, Difficulty, SearchFilter
 from .cosmetics import Icon
+
+__all__ = ["Level", "LevelDisplay", "LevelList", "Comment", "Gauntlet", "MapPack"]
 
 # A dictionary containing all the names of gauntlets.
 GAUNTLETS = {
@@ -416,7 +418,7 @@ class Comment(Entity):
 
         return Comment(
             level_id=int(comment_value.get("1", 0)),
-            content=decrypt_data(comment_value.get("2", "")),
+            content=base64_urlsafe_decode(comment_value.get("2", "")),
             author_player_id=int(comment_value.get("3", 0)),
             author_account_id=int(user_value.get("16", 0)),
             likes=int(comment_value.get("4", 0)),
@@ -548,7 +550,7 @@ class LevelList(ListLevels):
             id=int(parsed.get("1", 0)),
             name=parsed.get("2", ""),
             level_ids=parse_comma_separated_int_list(parsed.get("51", "")),
-            description=decrypt_data(parsed.get("3", "")),
+            description=base64_urlsafe_decode(parsed.get("3", "")),
             difficulty=determine_list_difficulty(parsed.get("7", None)),
             downloads=int(parsed.get("10", 0)),
             likes=int(parsed.get("14", 0)),

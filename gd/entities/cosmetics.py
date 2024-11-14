@@ -15,6 +15,8 @@ import aiofiles
 from .enums import Gamemode
 from ..helpers import send_get_request
 
+__all__ = ["color_id_to_hex", "hex_to_color_id", "Icon", "IconSet"]
+
 COLORS_LIST: Dict[int, int] = {
     "0": 0x7DFF00,
     "1": 0x00FF00,
@@ -264,10 +266,10 @@ class Icon:
             params["glow"] = self.glow_color_id
 
         response = await send_get_request(
-            decode=False, url=f"{ICON_RENDERER}.{extension}", params=params
+            url=f"{ICON_RENDERER}.{extension}", params=params
         )
 
-        return BytesIO(response)
+        return BytesIO(response.content)
 
 
 @dataclass

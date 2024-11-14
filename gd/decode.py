@@ -20,6 +20,15 @@ AW_CODE = "Aw=="
 DEFAULT_TIMEOUT = 60
 UDID_PREFIX = "S"
 
+__all__ = [
+    "XorKey",
+    "CHKSalt",
+    "cyclic_xor",
+    "xor_singular",
+    "base64_urlsafe_decode",
+    "base64_decompress",
+    "generate_chk",
+]
 
 # * Encryption and Decryption Functions
 

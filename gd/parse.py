@@ -4,10 +4,20 @@
 Helper script for parsing various responses.
 """
 
+__all__ = [
+    "parse_key_value_pairs",
+    "parse_level_data",
+    "parse_search_results",
+    "parse_user_data",
+    "parse_comments_data",
+    "parse_song_data",
+    "parse_comma_separated_int_list",
+]
+
 from typing import List, Dict, Union
 
 from .entities.enums import Difficulty, DemonDifficulty
-from .decode import START_ID_SONG_LIB, base64_decompress, base64_urlsafe_decode
+from .decode import base64_decompress, base64_urlsafe_decode
 
 
 def parse_key_value_pairs(
@@ -48,24 +58,6 @@ def parse_key_value_pairs(
         pairs[key] = int(value) if value and value.isdigit() else value
 
     return pairs
-
-
-def unparse_key_value_pairs(
-    parsed: Dict[str, Union[str, int]], separator: str = ":"
-) -> str:
-    """
-    Unparse key-value pairs into a separator-separated string.
-
-    :param parsed: The dictionary containing the parsed key-value pairs.
-    :type parsed: Dict[str, Union[str, int]]
-    :param separator: The separator to unparse the string.
-    :type separator: str
-    :return: A string containing the unparsed key-value pairs.
-    :rtype: str
-    """
-
-    # Unparse the parsed
-    return separator.join(f"{key}{separator}{value}" for key, value in parsed.items())
 
 
 def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
@@ -312,18 +304,6 @@ def determine_list_difficulty(
 
 
 # Utility Functions
-def is_newgrounds(song_id: int) -> bool:
-    """
-    Checks if a song ID is from Newgrounds.
-
-    :param id: The song ID to check.
-    :type id: int
-    :return: True if the song ID is from Newgrounds, False otherwise.
-    :rtype: bool
-    """
-    return song_id < START_ID_SONG_LIB
-
-
 def parse_comma_separated_int_list(key: str) -> List[int]:
     """
     Split the string by `,` then turn it into a list of integers.

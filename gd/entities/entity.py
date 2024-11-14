@@ -7,6 +7,8 @@ A file containing all the entity classes to inherit from.
 from typing import List, Self, Union
 from dataclasses import dataclass, field
 
+__all__ = ["Entity"]
+
 
 @dataclass
 class Entity:
@@ -96,10 +98,7 @@ class Entity:
         if not self.clients:
             raise ValueError("No clients are attached to this object.")
 
-        try:
-            return self.clients[index]
-        except IndexError:
-            pass
+        return self.clients[index]
 
     def client_logged_in(self) -> bool:
         """

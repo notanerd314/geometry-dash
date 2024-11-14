@@ -91,6 +91,7 @@ from datetime import timedelta
 from typing import Union, Tuple, List
 from hashlib import sha1
 import base64
+import asyncio
 
 import colorama
 
@@ -239,6 +240,7 @@ class Client:
             url="http://www.boomlings.com/database/accounts/loginGJAccount.php",
             data=data,
         )
+        response = response.text
 
         match response:
             case "-1":
@@ -294,9 +296,9 @@ class Client:
 
     @cooldown(15)
     @require_login("You need to login before you can send a post!")
-    async def send_post(self, message: str) -> int:
+    async def post(self, message: str) -> int:
         """
-        Sends an account comment to the account logged in.
+        Sends an account comment to the account logged in. (Not to be confused with a `POST` request)
 
         Cooldown is 15 seconds.
 
@@ -319,6 +321,7 @@ class Client:
         response = await send_post_request(
             url="http://www.boomlings.com/database/uploadGJAccComment20.php", data=data
         )
+        response = response.text
 
         return int(response)
 
@@ -366,6 +369,7 @@ class Client:
         response = await send_post_request(
             url="http://www.boomlings.com/database/uploadGJComment21.php", data=data
         )
+        response = response.text
 
         check_errors(
             response,
@@ -374,6 +378,65 @@ class Client:
         )
 
         return int(response)
+
+    @require_login("You need to login before you can use this function!")
+    async def delete_post(self, post_id: int) -> None:
+        """
+        Deletes a post using comment ID.
+
+        :param post_id: The ID of the post to delete.
+        :type post_id: int
+        :raises: gd.CommentError
+        :return: None
+        :rtype: None
+        """
+        response = send_post_request(
+            url="http://www.boomlings.com/database/deleteGJAccComment20.php",
+            data={
+                "accountID": self.account.account_id,
+                "commentID": post_id,
+                "gjp2": self.account.gjp2,
+                "secret": SECRET,
+            },
+        )
+        response = response.text
+
+        check_errors(
+            response,
+            CommentError,
+            "Unable to delete post, perhaps wrong ID?",
+        )
+
+    @require_login("You need to login before you can use this function!")
+    async def delete_comment(self, comment_id: int, level_id: int) -> None:
+        """
+        Deletes a comment using the comment's level ID and ID.
+
+        :param comment_id: The ID of the comment to delete.
+        :type comment_id: int
+        :param level_id: The ID of the level the comment belongs to.
+        :type level_id: int
+        :raises: gd.CommentError
+        :return: None
+        :rtype: None
+        """
+        response = send_post_request(
+            url="http://www.boomlings.com/database/deleteGJComment20.php",
+            data={
+                "accountID": self.account.account_id,
+                "commentID": comment_id,
+                "levelID": level_id,
+                "gjp2": self.account.gjp2,
+                "secret": SECRET,
+            },
+        )
+        response = response.text
+
+        check_errors(
+            response,
+            CommentError,
+            "Unable to delete post, perhaps wrong level ID or comment ID?",
+        )
 
     @cooldown(3)
     async def download_level(self, level_id: int) -> Level:
@@ -395,6 +458,7 @@ class Client:
             url="http://www.boomlings.com/database/downloadGJLevel22.php",
             data={"levelID": level_id, "secret": SECRET},
         )
+        response = response.text
 
         # Check if response is valid
         check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
@@ -410,31 +474,40 @@ class Client:
 
         Cooldown is 3 seconds.
 
-        :param weekly: Whether to return the weekly or daily level. Defaults to False for daily.
-        :type weekly: bool
-        :param time_left: If return a tuple containing the `Level` and the time left for the level.
+        :param special: The special level to download (e.g., daily or weekly).
+        :type special: SpecialLevel
+        :param time_left: If return a tuple containing the `Level` and the time left until the level is switched.
         :type time_left: bool
         :raises: gd.ResponseError
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
         """
-        level = await self.download_level(special)
+        # Use asyncio.gather to download the level and time left concurrently if needed
+        tasks = [self.download_level(special)]
 
-        # Makes another response for time left.
-        if time_left and special != SpecialLevel.EVENT:
-            daily_data: str = await send_post_request(
-                url="http://www.boomlings.com/database/getGJDailyLevel.php",
-                data={"secret": SECRET, "type": special},
+        if time_left:
+            tasks.append(
+                send_post_request(
+                    url="http://www.boomlings.com/database/getGJDailyLevel.php",
+                    data={"secret": SECRET, "type": special},
+                )
             )
+
+        if time_left:
+            level, daily_data = await asyncio.gather(*tasks)
+            daily_data = daily_data.text
             check_errors(
                 daily_data,
                 ResponseError,
                 "Cannot get current time left for the daily/weekly level.",
             )
-            daily_data = daily_data.split("|")
-            return level, timedelta(seconds=int(daily_data[1]))
 
-        return level
+            daily_data = daily_data.split("|")
+            return level.text, timedelta(seconds=int(daily_data[1]))
+
+        level = await asyncio.gather(*tasks)
+
+        return level.text
 
     async def search_level(
         self,
@@ -544,6 +617,7 @@ class Client:
         search_data = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php", data=data
         )
+        search_data = search_data.text
 
         check_errors(search_data, SearchLevelError, "Unable to fetch search results.")
         parsed_results = parse_search_results(search_data)
@@ -566,6 +640,7 @@ class Client:
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/music/musiclibrary_02.dat",
         )
+        response = response.content.decode()
 
         music_library = base64_decompress(response)
         return MusicLibrary.from_raw(music_library)
@@ -583,6 +658,8 @@ class Client:
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/sfx/sfxlibrary.dat",
         )
+        response = response.content.decode()
+
         sfx_library = base64_decompress(response)
         return SoundEffectLibrary.from_raw(sfx_library)
 
@@ -603,6 +680,8 @@ class Client:
             url="http://www.boomlings.com/database/getGJSongInfo.php",
             data={"secret": SECRET, "songID": song_id},
         )
+        response = response.text
+
         check_errors(response, InvalidSongID, "")
 
         return Song.from_raw(response)
@@ -628,6 +707,8 @@ class Client:
             data = {"secret": SECRET, "str": query}
 
         response = await send_post_request(url=url, data=data)
+        response = response.text
+
         check_errors(response, InvalidAccountID, f"Invalid account name/ID {query}.")
         return Player.from_raw(response.split("#")[0]).add_client(self)
 
@@ -650,6 +731,8 @@ class Client:
             url="http://www.boomlings.com/database/getGJComments21.php",
             data={"secret": SECRET, "levelID": level_id, "page": page},
         )
+        response = response.text
+
         check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
         return [
             Comment.from_raw(comment_data).add_client(self)
@@ -672,8 +755,10 @@ class Client:
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
             data={"secret": SECRET, "accountID": account_id, "page": page},
         )
+        response = response.text
 
         check_errors(response, InvalidAccountID, "Invalid account ID.")
+
         if not response.split("#")[0]:
             return None
 
@@ -711,7 +796,10 @@ class Client:
                 "mode": int(display_most_liked),
             },
         )
+        response = response.text
+
         check_errors(response, InvalidAccountID, "Invalid player ID.")
+
         if not response.split("#")[0]:
             return None
 
@@ -738,6 +826,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJLevels21.php",
             data={"secret": SECRET, "type": 5, "page": page, "str": player_id},
         )
+        response = response.text
 
         check_errors(response, InvalidAccountID, f"Invalid account ID {player_id}.")
 
@@ -769,6 +858,8 @@ class Client:
             url="http://www.boomlings.com/database/getGJMapPacks21.php",
             data={"secret": SECRET, "page": page},
         )
+        response = response.text
+
         check_errors(response, LoadError, "An error occurred when getting map packs.")
         map_packs = response.split("#")[0].split("|")
         return [
@@ -795,6 +886,7 @@ class Client:
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJGauntlets21.php", data=data
         )
+        response = response.text
 
         check_errors(response, LoadError, "An error occurred when getting gauntlets.")
         guantlets = response.split("#")[0].split("|")
@@ -863,6 +955,7 @@ class Client:
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevelLists.php", data=data
         )
+        response = response.text
 
         check_errors(
             response,

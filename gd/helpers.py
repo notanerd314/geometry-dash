@@ -15,6 +15,7 @@ import httpx
 from .exceptions import OnCooldown, LoginError
 
 MAX_LENGTH = 15
+__all__ = ["cooldown", "send_post_request", "send_get_request"]
 
 
 # Decorators for Client, Cooldown, and Login Logic
@@ -132,36 +133,29 @@ async def handle_response(response: httpx.Response) -> httpx.Response:
     return response
 
 
-async def send_post_request(**kwargs) -> str:
+async def send_post_request(**kwargs) -> httpx.Response:
     """
     Sends a POST request using httpx.
 
     :param **kwargs: The keyword arguments to pass to the httpx.AsyncClient.post method.
-    :return: The text of the response.
-    :rtype: str
+    :return: The full response object.
+    :rtype: httpx.Response
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(**kwargs, headers={"User-Agent": ""})
-        response_text = await handle_response(response)
-        return response_text.text
+        return response  # Return the full response object (not just the text)
 
 
-async def send_get_request(decode: bool = True, **kwargs) -> Union[str, bytes]:
+async def send_get_request(**kwargs) -> Union[str, bytes, httpx.Response]:
     """
     Sends a GET request using httpx.
 
     :param decode: Whether to decode and return the response as a string. Default is True.
     :type decode: bool
     :param **kwargs: The keyword arguments to pass to the httpx.AsyncClient.get method.
-    :return: The content of the response.
-    :rtype: Union[str, bytes]
+    :return: The full response object or decoded string (depending on decode).
+    :rtype: Union[str, bytes, httpx.Response]
     """
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.get(**kwargs)  # Make the GET request
-        handled_response = await handle_response(response)  # Handle the response
-        response_data = handled_response.content
-
-    if decode:
-        return response_data.decode()
-
-    return response_data
+        return response  # Return the full response object if decode is False
