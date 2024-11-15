@@ -39,9 +39,13 @@ class MusicLibrary:
     """
 
     version: int
+    """The version number of the library."""
     artists: Dict[int, "MusicLibrary.Artist"] = field(default_factory=dict)
+    """The version number of the library."""
     songs: Dict[int, "MusicLibrary.Song"] = field(default_factory=dict)
+    """The songs of the library."""
     tags: Dict[int, str] = field(default_factory=dict)
+    """The tags of the library."""
 
     @dataclass
     class Artist:
@@ -61,9 +65,13 @@ class MusicLibrary:
         """
 
         id: int
+        """The ID of the artist."""
         name: str
+        """The name of the artist."""
         website: Optional[str] = None
+        """The website of the artist."""
         youtube_channel_id: Optional[str] = None
+        """The youtube channel ID of the artist."""
 
         @staticmethod
         def from_raw(raw_str: str) -> "MusicLibrary.Artist":

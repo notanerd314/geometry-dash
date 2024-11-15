@@ -14,7 +14,7 @@ from .enums import Gamemode, ModRank
 from .cosmetics import IconSet
 from .level import Comment, LevelDisplay
 from .entity import Entity
-from ..decode import decrypt_data
+from ..decode import base64_urlsafe_decode
 from ..helpers import require_client
 
 color.init(autoreset=True)
@@ -71,7 +71,7 @@ class Post(Entity):
         comment_value = parse_key_value_pairs(parsed[0], "~")
 
         return Post(
-            content=decrypt_data(comment_value.get("2", "")),
+            content=base64_urlsafe_decode(comment_value.get("2", "")),
             likes=int(comment_value.get("4", 0)),
             post_id=int(comment_value.get("6", 0)),
             posted_ago=comment_value.get("9", None),

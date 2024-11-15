@@ -4,7 +4,7 @@
 A module containing all enumerations of various things.
 """
 
-from enum import IntEnum, Enum
+from enum import IntEnum, Enum, StrEnum, auto
 
 
 # Enum
@@ -212,3 +212,12 @@ class SpecialLevel(IntEnum):
     """Weekly level."""
     EVENT = -3
     """Event level."""
+
+class Leaderboard(StrEnum):
+    """
+    A class representing the leaderboard types.
+    """
+    TOP = auto()
+    RELATIVE = auto()
+    FRIENDS = auto()
+    CREATORS = auto()

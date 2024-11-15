@@ -3,20 +3,6 @@ __doc__ = """
 
 A lightweight and asynchronous API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
 
-```py
->>> from gd import Client
->>> client = Client()
->>> level = await client.download_level(13519)
->>> level.name
-"The Nightmare"
->>> level.difficulty
-Difficulty.EASY_DEMON
->>> level.description
-"Hard map by Jax. 7813"
->>> level.official_song
-OfficialSong.POLARGEIST
-```
-
 # Installation and Information
 ### *why the heck did i put that???? it's unfinished!!!!!*
 Install GDAPI via PyPI:
@@ -120,6 +106,7 @@ from .entities.enums import (
     DemonDifficulty,
     Difficulty,
     SpecialLevel,
+    Leaderboard,
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from .entities.song import MusicLibrary, SoundEffectLibrary, Song
@@ -968,3 +955,41 @@ class Client:
             LevelList.from_raw(level_list_data).add_client(self)
             for level_list_data in response.split("|")
         ]
+
+    async def leaderboard(self, leaderboard: Leaderboard = Leaderboard.TOP, count: int = 100) -> List[Player]:
+        """
+        Get the leaderboard for the given type.
+
+        :param leaderboard: The type of leaderboard to retrieve.
+        :type leaderboard: Leaderboard
+        :param count: The number of players to retrieve, limits to 100.
+        :raises: gd.ResponseError
+        :return: A list of `Player` instances.
+        :rtype: list[Player]
+        """
+        if count < 1 or count > 100:
+            raise ValueError("Count must be between 1 and 100.")
+
+        if leaderboard == Leaderboard.FRIENDS and not self.logged_in:
+            raise ValueError("Only friends leaderboard is available when logged in.")
+
+        data = {
+            "secret": SECRET, 
+            "type": leaderboard, 
+            "count": count,
+            "accountID": self.account.account_id if self.account else None,
+            "gjp2": self.account.gjp2 if self.account else None,
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJScores20.php",
+            data=data,
+        )
+
+        check_errors(response, ResponseError, "An error occurred when getting the leaderboard.")
+
+        response = response.text.split("#")[0].split("|")
+
+        del response[-1]
+
+        return [Player.from_raw(player).add_client(self) for player in response]
