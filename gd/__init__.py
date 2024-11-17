@@ -63,7 +63,7 @@ __title__ = "gdapi"
 __author__ = "notanerd"
 __license__ = "MIT"
 __copyright__ = "Copyright 2024 notanerd"
-__version__ = "1.0.0"
+__version__ = "0.1.0"
 
 from collections import namedtuple
 

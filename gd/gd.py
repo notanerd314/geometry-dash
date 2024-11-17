@@ -59,6 +59,7 @@ def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
 
     return result
 
+
 class Client:
     """
     gd.Client
@@ -286,7 +287,7 @@ class Client:
                 "accountID": self.account.account_id,
                 "commentID": post_id,
                 "gjp2": self.account.gjp2,
-            "secret": SECRET,
+                "secret": SECRET,
             },
         )
         response = response.text
@@ -518,7 +519,9 @@ class Client:
         ]
 
     @require_login("You need to log in before you can view the leaderboard.")
-    async def level_leaderboard(self, level_id: int, friends: bool = False, week: bool = False) -> List[LeaderboardPlayer]:
+    async def level_leaderboard(
+        self, level_id: int, friends: bool = False, week: bool = False
+    ) -> List[LeaderboardPlayer]:
         """
         Gets the leaderboard for a given level.
 
@@ -561,7 +564,6 @@ class Client:
             LeaderboardPlayer.from_raw(player_data).add_client(self)
             for player_data in response
         ]
-
 
     @cooldown(10)
     async def music_library(self) -> MusicLibrary:
@@ -903,7 +905,9 @@ class Client:
             for level_list_data in response.split("|")
         ]
 
-    async def leaderboard(self, leaderboard: Leaderboard = Leaderboard.TOP, count: int = 100) -> List[Player]:
+    async def leaderboard(
+        self, leaderboard: Leaderboard = Leaderboard.TOP, count: int = 100
+    ) -> List[Player]:
         """
         Get the leaderboard for the given type.
 
@@ -921,8 +925,8 @@ class Client:
             raise ValueError("Only friends leaderboard is available when logged in.")
 
         data = {
-            "secret": SECRET, 
-            "type": leaderboard, 
+            "secret": SECRET,
+            "type": leaderboard,
             "count": count,
             "accountID": self.account.account_id if self.account else None,
             "gjp2": self.account.gjp2 if self.account else None,
@@ -933,7 +937,9 @@ class Client:
             data=data,
         )
 
-        check_errors(response, ResponseError, "An error occurred when getting the leaderboard.")
+        check_errors(
+            response, ResponseError, "An error occurred when getting the leaderboard."
+        )
 
         response = response.text.split("#")[0].split("|")
         del response[-1]

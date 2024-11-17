@@ -4,10 +4,11 @@
 A module containing all the classes and methods related to levels in Geometry Dash.
 """
 
-from typing import List, Optional, Union, Tuple
+from typing import List, Union, Tuple
 from datetime import datetime
 from dataclasses import dataclass
 from dateutil.relativedelta import relativedelta
+from abc import ABC, abstractmethod
 
 from .song import Song, OfficialSong
 from .entity import Entity
@@ -82,7 +83,7 @@ GAUNTLETS = {
 }
 
 
-@dataclass
+@dataclass(frozen=True)
 class Level(Entity):
     """
     A class representing a downloaded level in Geometry Dash.
@@ -111,9 +112,9 @@ class Level(Entity):
         Whether the level can be copied or not.
     length : Length
         The length of the level. (Not the exact length)
-    requested_stars : Optional[int]
+    requested_stars : int]
         The level rating requested by the creator.
-    stars : Optional[int]
+    stars : int
         The star count for the level.
     coins : int
         The coins count for the level.
@@ -137,24 +138,24 @@ class Level(Entity):
         The official song used in the level. Returns None if the level uses a custom song.
     """
 
-    id: Optional[int] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
-    level_data: Optional[str] = None
-    version: Optional[int] = None
-    creator_player_id: Optional[int] = None
+    id: int = None
+    name: str = None
+    description: str = None
+    level_data: str = None
+    version: int = None
+    creator_player_id: int = None
     downloads: int = None
-    likes: Optional[int] = None
+    likes: int = None
     copyable: bool = None
     length: "Length" = None
-    requested_stars: Optional[int] = None
-    stars: Optional[int] = None
+    requested_stars: int = None
+    stars: int = None
     coins: int = None
     custom_song_id: Union[int, None] = None
     song_list_ids: List[int] = None
     sfx_list_ids: List[int] = None
     daily_id: Union[int, None] = None
-    copied_level_id: Optional[int] = None
+    copied_level_id: int = None
     low_detail_mode: bool = None
     two_player_mode: bool = None
     verified_coins: bool = None
@@ -164,8 +165,8 @@ class Level(Entity):
     is_event: bool = False
     rating: "LevelRating" = None
     difficulty: "Difficulty" = None
-    level_password: Optional[str] = None
-    official_song: Optional[OfficialSong] = None
+    level_password: str = None
+    official_song: OfficialSong = None
 
     @staticmethod
     def from_raw(raw_str: str) -> "Level":
@@ -271,23 +272,23 @@ class Level(Entity):
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class LevelDisplay(Level):
     """
     A class representing a level displayed in the search results in Geometry Dash.
 
     Attributes
     ----------
-    creator_name : Optional[str]
+    creator_name : str]
         The creator name of the level.
-    creator_account_id : Optional[int]
+    creator_account_id : int]
         The creator's account ID.
     song_data : Union[Song, None]
         The custom song object of the level.
     """
 
-    creator_name: Optional[str] = None
-    creator_account_id: Optional[int] = None
+    creator_name: str = None
+    creator_account_id: int = None
     song_data: "Song" = None
 
     @staticmethod
@@ -345,7 +346,7 @@ class LevelDisplay(Level):
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class Comment(Entity):
     """
     A class representing a comment in a level.
@@ -444,10 +445,10 @@ class Comment(Entity):
         )
 
 
-@dataclass
-class ListLevels(Entity):
+@dataclass(frozen=True)
+class ListLevels(Entity, ABC):
     """
-    A class representing a list of levels. (Not to be confused with LevelList)
+    An abstract class representing a list of levels. (Not to be confused with LevelList)
 
     Attributes
     ----------
@@ -488,8 +489,15 @@ class ListLevels(Entity):
         level_id = self.levels_id[index]
         return await client.download_level(level_id=level_id)
 
+    @staticmethod
+    @abstractmethod
+    def from_raw(raw_str: str):
+        """
+        Returns the instance from the raw data in the servers.
+        """
 
-@dataclass
+
+@dataclass(frozen=True)
 class LevelList(ListLevels):
     """
     A class representing a list.
@@ -566,7 +574,7 @@ class LevelList(ListLevels):
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class MapPack(ListLevels):
     """
     A class representing a map pack.
@@ -621,7 +629,7 @@ class MapPack(ListLevels):
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class Gauntlet(ListLevels):
     """
     A class representing a gauntlet.

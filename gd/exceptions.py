@@ -80,5 +80,5 @@ def check_errors(data: str, exception: Exception, text: str) -> None:
     :param text: The error message to display when the response status is -1
     :type text: str
     """
-    if data == "-1" or data == "-01":
+    if data == "-1":
         raise exception(text)

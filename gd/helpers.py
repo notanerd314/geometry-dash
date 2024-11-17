@@ -125,14 +125,6 @@ def require_login(message: str = "You need to login before you can use this func
 
 
 # HTTP Helper Functions with httpx
-async def handle_response(response: httpx.Response) -> httpx.Response:
-    """
-    Handles HTTP response to ensure no error occurred.
-    """
-    response.raise_for_status()  # Raises an exception for 4xx/5xx responses
-    return response
-
-
 async def send_post_request(**kwargs) -> httpx.Response:
     """
     Sends a POST request using httpx.
@@ -146,7 +138,7 @@ async def send_post_request(**kwargs) -> httpx.Response:
         return response  # Return the full response object (not just the text)
 
 
-async def send_get_request(**kwargs) -> Union[str, bytes, httpx.Response]:
+async def send_get_request(**kwargs) -> httpx.Response:
     """
     Sends a GET request using httpx.
 

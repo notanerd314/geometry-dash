@@ -45,7 +45,7 @@ class XorKey(StrEnum):
 
 class CHKSalt(StrEnum):
     """
-    An enum class for salting, typically used for encryption.
+    An enum class for CHK salts, typically used for encryption.
     """
 
     LEVEL = "xI25fpAapCQg"

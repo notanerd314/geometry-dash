@@ -179,10 +179,11 @@ def parse_song_data(song: str) -> Dict[str, Union[str, int]]:
     # Literally parse_key_value_pairs again lol, i'm so funni!!!!!
     return parse_key_value_pairs(song.replace("~", ""), "|")
 
+
 def str_to_delta(value: str) -> relativedelta:
     """
     Convert a string representation of time into a relativedelta object.
-    
+
     :param value: The string representation of time, e.g., '3 months', '5 hours', '2 minutes'.
     :type value: str
     :return: The relativedelta object representing the time.
@@ -198,19 +199,19 @@ def str_to_delta(value: str) -> relativedelta:
     unit = parts[1].lower()  # Second part is the unit (e.g., months, years)
 
     # Map the unit to the appropriate relativedelta argument
-    if unit in ['month', 'months']:
+    if unit in ["month", "months"]:
         return relativedelta(months=time)
-    if unit in ['year', 'years']:
+    if unit in ["year", "years"]:
         return relativedelta(years=time)
-    if unit in ['day', 'days']:
+    if unit in ["day", "days"]:
         return relativedelta(days=time)
-    if unit in ['week', 'weeks']:
+    if unit in ["week", "weeks"]:
         return relativedelta(weeks=time)
-    if unit in ['hour', 'hours']:
+    if unit in ["hour", "hours"]:
         return relativedelta(hours=time)
-    if unit in ['minute', 'minutes']:
+    if unit in ["minute", "minutes"]:
         return relativedelta(minutes=time)
-    if unit in ['second', 'seconds']:
+    if unit in ["second", "seconds"]:
         return relativedelta(seconds=time)
 
     raise ValueError(f"Unknown time unit: {unit}")

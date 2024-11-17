@@ -121,6 +121,7 @@ class ModRank(IntEnum):
     ELDER_MOD = 2
     """Elder moderator."""
 
+
 class Gamemode(Enum):
     """
     An **Enum** class representing the different game modes in Geometry Dash.
@@ -144,6 +145,7 @@ class Gamemode(Enum):
     SPIDER = 6
     SWING = 7
     JETPACK = 8
+
 
 class SearchFilter(IntEnum):
     """
@@ -181,6 +183,7 @@ class SearchFilter(IntEnum):
     FRIENDS = 13
     """Filter levels made by friends. (Login required)"""
 
+
 class SpecialLevel(IntEnum):
     """
     An **Enum** class representing special levels in Geometry Dash.
@@ -193,10 +196,12 @@ class SpecialLevel(IntEnum):
     EVENT = -3
     """Event level."""
 
+
 class Leaderboard(StrEnum):
     """
     A class representing the leaderboard types.
     """
+
     TOP = auto()
     RELATIVE = auto()
     FRIENDS = auto()

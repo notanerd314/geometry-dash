@@ -15,7 +15,7 @@ import aiofiles
 from .enums import Gamemode
 from ..helpers import send_get_request
 
-__all__ = ["color_id_to_hex", "hex_to_color_id", "Icon", "IconSet"]
+__all__ = ["color_id_to_hex", "Icon", "IconSet"]
 
 COLORS_LIST: Dict[int, int] = {
     "0": 0x7DFF00,
@@ -155,20 +155,6 @@ def color_id_to_hex(color_id: int) -> Union[int, None]:
     :return: The hexadecimal color code if found, otherwise None.
     """
     return COLORS_LIST.get(color_id, None)
-
-
-def hex_to_color_id(hex_color: int) -> Union[int, None]:
-    """
-    Returns the color ID for the given hexadecimal color code. If not found, returns None.
-
-    :param hex_color: The hex of the color.
-    :type hex_color: int
-    :return: The ID of the color if found, otherwise None.
-    """
-    for color_id, color_hex in COLORS_LIST.items():
-        if color_hex == hex_color:
-            return color_id
-    return None
 
 
 @dataclass

@@ -6,6 +6,7 @@ A module containing all the classes and methods related to users and accounts in
 from typing import List, Optional, Union
 from dataclasses import dataclass
 from hashlib import sha1
+from collections import namedtuple
 
 from dateutil.relativedelta import relativedelta
 import colorama as color
@@ -23,10 +24,28 @@ color.init(autoreset=True)
 SECRET = "Wmfd2893gb7"
 PASSWORD_SALT = "mI29fmAnxgTs"
 
-__all__ = ["Post", "Player", "Account"]
+__all__ = [
+    "Post",
+    "Player",
+    "Account",
+    "LeaderboardPlayer",
+    "DifficultyStats",
+    "DemonStats",
+]
+
+DifficultyStats = namedtuple(
+    "DifficultyStats",
+    ["auto", "easy", "normal", "hard", "harder", "insane", "daily", "guantlet"],
+)
+"""A class representing how many different levels of difficulty the player has beaten."""
+
+DemonStats = namedtuple(
+    "DemonStats", ["easy", "medium", "hard", "insane", "extreme", "weekly", "guantlet"]
+)
+"""A class representing how many different demon levels the player has beaten."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class Post(Entity):
     """
     A class representing a post from a player.
@@ -80,54 +99,7 @@ class Post(Entity):
         )
 
 
-# * Classes representing stats
-@dataclass
-class DifficultyStats:
-    """
-    A class representing the non-demon stats of a level.
-    """
-
-    auto: int
-    """The amount of auto levels beaten."""
-    easy: int
-    """The amount of easy levels beaten."""
-    normal: int
-    """The amount of normal levels beaten."""
-    hard: int
-    """The amount of hard levels beaten."""
-    harder: int
-    """The amount of harder levels beaten."""
-    insane: int
-    """The amount of insane levels beaten."""
-    daily: int = None
-    """The amount of daily levels beaten."""
-    guantlet: int = None
-    """The amount of non-demon gauntlet levels beaten."""
-
-
-@dataclass
-class DemonStats:
-    """
-    A class representing the demon stats of a level.
-    """
-
-    easy: int
-    """The amount of easy demon levels beaten."""
-    medium: int
-    """The amount of medium demon levels beaten."""
-    hard: int
-    """The amount of hard demon levels beaten."""
-    insane: int
-    """The amount of insane demon levels beaten."""
-    extreme: int
-    """The amount of extreme demon levels beaten."""
-    weekly: int = None
-    """The amount of weekly levels beaten."""
-    guantlet: int = None
-    """The amount of demon gauntlet levels beaten."""
-
-
-@dataclass
+@dataclass(frozen=True)
 class Player(Entity):
     """
     A class representing an user's profile.
@@ -385,7 +357,8 @@ class Player(Entity):
 
         return await client.get_user_levels(self.player_id, page)
 
-@dataclass
+
+@dataclass(frozen=True)
 class LeaderboardPlayer(Player):
     """
     Represents a player on Geometry Dash leaderboard.
@@ -405,13 +378,10 @@ class LeaderboardPlayer(Player):
         player = Player.from_raw(raw_str)
         ago = parse_key_value_pairs(raw_str).get("42", "0 seconds")
 
-        return LeaderboardPlayer(
-            set_ago=str_to_delta(ago),
-            **player.__dict__
-        )
+        return LeaderboardPlayer(set_ago=str_to_delta(ago), **player.__dict__)
 
 
-@dataclass
+@dataclass(frozen=True)
 class Account:
     """
     Represents an account (not Player) on Geometry Dash.
