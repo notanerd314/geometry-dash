@@ -2,6 +2,7 @@
 
 A lightweight and asynchronous API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
 
+Example for downloading a level:
 ```py
 >>> from gd import Client
 >>> client = Client()
@@ -30,7 +31,7 @@ The package requires the following dependencies:
 - aiofiles
 - colorama (For useless eye candy)
 
-# Usage
+# Usages
 ### Downloading a level:
 ```py
 >>> from gd import Client

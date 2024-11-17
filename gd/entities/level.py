@@ -7,8 +7,9 @@ A module containing all the classes and methods related to levels in Geometry Da
 from typing import List, Union, Tuple
 from datetime import datetime
 from dataclasses import dataclass
-from dateutil.relativedelta import relativedelta
 from abc import ABC, abstractmethod
+
+from dateutil.relativedelta import relativedelta
 
 from .song import Song, OfficialSong
 from .entity import Entity
