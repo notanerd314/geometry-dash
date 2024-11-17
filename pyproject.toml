@@ -13,7 +13,8 @@ license = { text = "MIT" }
 dependencies = [
     "httpx",
     "aiofiles",
-    "colorama"
+    "colorama".
+    "dateutil"
 ]
 readme = "README.md"
 classifiers = [

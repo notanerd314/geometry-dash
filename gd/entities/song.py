@@ -200,7 +200,7 @@ class MusicLibrary:
         :return: An instance of a MusicLibrary.
         """
 
-        parsed = raw_str.strip().split("|")
+        parsed = tuple(raw_str.strip().split("|"))
         version = int(parsed[0])
 
         artists = {

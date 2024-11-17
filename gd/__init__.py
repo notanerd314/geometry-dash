@@ -1,35 +1,7 @@
 """
 # `gdapi`
 
-A lightweight and asynchronous API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
-
-```py
->>> from gd import Client
->>> client = Client()
->>> level = await client.download_level(13519)
->>> level.name
-"The Nightmare"
->>> level.difficulty
-Difficulty.EASY_DEMON
->>> level.description
-"Hard map by Jax. 7813"
->>> level.official_song
-OfficialSong.POLARGEIST
-```
-
-# Installation and Information
-### *why the heck did i put that???? it's unfinished!!!!!*
-Install GDAPI via PyPI:
-
-```bash
-$ python -m pip install gdapi
-```
-**GDAPI** supports Python version 3.7 or greater officially.
-
-The package requires the following dependencies:
-- aiohttp
-- aiofiles
-- colorama (For useless eye candy)
+Access the Geometry Dash API programmatically.
 
 # Usage
 ### Downloading a level:

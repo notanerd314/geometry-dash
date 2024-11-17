@@ -7,6 +7,7 @@ A module containing all the classes and methods related to levels in Geometry Da
 from typing import List, Optional, Union, Tuple
 from datetime import datetime
 from dataclasses import dataclass
+from dateutil.relativedelta import relativedelta
 
 from .song import Song, OfficialSong
 from .entity import Entity
@@ -17,6 +18,7 @@ from ..parse import (
     parse_key_value_pairs,
     determine_difficulty,
     determine_list_difficulty,
+    str_to_delta,
 )
 from ..decode import base64_urlsafe_decode
 from .enums import LevelRating, ModRank, Gamemode, Length, Difficulty, SearchFilter
@@ -360,8 +362,8 @@ class Comment(Entity):
         The ID of the comment.
     is_spam : bool
         If the comment is spam.
-    posted_ago : str
-        The time the comment was posted in a human-readable format. Eg: `"5 months"`
+    posted_ago : relativedelta
+        Time passed since the comment was posted.
     precentage : int
         The perecentage of the comment.
     mod_level : ModRank
@@ -389,7 +391,7 @@ class Comment(Entity):
     likes: int = None
     id: int = None
     is_spam: bool = None
-    posted_ago: str = None
+    posted_ago: relativedelta = None
     precentage: int = None
     mod_level: ModRank = None
 
@@ -424,7 +426,7 @@ class Comment(Entity):
             likes=int(comment_value.get("4", 0)),
             id=int(comment_value.get("6", 0)),
             is_spam=bool(int(comment_value.get("7", 0))),
-            posted_ago=comment_value.get("9", None),
+            posted_ago=str_to_delta(comment_value.get("9", "0 seconds")),
             precentage=int(comment_value.get("10", 0)),
             mod_level=ModRank(int(comment_value.get("11", 0))),
             author_name=user_value.get("1", ""),

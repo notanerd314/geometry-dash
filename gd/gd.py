@@ -1,77 +1,4 @@
-__doc__ = """
-# `gdapi`
-
-A lightweight and asynchronous API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
-
-# Installation and Information
-### *why the heck did i put that???? it's unfinished!!!!!*
-Install GDAPI via PyPI:
-
-```bash
-$ python -m pip install gdapi
-```
-**GDAPI** supports Python version 3.7 or greater officially.
-
-The package requires the following dependencies:
-- aiohttp
-- aiofiles
-- colorama (For useless eye candy)
-
-# Usage
-### Downloading a level:
-```py
->>> from gd import Client
->>> client = Client()
->>> level = await client.download_level(13519)
->>> level.name
-"The Nightmare"
->>> level.difficulty
-<DemonDifficulty.EASY_DEMON: 3>
->>> level.description
-"Hard map by Jax. 7813"
->>> level.official_song
-<OfficialSong.POLARGEIST: 2>
-```
-
-### Fetching a song and downloading it:
-```py
->>> from gd import Client
->>> client = Client()
->>> song = await client.get_song(1)
->>> song.name
-"Chilled 1"
->>> song.size
-0.07
->>> song.link
-"http://audio.ngfiles.com/0/1_newgrounds_consin.mp3"
->>> await song.download_to("chilled.mp3") # Download the song and name it "chilled.mp3" in the relative path.
-```
-
-### Getting the Music Library:
-```py
->>> from gd import Client
->>> client = Client()
->>> library = await client.music_library()
->>> library.version
-127
->>> library.artists
-{10002716: Artist(id=10002716, name='Raul Ojamaa', website=None, youtube_channel_id=None),
- 10002717: Artist(id=10002717, name='Malou', website=None, youtube_channel_id=None), ...}
->>> library.tags
-{234: '8bit', 251: 'action', 239: 'ambiance', 246: 'ambient', 247: 'battle', 248: 'boss', 250: 'calm', 249: 'casual', ...}
-```
-
-### Login and comment:
-```py
->>> from gd import Client
->>> client = Client()
->>> credientals = await client.login("notanerd1", "*********") # Password is hidden on purpose
->>> credientals
-Account(account_id=24514763, player_id=218839712, name='notanerd1', password=********) # Hidden when printing the instance
->>> comment_id = await client.comment("I am high", level_id=111663149, percentage=0) # Comment on the level with the percentage of 0
-2994273
-```
-"""
+__doc__ = """Accessing the Geometry Dash API programmatically."""
 
 from datetime import timedelta
 from typing import Union, Tuple, List
@@ -110,7 +37,7 @@ from .entities.enums import (
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from .entities.song import MusicLibrary, SoundEffectLibrary, Song
-from .entities.user import Account, Player, Post
+from .entities.user import Account, Player, Post, LeaderboardPlayer
 from .helpers import send_get_request, send_post_request, cooldown, require_login
 
 SECRET = "Wmfd2893gb7"
@@ -131,7 +58,6 @@ def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
     result = sha1(password.encode()).hexdigest()
 
     return result
-
 
 class Client:
     """
@@ -249,29 +175,6 @@ class Client:
         )
         return self.account
 
-    @cooldown(10)
-    async def change_account(self, name: str, password: str) -> Account:
-        """
-        An atomic way of logging out then logging in.
-
-        Cooldown is 10 seconds.
-
-        :param name: The account name.
-        :type name: str
-        :param password: The account password.
-        :type password: str
-
-        :return: The account instance
-        :rtype: :class:`gd.entities.Account`
-        """
-        if not self.account:
-            raise LoginError(
-                "The client is not logged in to change accounts! Use .login() instead."
-            )
-
-        self.logout()
-        return await self.login(name, password)
-
     def logout(self) -> None:
         """
         Logs out the current account.
@@ -383,7 +286,7 @@ class Client:
                 "accountID": self.account.account_id,
                 "commentID": post_id,
                 "gjp2": self.account.gjp2,
-                "secret": SECRET,
+            "secret": SECRET,
             },
         )
         response = response.text
@@ -613,6 +516,52 @@ class Client:
             LevelDisplay.from_parsed(result).add_client(self)
             for result in parsed_results
         ]
+
+    @require_login("You need to log in before you can view the leaderboard.")
+    async def level_leaderboard(self, level_id: int, friends: bool = False, week: bool = False) -> List[LeaderboardPlayer]:
+        """
+        Gets the leaderboard for a given level.
+
+        :param level_id: The ID of the level.
+        :type level_id: int
+        :param friends: Whether to include get friends' scores in the leaderboard. Defaults to False.
+        :return: A list of Player instances representing the leaderboard.
+        :rtype: List[:class:`gd.entities.LeaderboardPlayer`]
+        """
+        if friends and week:
+            raise ValueError("Cannot fetch both friends and weekly leaderboard.")
+
+        leaderboard = 1
+        if friends:
+            leaderboard = 0
+        elif week:
+            leaderboard = 2
+
+        data = {
+            "secret": SECRET,
+            "type": leaderboard,
+            "levelID": level_id,
+            "accountID": self.account.account_id,
+            "gjp2": self.account.gjp2,
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevelScores211.php", data=data
+        )
+
+        check_errors(
+            response,
+            ResponseError,
+            "Unable to fetch level leaderboard.",
+        )
+
+        response = response.text.split("#")[0].split("|")
+
+        return [
+            LeaderboardPlayer.from_raw(player_data).add_client(self)
+            for player_data in response
+        ]
+
 
     @cooldown(10)
     async def music_library(self) -> MusicLibrary:
@@ -854,19 +803,17 @@ class Client:
             for map_pack_data in map_packs
         ]
 
-    async def gauntlets(self, not_2_2: bool = True, ncs: bool = True) -> List[Gauntlet]:
+    async def gauntlets(self, ncs: bool = True) -> List[Gauntlet]:
         """
         Get the list of gauntlets objects.
 
-        :param not_2_2: Whether to get ONLY the 2.1 guantlets or both versions.
-        :type not_2_2: bool
         :param ncs: Whether to include NCS gauntlets to the list. Defaults to True.
         :type ncs: bool
         :raises: gd.LoadError
         :return: A list of `Gauntlet` instances.
         :rtype: List[:class:`gd.entities.level.Gauntlet`]
         """
-        data = {"secret": SECRET, "special": int(not not_2_2)}
+        data = {"secret": SECRET}
         if ncs:
             data["binaryVersion"] = 46
 
@@ -989,7 +936,6 @@ class Client:
         check_errors(response, ResponseError, "An error occurred when getting the leaderboard.")
 
         response = response.text.split("#")[0].split("|")
-
         del response[-1]
 
         return [Player.from_raw(player).add_client(self) for player in response]

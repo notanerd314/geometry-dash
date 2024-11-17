@@ -7,9 +7,10 @@ from typing import List, Optional, Union
 from dataclasses import dataclass
 from hashlib import sha1
 
+from dateutil.relativedelta import relativedelta
 import colorama as color
 
-from ..parse import parse_key_value_pairs
+from ..parse import parse_key_value_pairs, str_to_delta
 from .enums import Gamemode, ModRank
 from .cosmetics import IconSet
 from .level import Comment, LevelDisplay
@@ -38,8 +39,8 @@ class Post(Entity):
         The number of likes of the post.
     post_id : int
         The id of the post.
-    posted_ago : str
-        The time when the post was posted in a string, example: `"5 months"`
+    posted_ago : relativedelta
+        Time passed after the post was created.
     author_account_id : Union[int, None]
         The ID of the author, or None if doesn't exist.
     """
@@ -50,7 +51,7 @@ class Post(Entity):
     """The number of likes of the post."""
     post_id: int = None
     """The ID of the post."""
-    posted_ago: str = None
+    posted_ago: relativedelta = None
     """The time when the post was posted, e.g., '5 months'."""
     author_account_id: Union[int, None] = None
     """The ID of the author, or None if it doesn't exist."""
@@ -74,7 +75,7 @@ class Post(Entity):
             content=base64_urlsafe_decode(comment_value.get("2", "")),
             likes=int(comment_value.get("4", 0)),
             post_id=int(comment_value.get("6", 0)),
-            posted_ago=comment_value.get("9", None),
+            posted_ago=str_to_delta(comment_value.get("9", "0 seconds")),
             author_account_id=account_id,
         )
 
@@ -265,7 +266,7 @@ class Player(Entity):
             moons=parsed.get("52", 0),
             demons=parsed.get("4", 0),
             diamonds=parsed.get("46"),
-            rank=parsed.get("30"),
+            rank=parsed.get("6"),
             creator_points=parsed.get("8", 0),
             secret_coins=parsed.get("13", 0),
             user_coins=parsed.get("17", 0),
@@ -383,6 +384,31 @@ class Player(Entity):
         """
 
         return await client.get_user_levels(self.player_id, page)
+
+@dataclass
+class LeaderboardPlayer(Player):
+    """
+    Represents a player on Geometry Dash leaderboard.
+    Inherited from `Player`
+
+    Attributes
+    ==========
+    set_ago : relativedelta
+        Time difference from the current player's account creation time.
+    """
+
+    set_ago: relativedelta = relativedelta(seconds=0)
+    """Time difference from the current player's account creation time."""
+
+    @staticmethod
+    def from_raw(raw_str: str) -> "LeaderboardPlayer":
+        player = Player.from_raw(raw_str)
+        ago = parse_key_value_pairs(raw_str).get("42", "0 seconds")
+
+        return LeaderboardPlayer(
+            set_ago=str_to_delta(ago),
+            **player.__dict__
+        )
 
 
 @dataclass

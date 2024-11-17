@@ -121,7 +121,6 @@ class ModRank(IntEnum):
     ELDER_MOD = 2
     """Elder moderator."""
 
-
 class Gamemode(Enum):
     """
     An **Enum** class representing the different game modes in Geometry Dash.
@@ -145,24 +144,6 @@ class Gamemode(Enum):
     SPIDER = 6
     SWING = 7
     JETPACK = 8
-
-
-class ColorPart(Enum):
-    """
-    An **Enum** class representing icon color parts in Geometry Dash.
-
-    - `PRIMARY` (1): Primary color.
-    - `SECONDARY` (2): Secondary color.
-    - `GLOW` (3): Glow color.
-    """
-
-    PRIMARY = 1
-    """Primary icon color."""
-    SECONDARY = 2
-    """Secondary icon color."""
-    GLOW = 3
-    """Glow icon color."""
-
 
 class SearchFilter(IntEnum):
     """
@@ -200,7 +181,6 @@ class SearchFilter(IntEnum):
     FRIENDS = 13
     """Filter levels made by friends. (Login required)"""
 
-
 class SpecialLevel(IntEnum):
     """
     An **Enum** class representing special levels in Geometry Dash.
@@ -221,3 +201,4 @@ class Leaderboard(StrEnum):
     RELATIVE = auto()
     FRIENDS = auto()
     CREATORS = auto()
+    WEEK = auto()
