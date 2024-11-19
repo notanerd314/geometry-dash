@@ -75,8 +75,10 @@ def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
     parsed = parse_key_value_pairs(text)
 
     # Decrypt specific values
-    parsed["4"] = base64_decompress(parsed.get("4"))
-    parsed["3"] = base64_urlsafe_decode(parsed.get("3"))
+    parsed["4"] = base64_decompress(parsed.get("4", "")) if parsed.get("4") else None
+    parsed["3"] = (
+        base64_urlsafe_decode(parsed.get("3", "")) if parsed.get("3") else None
+    )
     parsed["27"] = (
         base64_urlsafe_decode(parsed.get("27"))
         if parsed.get("27") not in [None, "0"]

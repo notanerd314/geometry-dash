@@ -5,7 +5,7 @@ disable=E0402,R0902
 max-line-length=150
 
 [MASTER]
-ignore=tests.py
+ignore=tests.py,examples
 
 [DESIGN]
 max-args=20

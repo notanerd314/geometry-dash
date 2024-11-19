@@ -16,14 +16,9 @@ from .parse import (
 )
 from .exceptions import (
     check_errors,
-    LoginError,
-    CommentError,
-    ResponseError,
-    InvalidAccountID,
-    InvalidLevelID,
-    SearchLevelError,
-    InvalidSongID,
     LoadError,
+    InvalidID,
+    LoginError,
 )
 from .decode import CHKSalt, XorKey, generate_chk, base64_decompress
 from .entities.enums import (
@@ -128,6 +123,35 @@ class Client:
         """If the client has logged in or not."""
         return bool(self.account)
 
+    @logged_in.setter
+    def logged_in(self) -> None:
+        raise ValueError("This property is frozen.")
+
+    async def check_login(self) -> bool:
+        """
+        Checks if the account credientials are correct.
+
+        :return: True if the credentials are correct, False otherwise.
+        :rtype: bool
+        """
+        if not self.account:
+            return False
+
+        data = {
+            "secret": LOGIN_SECRET,
+            "userName": self.account.name,
+            "gjp2": self.account.gjp2,
+            "udid": "blah blah placeholder HAHAHHAH",
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/accounts/loginGJAccount.php",
+            data=data,
+        )
+        response = response.text
+
+        return response.text == f"{self.account.account_id}|{self.account.player_id}"
+
     async def login(self, name: str, password: str) -> Account:
         """
         Login account with given name and password.
@@ -176,6 +200,27 @@ class Client:
         )
         return self.account
 
+    def unsafe_login(self, name: str, password: str, account_id: int, player_id: int) -> Account:
+        """
+        Login account with given name and password without any additional checks.
+
+        :param name: The account name.
+        :type name: str
+        :param password: The account password.
+        :type password: str
+        :param account_id: The account ID.
+        :type account_id: int
+        :param player_id: The player ID.
+        :type player_id: int
+
+        :return: The Account instance
+        :rtype: :class:`gd.entities.Account`
+        """
+        self.account = Account(
+            account_id=account_id, player_id=player_id, name=name, password=password
+        )
+        return self.account
+
     def logout(self) -> None:
         """
         Logs out the current account.
@@ -195,7 +240,7 @@ class Client:
 
         :param message: The message to send.
         :type message: str
-        :raises: gd.ResponseError
+        :raises: gd.LoadError
         :return: The post ID of the sent post.
         :rtype: int
         """
@@ -232,7 +277,7 @@ class Client:
         :type level_id: int
         :param percentage: The percentage of the level completed, optional. Defaults to 0.
         :type percentage: int
-        :raises: gd.CommentError
+        :raises: gd.InvalidID
         :return: The comment ID of the sent comment.
         :rtype: int
         """
@@ -264,7 +309,7 @@ class Client:
 
         check_errors(
             response,
-            CommentError,
+            InvalidID,
             "Unable to post comment, maybe the level ID is wrong?",
         )
 
@@ -277,7 +322,7 @@ class Client:
 
         :param post_id: The ID of the post to delete.
         :type post_id: int
-        :raises: gd.CommentError
+        :raises: gd.InvalidID
         :return: None
         :rtype: None
         """
@@ -294,7 +339,7 @@ class Client:
 
         check_errors(
             response,
-            CommentError,
+            InvalidID,
             "Unable to delete post, perhaps wrong ID?",
         )
 
@@ -307,7 +352,7 @@ class Client:
         :type comment_id: int
         :param level_id: The ID of the level the comment belongs to.
         :type level_id: int
-        :raises: gd.CommentError
+        :raises: gd.InvalidID
         :return: None
         :rtype: None
         """
@@ -325,8 +370,8 @@ class Client:
 
         check_errors(
             response,
-            CommentError,
-            "Unable to delete post, perhaps wrong level ID or comment ID?",
+            InvalidID,
+            "Invalid comment or level ID.",
         )
 
     @cooldown(3)
@@ -338,7 +383,7 @@ class Client:
 
         :param id: The ID of the level.
         :type id: int
-        :raises: gd.InvalidLevelID
+        :raises: gd.InvalidID
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
         """
@@ -352,7 +397,7 @@ class Client:
         response = response.text
 
         # Check if response is valid
-        check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
+        check_errors(response, InvalidID, f"Invalid level ID {level_id}.")
 
         return Level.from_raw(response).add_client(self)
 
@@ -369,7 +414,7 @@ class Client:
         :type special: SpecialLevel
         :param time_left: If return a tuple containing the `Level` and the time left until the level is switched.
         :type time_left: bool
-        :raises: gd.ResponseError
+        :raises: gd.LoadError
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
         """
@@ -389,7 +434,7 @@ class Client:
             daily_data = daily_data.text
             check_errors(
                 daily_data,
-                ResponseError,
+                LoadError,
                 "Cannot get current time left for the daily/weekly level.",
             )
 
@@ -449,7 +494,7 @@ class Client:
         :param src_filter: Filters the result by Magic, Recent, ...
         :type src_filter: Optional[Union[filter, str]]
 
-        :raises: gd.SearchLevelError
+        :raises: gd.LoadError
         :raises: ValueError
 
         :return: A list of `LevelDisplay` instances.
@@ -510,7 +555,7 @@ class Client:
         )
         search_data = search_data.text
 
-        check_errors(search_data, SearchLevelError, "Unable to fetch search results.")
+        check_errors(search_data, LoadError, "Unable to fetch search results.")
         parsed_results = parse_search_results(search_data)
 
         return [
@@ -554,7 +599,7 @@ class Client:
 
         check_errors(
             response,
-            ResponseError,
+            LoadError,
             "Unable to fetch level leaderboard.",
         )
 
@@ -611,7 +656,7 @@ class Client:
         :param id: The ID of the song.
         :type id: int
         :return: A `Song` instance containing the song data.
-        :raises: gd.InvalidSongID
+        :raises: gd.InvalidID
         :rtype: :class:`gd.entities.song.Song`
         """
         response = await send_post_request(
@@ -620,7 +665,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidSongID, "")
+        check_errors(response, InvalidID, "")
 
         return Song.from_raw(response)
 
@@ -632,7 +677,7 @@ class Client:
         :type query: Union[str, int]
         :param use_id: If searches the user using the account ID.
         :type use_id: Optional[bool]
-        :raises: gd.InvalidAccountID
+        :raises: gd.InvalidID
         :return: A `Player` instance containing the user's profile data.
         :rtype: :class:`gd.entities.user.Player`
         """
@@ -647,7 +692,7 @@ class Client:
         response = await send_post_request(url=url, data=data)
         response = response.text
 
-        check_errors(response, InvalidAccountID, f"Invalid account name/ID {query}.")
+        check_errors(response, InvalidID, f"Invalid account name/ID {query}.")
         return Player.from_raw(response.split("#")[0]).add_client(self)
 
     async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
@@ -658,7 +703,7 @@ class Client:
         :type level_id: int
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
-        :raises: gd.InvalidLevelID
+        :raises: gd.InvalidID
         :return: A list of `Comment` instances.
         :rtype: :class:`gd.entities.level.Comment`
         """
@@ -671,7 +716,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidLevelID, f"Invalid level ID {level_id}.")
+        check_errors(response, InvalidID, f"Invalid level ID {level_id}.")
         return [
             Comment.from_raw(comment_data).add_client(self)
             for comment_data in response.split("|")
@@ -685,7 +730,7 @@ class Client:
         :type account_id: int
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
-        :raises: gd.InvalidAccountID
+        :raises: gd.InvalidID
         :return: A list of `Post` instances or None if there are no posts.
         :rtype: List[:class:`gd.entities.user.Post`]
         """
@@ -695,7 +740,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidAccountID, "Invalid account ID.")
+        check_errors(response, InvalidID, "Invalid account ID.")
 
         if not response.split("#")[0]:
             return None
@@ -721,7 +766,7 @@ class Client:
         :type page: int
         :param display_most_liked: Whether to display the most liked comments. Defaults to False.
         :type display_most_liked: bool
-        :raises: gd.InvalidAccountID
+        :raises: gd.InvalidID
         :return: A list of `Comment` instances or None if no comments were found.
         :rtype: List[:class:`gd.entities.level.Comment`]
         """
@@ -736,7 +781,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidAccountID, "Invalid player ID.")
+        check_errors(response, InvalidID, "Invalid player ID.")
 
         if not response.split("#")[0]:
             return None
@@ -766,7 +811,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidAccountID, f"Invalid account ID {player_id}.")
+        check_errors(response, InvalidID, f"Invalid account ID {player_id}.")
 
         if not response.split("#")[0]:
             return None
@@ -856,7 +901,7 @@ class Client:
         :type demon_difficulty: DemonDifficulty
         :param only_rated: Filters only rated lists.
         :type only_rated: bool
-        :raises: gd.SearchLevelError
+        :raises: gd.LoadError
         :return: A list of `LevelList` instances.
         :rtype: List[:class:`gd.entities.level.LevelList`]
         """
@@ -895,7 +940,7 @@ class Client:
 
         check_errors(
             response,
-            SearchLevelError,
+            LoadError,
             "An error occurred while searching lists, maybe it doesn't exist?",
         )
         response = response.split("#")[0]
@@ -914,7 +959,7 @@ class Client:
         :param leaderboard: The type of leaderboard to retrieve.
         :type leaderboard: Leaderboard
         :param count: The number of players to retrieve, limits to 100.
-        :raises: gd.ResponseError
+        :raises: gd.LoadError
         :return: A list of `Player` instances.
         :rtype: list[Player]
         """
@@ -938,10 +983,20 @@ class Client:
         )
 
         check_errors(
-            response, ResponseError, "An error occurred when getting the leaderboard."
+            response, LoadError, "An error occurred when getting the leaderboard."
         )
 
         response = response.text.split("#")[0].split("|")
         del response[-1]
 
         return [Player.from_raw(player).add_client(self) for player in response]
+
+    async def like_level(self, level_id: int, dislike: bool = False) -> None:
+        """
+        Like or dislike a level.
+
+        :param level_id: The ID of the level to like or dislike.
+        :type level_id: int
+        :param dislike: Whether to dislike the level. Defaults to False.
+        :raises: gd.LikeError
+        """

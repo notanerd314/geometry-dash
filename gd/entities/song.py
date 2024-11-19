@@ -21,7 +21,7 @@ __all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song", "Officia
 # Music Library
 
 
-@dataclass(frozen=True)
+@dataclass
 class MusicLibrary:
     """
     A class representing the whole entire music library.
@@ -47,7 +47,7 @@ class MusicLibrary:
     tags: Dict[int, str] = field(default_factory=dict)
     """The tags of the library."""
 
-    @dataclass(frozen=True)
+    @dataclass
     class Artist:
         """
         A class representing an artist in the music library.
@@ -91,7 +91,7 @@ class MusicLibrary:
                 youtube_channel_id=parsed[3] if parsed[3].strip() else None,
             )
 
-    @dataclass(frozen=True)
+    @dataclass
     class Song:
         """
         A class representing a song in the music library.
@@ -308,7 +308,7 @@ class MusicLibrary:
 # SFX Library
 
 
-@dataclass(frozen=True)
+@dataclass
 class SoundEffectLibrary:
     """
     A class representing the sound effect library.
@@ -328,7 +328,7 @@ class SoundEffectLibrary:
     creators: List["Creator"]
     sfx: List["SoundEffect"]
 
-    @dataclass(frozen=True)
+    @dataclass
     class Folder:
         """
         A class representing a folder in the SFX library.
@@ -361,7 +361,7 @@ class SoundEffectLibrary:
                 name=parsed[1],
             )
 
-    @dataclass(frozen=True)
+    @dataclass
     class Creator:
         """
         A class representing a creator in the SFX library.
@@ -529,7 +529,7 @@ class SoundEffectLibrary:
         return result
 
 
-@dataclass(frozen=True)
+@dataclass
 class SoundEffect:
     """
     A class representing a sound effect in the SFX library.
@@ -612,7 +612,7 @@ class SoundEffect:
 # Level song
 
 
-@dataclass(frozen=True)
+@dataclass
 class Song:
     """
     A class representing a level song in the Geometry Dash level.

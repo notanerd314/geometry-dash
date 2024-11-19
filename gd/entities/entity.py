@@ -6,7 +6,7 @@ A file containing all the entity classes to inherit from.
 
 from typing import List, Self, Union
 from dataclasses import dataclass, field
-from abc import ABC, abstractmethod
+from abc import ABC
 
 __all__ = ["Entity"]
 
@@ -109,10 +109,3 @@ class Entity(ABC):
         :rtype: bool
         """
         return any(client.logged_in for client in self.clients)
-
-    @abstractmethod
-    @staticmethod
-    def from_raw(raw_str: str):
-        """
-        An abstract method for creating an instance from the raw data in the servers.
-        """

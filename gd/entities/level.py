@@ -7,7 +7,7 @@ A module containing all the classes and methods related to levels in Geometry Da
 from typing import List, Union, Tuple
 from datetime import datetime
 from dataclasses import dataclass
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from dateutil.relativedelta import relativedelta
 
@@ -84,7 +84,7 @@ GAUNTLETS = {
 }
 
 
-@dataclass(frozen=True)
+@dataclass
 class Level(Entity):
     """
     A class representing a downloaded level in Geometry Dash.
@@ -197,7 +197,7 @@ class Level(Entity):
             id=parsed.get("1"),
             name=parsed.get("2"),
             description=parsed.get("3"),
-            level_data=parsed.get("4"),
+            level_data=parsed.get("4", ""),
             version=parsed.get("5"),
             creator_player_id=parsed.get("6"),
             downloads=int(parsed.get("10", 0)),
@@ -273,7 +273,7 @@ class Level(Entity):
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class LevelDisplay(Level):
     """
     A class representing a level displayed in the search results in Geometry Dash.
@@ -347,7 +347,7 @@ class LevelDisplay(Level):
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class Comment(Entity):
     """
     A class representing a comment in a level.
@@ -446,7 +446,7 @@ class Comment(Entity):
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class ListLevels(Entity, ABC):
     """
     An abstract class representing a list of levels. (Not to be confused with LevelList)
@@ -490,15 +490,8 @@ class ListLevels(Entity, ABC):
         level_id = self.levels_id[index]
         return await client.download_level(level_id=level_id)
 
-    @staticmethod
-    @abstractmethod
-    def from_raw(raw_str: str):
-        """
-        Returns the instance from the raw data in the servers.
-        """
 
-
-@dataclass(frozen=True)
+@dataclass
 class LevelList(ListLevels):
     """
     A class representing a list.
@@ -575,7 +568,7 @@ class LevelList(ListLevels):
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class MapPack(ListLevels):
     """
     A class representing a map pack.
@@ -630,7 +623,7 @@ class MapPack(ListLevels):
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class Gauntlet(ListLevels):
     """
     A class representing a gauntlet.

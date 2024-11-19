@@ -45,7 +45,7 @@ DemonStats = namedtuple(
 """A class representing how many different demon levels the player has beaten."""
 
 
-@dataclass(frozen=True)
+@dataclass
 class Post(Entity):
     """
     A class representing a post from a player.
@@ -99,7 +99,7 @@ class Post(Entity):
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class Player(Entity):
     """
     A class representing an user's profile.
@@ -358,7 +358,7 @@ class Player(Entity):
         return await client.get_user_levels(self.player_id, page)
 
 
-@dataclass(frozen=True)
+@dataclass
 class LeaderboardPlayer(Player):
     """
     Represents a player on Geometry Dash leaderboard.
@@ -381,7 +381,7 @@ class LeaderboardPlayer(Player):
         return LeaderboardPlayer(set_ago=str_to_delta(ago), **player.__dict__)
 
 
-@dataclass(frozen=True)
+@dataclass
 class Account:
     """
     Represents an account (not Player) on Geometry Dash.

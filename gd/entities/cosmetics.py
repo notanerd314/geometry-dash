@@ -307,7 +307,7 @@ class IconSet:
         glow_color: int = None,
     ) -> "IconSet":
         """
-        A function to creator an user's icon set.
+        A function to creator an user's icon set fast.
 
         :param cube: Cube icon ID.
         :type cube: int

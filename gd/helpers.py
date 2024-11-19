@@ -10,6 +10,7 @@ from functools import wraps
 from time import time
 from typing import Union
 
+from colorama import Fore
 import httpx
 
 from .exceptions import OnCooldown, LoginError
@@ -19,6 +20,26 @@ __all__ = ["cooldown", "send_post_request", "send_get_request"]
 
 
 # Decorators for Client, Cooldown, and Login Logic
+def deprecated(message: str, version: str):
+    """
+    A decorator to mark a function as deprecated.
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Print the deprecation message
+            print(
+                f"{Fore.LIGHTYELLOW_EX}DeprecationWarning: {message} (Method will be removed in {version}){Fore.RESET}"
+            )
+            # Call the original function
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 def require_client(
     error_message: str = "At least one client must be attached in order to use this function.",
     login: bool = False,
