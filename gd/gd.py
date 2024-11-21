@@ -34,7 +34,7 @@ from .entities.enums import (
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from .entities.song import MusicLibrary, SoundEffectLibrary, Song, OfficialSong
-from .entities.user import Account, Player, Post, LeaderboardPlayer
+from .entities.user import Account, Player, Post
 from .entities.cosmetics import Icon, IconSet
 from .helpers import send_get_request, send_post_request, cooldown, require_login
 
@@ -63,7 +63,6 @@ __all__ = [
     "Account",
     "Player",
     "Post",
-    "LeaderboardPlayer",
     "Icon",
     "IconSet",
     "SECRET",
@@ -611,7 +610,7 @@ class Client:
     @require_login("You need to log in before you can view the leaderboard.")
     async def level_leaderboard(
         self, level_id: int, friends: bool = False, week: bool = False
-    ) -> List[LeaderboardPlayer]:
+    ) -> List[Player]:
         """
         Gets the leaderboard for a given level.
 
@@ -619,7 +618,7 @@ class Client:
         :type level_id: int
         :param friends: Whether to include get friends' scores in the leaderboard. Defaults to False.
         :return: A list of Player instances representing the leaderboard.
-        :rtype: List[:class:`gd.entities.LeaderboardPlayer`]
+        :rtype: List[:class:`gd.entities.Player`]
         """
         if friends and week:
             raise ValueError("Cannot fetch both friends and weekly leaderboard.")
@@ -651,7 +650,7 @@ class Client:
         response = response.text.split("#")[0].split("|")
 
         return [
-            LeaderboardPlayer.from_raw(player_data).add_client(self)
+            Player.from_raw(player_data).add_client(self)
             for player_data in response
         ]
 
@@ -716,7 +715,7 @@ class Client:
 
     async def search_user(self, query: Union[str, int], use_id: bool = False) -> Player:
         """
-        Get an user profile by account ID or name.
+        Get an user profile by account ID or name. 
 
         :param query: The account ID/name to retrieve the profile.
         :type query: Union[str, int]
@@ -729,7 +728,12 @@ class Client:
 
         if use_id:
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
-            data = {"secret": SECRET, "targetAccountID": query}
+            data = {
+                "secret": SECRET, 
+                "targetAccountID": query,
+                "gjp2": self.account.gjp2 if self.logged_in else None,
+                "accountID": self.account.account_id if self.logged_in else None,
+            }
         else:
             url = "http://www.boomlings.com/database/getGJUsers20.php"
             data = {"secret": SECRET, "str": query}
@@ -1068,7 +1072,7 @@ class Client:
             key=XorKey.LIKE,
             salt=CHKSalt.LIKE,
         )
-        
+
         return data
 
     @require_login("An account is required to perform this action.")
@@ -1110,7 +1114,7 @@ class Client:
 
         :param comment_id: The ID of the comment to like or dislike.
         :type comment_id: int
-        :param level_id: The ID of the level the comment belongs to. (Use negative for lists)
+        :param level_id: The ID of the level the comment belongs to. (Use negative ID for lists)
         :type level_id: int
         :param dislike: Whether to dislike the comment. Defaults to False.
         :type dislike: bool

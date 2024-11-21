@@ -28,7 +28,6 @@ __all__ = [
     "Post",
     "Player",
     "Account",
-    "LeaderboardPlayer",
     "DifficultyStats",
     "DemonStats",
 ]
@@ -146,6 +145,10 @@ class Player(Entity):
         If the user has registered.
     mod_level : Optional[ModRank]
         The mod level of the user.
+    is_friend : bool = False
+        If the player is a friend.
+    accept_requests : bool = False
+        If the player accept all friend requests.
     primary_color_id : Optional[int]
         The primary color id of the user's icon.
     secondary_color_id : Optional[int]
@@ -168,6 +171,8 @@ class Player(Entity):
         The stats of non-demon classic levels beaten.
     platformer_stats: Optional[DifficultyStats]
         The stats of platformer non-demon levels beaten.
+    set_ago : Optional[relativedelta] = None
+        The last time the score was set on a level.
     """
 
     name: str = None
@@ -196,6 +201,10 @@ class Player(Entity):
     """If the user has registered."""
     mod_level: Optional[ModRank] = None
     """The mod level of the user."""
+    is_friend: bool = False
+    """If the player is a friend."""
+    accept_requests: bool = False
+    """If the player accept all friend requests."""
 
     primary_color_id: Optional[int] = None
     """The primary color id of the user's icon."""
@@ -223,6 +232,9 @@ class Player(Entity):
     """The stats of non-demon classic levels beaten."""
     platformer_stats: Optional[DifficultyStats] = None
     """The stats of platformer non-demon levels beaten."""
+
+    set_ago: Optional[relativedelta] = None
+    """The last time the score was set on a level."""
 
     @staticmethod
     def from_raw(raw_str: str) -> "Player":
@@ -258,6 +270,8 @@ class Player(Entity):
             user_coins=parsed.get("17", 0),
             registered=parsed.get("29") == 1,
             mod_level=ModRank(parsed.get("49", 0)),
+            is_friend=parsed.get("31") == 1,
+            accept_requests=parsed.get("19") == 0,
             profile_icon_type=Gamemode(parsed.get("14", 1)),
             primary_color_id=primary_color,
             secondary_color_id=secondary_color,
@@ -329,6 +343,7 @@ class Player(Entity):
                 secondary_color=secondary_color,
                 glow_color=glow_color,
             ),
+            set_ago=str_to_delta(parsed.get("42", "0 seconds")),
         )
 
     @require_client()
@@ -370,29 +385,6 @@ class Player(Entity):
         """
 
         return await client.get_user_levels(self.player_id, page)
-
-
-@dataclass
-class LeaderboardPlayer(Player):
-    """
-    Represents a player on Geometry Dash leaderboard.
-    Inherited from `Player`
-
-    Attributes
-    ==========
-    set_ago : relativedelta
-        Time difference from the current player's account creation time.
-    """
-
-    set_ago: relativedelta = relativedelta(seconds=0)
-    """Time difference from the current player's account creation time."""
-
-    @staticmethod
-    def from_raw(raw_str: str) -> "LeaderboardPlayer":
-        player = Player.from_raw(raw_str)
-        ago = parse_key_value_pairs(raw_str).get("42", "0 seconds")
-
-        return LeaderboardPlayer(set_ago=str_to_delta(ago), **player.__dict__)
 
 
 @dataclass
