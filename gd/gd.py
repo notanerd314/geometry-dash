@@ -20,7 +20,7 @@ from .exceptions import (
     InvalidID,
     LoginError,
 )
-from .decode import CHKSalt, XorKey, generate_chk, base64_decompress
+from .decode import CHKSalt, XorKey, generate_chk, base64_decompress, generate_rs
 from .entities.enums import (
     Length,
     LevelRating,
@@ -29,14 +29,56 @@ from .entities.enums import (
     Difficulty,
     SpecialLevel,
     Leaderboard,
+    ModRank,
+    Gamemode,
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
-from .entities.song import MusicLibrary, SoundEffectLibrary, Song
+from .entities.song import MusicLibrary, SoundEffectLibrary, Song, OfficialSong
 from .entities.user import Account, Player, Post, LeaderboardPlayer
+from .entities.cosmetics import Icon, IconSet
 from .helpers import send_get_request, send_post_request, cooldown, require_login
+
+__all__ = [
+    "LoadError",
+    "InvalidID",
+    "LoginError",
+    "Length",
+    "LevelRating",
+    "SearchFilter",
+    "DemonDifficulty",
+    "Difficulty",
+    "SpecialLevel",
+    "Leaderboard",
+    "ModRank",
+    "Level",
+    "LevelDisplay",
+    "Comment",
+    "MapPack",
+    "LevelList",
+    "Gauntlet",
+    "MusicLibrary",
+    "SoundEffectLibrary",
+    "Song",
+    "OfficialSong",
+    "Account",
+    "Player",
+    "Post",
+    "LeaderboardPlayer",
+    "Icon",
+    "IconSet",
+    "SECRET",
+    "LOGIN_SECRET",
+    "gjp2",
+    "Client",
+    "Gamemode",
+    "CHKSalt",
+    "XorKey",
+    "generate_chk",
+]
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
+RS = "8f0l0ClAN1"
 
 
 def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
@@ -200,7 +242,9 @@ class Client:
         )
         return self.account
 
-    def unsafe_login(self, name: str, password: str, account_id: int, player_id: int) -> Account:
+    def unsafe_login(
+        self, name: str, password: str, account_id: int, player_id: int
+    ) -> Account:
         """
         Login account with given name and password without any additional checks.
 
@@ -232,9 +276,9 @@ class Client:
 
     @cooldown(15)
     @require_login("You need to login before you can send a post!")
-    async def post(self, message: str) -> int:
+    async def account_comment(self, message: str) -> int:
         """
-        Sends an account comment to the account logged in. (Not to be confused with a `POST` request)
+        Sends an account comment to the account logged in.
 
         Cooldown is 15 seconds.
 
@@ -281,6 +325,7 @@ class Client:
         :return: The comment ID of the sent comment.
         :rtype: int
         """
+
         data = {
             "secret": SECRET,
             "accountID": self.account.account_id,
@@ -991,6 +1036,42 @@ class Client:
 
         return [Player.from_raw(player).add_client(self) for player in response]
 
+    def _data_like(
+        self, item_id: int, like_type: int, dislike: bool = False, special: int = 0
+    ):
+        data = {
+            "itemID": item_id,
+            "type": like_type,
+            "like": int(not dislike),
+            "accountID": self.account.account_id,
+            "udid": "0",
+            "uuid": self.account.player_id,
+            "gjp2": self.account.gjp2,
+            "special": special,
+            "secret": SECRET,
+            "rs": generate_rs(),
+            "gameVersion": 22,
+            "binaryVersion": 42,
+        }
+
+        data["chk"] = generate_chk(
+            values=[
+                data["special"],
+                data["itemID"],
+                data["like"],
+                data["type"],
+                data["rs"],
+                data["accountID"],
+                data["udid"],
+                data["uuid"],
+            ],
+            key=XorKey.LIKE,
+            salt=CHKSalt.LIKE,
+        )
+        
+        return data
+
+    @require_login("An account is required to perform this action.")
     async def like_level(self, level_id: int, dislike: bool = False) -> None:
         """
         Like or dislike a level.
@@ -998,5 +1079,64 @@ class Client:
         :param level_id: The ID of the level to like or dislike.
         :type level_id: int
         :param dislike: Whether to dislike the level. Defaults to False.
-        :raises: gd.LikeError
         """
+        data = self._data_like(level_id, 1, dislike)
+
+        await send_post_request(
+            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
+        )
+
+    @require_login("An account is required to perform this action.")
+    async def like_list(self, list_id: int, dislike: bool = False) -> None:
+        """
+        Like or dislike a list.
+
+        :param list_id: The ID of the list to like or dislike.
+        :type list_id: int
+        :param dislike: Whether to dislike the level. Defaults to False.
+        """
+        data = self._data_like(list_id, 4, dislike)
+
+        await send_post_request(
+            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
+        )
+
+    @require_login("An account is required to perform this action.")
+    async def like_comment(
+        self, comment_id: int, level_id: int, dislike: bool = False
+    ) -> None:
+        """
+        Like or dislike a comment in a level or list.
+
+        :param comment_id: The ID of the comment to like or dislike.
+        :type comment_id: int
+        :param level_id: The ID of the level the comment belongs to. (Use negative for lists)
+        :type level_id: int
+        :param dislike: Whether to dislike the comment. Defaults to False.
+        :type dislike: bool
+        :return: None
+        :rtype: None
+        """
+        data = self._data_like(comment_id, 2, dislike, level_id)
+
+        await send_post_request(
+            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
+        )
+
+    @require_login("An account is required to perform this action.")
+    async def like_post(self, post_id: int, dislike: bool = False) -> None:
+        """
+        Like or dislike an account post.
+
+        :param post_id: The ID of the post to like or dislike.
+        :type post_id: int
+        :param dislike: Whether to dislike the comment. Defaults to False.
+        :type dislike: bool
+        :return: None
+        :rtype: None
+        """
+        data = self._data_like(post_id, 3, dislike, post_id)
+
+        await send_post_request(
+            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
+        )

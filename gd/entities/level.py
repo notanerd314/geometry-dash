@@ -262,8 +262,8 @@ class Level(Entity):
         :type message: str
         :param percentage: The percentage of the level completed. Defaults to 0.
         :type percentage: int
-        :param client_index: The client index to send the comment as. Defaults to the priority.
-        :type client_index: int
+        :param client: The client (or client index) to send the comment as.
+        :type client: int
         :raises: gd.CommentError
         :return: The comment ID of the sent comment.
         :rtype: int
@@ -271,6 +271,20 @@ class Level(Entity):
         return await client.comment(
             message=message, level_id=self.id, percentage=percentage
         )
+
+    @require_client()
+    async def like(self, dislike: bool = False, client: int = None) -> None:
+        """
+        Sends a like to the level.
+
+        :param dislike: If True, dislike the level, else like it.
+        :type dislike: bool
+        :param client: The client (or client index) to like.
+        :type client: int
+        :return: None
+        :rtype: None
+        """
+        await client.like_level(level_id=self.id, dislike=dislike)
 
 
 @dataclass
@@ -445,6 +459,20 @@ class Comment(Entity):
             author_has_glow=bool(int(user_value.get("15", 0))),
         )
 
+    @require_client()
+    async def like(self, dislike: bool = False, client: int = None):
+        """
+        Like or dislike the comment.
+
+        :param dislike: If True, dislike the comment, else like it.
+        :type dislike: bool
+        :param client: The client (or client index) to like.
+        :type client: int
+        :return: None
+        :rtype: None
+        """
+        await client.like_comment(self.id, self.level_id, dislike)
+
 
 @dataclass
 class ListLevels(Entity, ABC):
@@ -566,6 +594,20 @@ class LevelList(ListLevels):
             diamonds=int(parsed.get("55", 0)),
             minimum_levels=int(parsed.get("56", 0)),
         )
+
+    @require_client()
+    async def like(self, dislike: bool = False, client: int = None) -> None:
+        """
+        Like or dislike a list.
+
+        :param dislike: If True, dislike the level, else like it.
+        :type dislike: bool
+        :param client: The client (or client index) to like.
+        :type client: int
+        :return: None
+        :rtype: None
+        """
+        return await client.like_list(self.id, dislike)
 
 
 @dataclass

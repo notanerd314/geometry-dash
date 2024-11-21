@@ -98,6 +98,20 @@ class Post(Entity):
             author_account_id=account_id,
         )
 
+    @require_client()
+    async def like(self, dislike: bool = False, client: int = None) -> None:
+        """
+        Like or dislike the post.
+
+        :param dislike: If True, dislike the post, else like it.
+        :type dislike: bool
+        :param client: The client (or client index) to like.
+        :type client: int
+        :return: None
+        :rtype: None
+        """
+        await client.like_post(self.id, dislike)
+
 
 @dataclass
 class Player(Entity):
@@ -410,7 +424,7 @@ class Account:
     @property
     def gjp2(self) -> str:
         """
-        Generate GJP2 hash from password. (Recommended for 2.2s)
+        Generate GJP2 hash from password. (Recommended)
         """
         encrypted_password = self.password + PASSWORD_SALT
         gjp = sha1(encrypted_password.encode()).hexdigest()

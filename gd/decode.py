@@ -8,6 +8,8 @@ This module has limited documentation and is not intended to be used directly.
 
 import base64
 import zlib
+import random
+from string import ascii_letters, digits
 from typing import List, Union
 from hashlib import sha1
 from enum import StrEnum
@@ -19,6 +21,7 @@ BASE64_PADDING_CHAR = "="
 AW_CODE = "Aw=="
 DEFAULT_TIMEOUT = 60
 UDID_PREFIX = "S"
+LETTERS = ascii_letters + digits
 
 __all__ = [
     "XorKey",
@@ -41,6 +44,7 @@ class XorKey(StrEnum):
     LEVEL_PASSWORD = "26364"
     GJP = "37526"
     COMMENT = "29481"
+    LIKE = "58281"
 
 
 class CHKSalt(StrEnum):
@@ -104,6 +108,36 @@ def xor_singular(input_bytes: bytes, key: str) -> str:
     return "".join(chr(byte ^ key_byte) for byte in input_bytes)
 
 
+def robtop_cipher(value: str, key: int = 37526) -> str:
+    """
+    I'm too lazy to document this piece of crap.
+
+    :param value: The string to be encrypted.
+    :param key: The encryption key (an integer).
+
+    :return: The encrypted string in URL-safe base64 format.
+    """
+    # Convert the key to a string for cyclic XOR use
+    key_str = str(key)
+    key_len = len(key_str)
+
+    # Perform XOR on each character in the value using the key
+    xored_str = "".join(
+        chr(ord(char) ^ ord(key_str[i % key_len])) for i, char in enumerate(value)
+    )
+
+    # Convert the XORed string to bytes
+    xored_bytes = xored_str.encode("utf-8")
+
+    # Encode the XORed bytes to base64
+    base64_encoded = base64.b64encode(xored_bytes).decode("utf-8")
+
+    # Replace '/' with '_' and '+' with '-'
+    encrypted_string = base64_encoded.replace("/", "_").replace("+", "-")
+
+    return encrypted_string
+
+
 def base64_urlsafe_decode(encrypted: str) -> str:
     """
     Decode base64-encoded data with padding and URL-safe encoding.
@@ -114,6 +148,17 @@ def base64_urlsafe_decode(encrypted: str) -> str:
     :rtype: str
     """
     return base64.urlsafe_b64decode(add_padding(encrypted)).decode()
+
+
+def base64_encode(value: str) -> str:
+    """
+    Encode a value as a base64-encoded string.
+    :param value: The value to encode.
+    :type value: str
+    :return: The base64-encoded value.
+    :rtype: str
+    """
+    return base64.urlsafe_b64encode(value.encode()).decode()
 
 
 def base64_decompress(encrypted: str) -> str:
@@ -129,11 +174,23 @@ def base64_decompress(encrypted: str) -> str:
     return zlib.decompress(decoded_data, 15 | 32).decode()
 
 
+def generate_rs(n: int = 10) -> str:
+    """
+    Generates a random seed.
+
+    :param n: The length of the random seed.
+    :type n: int
+    :return: A random seed as a string.
+    :rtype: str
+    """
+    return ("").join(random.choices(LETTERS, k=n))
+
+
 def generate_chk(values: List[Union[int, str]], key: str = "", salt: str = "") -> str:
     """
-    Generates chk data.
+    Generates CHK data.
 
-    :param values: The values to include in the chk data.
+    :param values: The values to include in the CHK data.
     :type values: List[Union[int, str]]
     :param key: The XOR key to use.
     :type key: str
