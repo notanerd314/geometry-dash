@@ -4,7 +4,7 @@ A module containing all the classes and methods related to songs in Geometry Das
 """
 
 from urllib.parse import unquote
-from typing import Dict, Optional, List, Union
+from typing import Optional, Union
 from datetime import timedelta
 from enum import Enum
 from pathlib import Path
@@ -30,21 +30,21 @@ class MusicLibrary:
     ----------
     version : int
         The version number of the library.
-    artists : Dict[int, MusicLibraryArtist]
+    artists : dict[int, MusicLibraryArtist]
         The artists of the library.
-    songs : Dict[int, MusicLibrarySong]
+    songs : dict[int, MusicLibrarySong]
         The songs of the library.
-    tags : Dict[int, str]
+    tags : dict[int, str]
         The tags of the library.
     """
 
     version: int
     """The version number of the library."""
-    artists: Dict[int, "MusicLibrary.Artist"] = field(default_factory=dict)
+    artists: dict[int, "MusicLibrary.Artist"] = field(default_factory=dict)
     """The version number of the library."""
-    songs: Dict[int, "MusicLibrary.Song"] = field(default_factory=dict)
+    songs: dict[int, "MusicLibrary.Song"] = field(default_factory=dict)
     """The songs of the library."""
-    tags: Dict[int, str] = field(default_factory=dict)
+    tags: dict[int, str] = field(default_factory=dict)
     """The tags of the library."""
 
     @dataclass
@@ -127,8 +127,8 @@ class MusicLibrary:
         @staticmethod
         def from_raw(
             raw_str: str,
-            artists_list: Dict[int, "MusicLibrary.Artist"],
-            tags_list: Dict[int, str] = None,
+            artists_list: dict[int, "MusicLibrary.Artist"],
+            tags_list: dict[int, str] = None,
         ) -> "MusicLibrary.Song":
             """
             A static method that converts raw string to a `MusicLibrary.Song` instance.
@@ -136,7 +136,7 @@ class MusicLibrary:
             :param raw_str: The raw str returned from the servers.
             :type raw_str: str
             :param artists_list: A dictionary of artist IDs to `MusicLibraryArtist` instances.
-            :type artists_list: Dict[int, MusicLibraryArtist]
+            :type artists_list: dict[int, MusicLibraryArtist]
             :return: An instance of a MusicLibrarySong.
             """
 
@@ -161,6 +161,9 @@ class MusicLibrary:
         async def content(self) -> BytesIO:
             """
             Gets the song content and returns it as a BytesIO object.
+
+            :return: The bytes of the song content.
+            :rtype: BytesIO
             """
             response = await send_get_request(url=self.link)
 
@@ -172,6 +175,7 @@ class MusicLibrary:
 
             :param path: Full path to save the file, including filename.
             :type path: str
+            :rtype: None
             """
 
             if path is None:
@@ -223,13 +227,14 @@ class MusicLibrary:
 
         return MusicLibrary(version=version, artists=artists, songs=songs, tags=tags)
 
-    def filter_song_by_tags(self, tags: set[str]) -> List[Song]:
+    def filter_song_by_tags(self, tags: set[str]) -> list[Song]:
         """
         Get all songs with the tags specified.
 
         :param tags: The name of tags to filter by.
         :type tags: set[str]
         :return: A list of songs that have the specified tags.
+        :rtype: list[Song]
         """
         songs = []
         tags = {tag.lower() for tag in tags}
@@ -317,16 +322,16 @@ class SoundEffectLibrary:
     ----------
     version : int
         The version of the library.
-    folders : List[SoundEffectLibrary.Folder]
+    folders : list[SoundEffectLibrary.Folder]
         All the folders of the SoundEffectLibrary that also contains the songs in each value.
-    creators : List[Creator]
+    creators : list[SoundEffectLibrary.Creator]
         The list of all the creators in the library.
     """
 
     version: int
-    folders: List["SoundEffectLibrary.Folder"]
-    creators: List["Creator"]
-    sfx: List["SoundEffect"]
+    folders: list["SoundEffectLibrary.Folder"]
+    creators: list["SoundEffectLibrary.Creator"]
+    sfx: list["SoundEffect"]
 
     @dataclass
     class Folder:
@@ -339,7 +344,7 @@ class SoundEffectLibrary:
             The id of the folder.
         name : str
             The name of the folder.
-        sfx : List[SFX]
+        sfx : list[SFX]
             The sound effects that the folder contains.
         """
 
@@ -354,6 +359,7 @@ class SoundEffectLibrary:
             :param raw_str: The raw data of the folder.
             :type raw_str: str
             :return: An instance of the SoundEffectLibrary.Folder class.
+            :rtype: SoundEffectLibrary.Folder
             """
             parsed = raw_str.strip().split(",")
             return SoundEffectLibrary.Folder(
@@ -398,6 +404,7 @@ class SoundEffectLibrary:
         :param raw_str: The raw data returned from the servers.
         :type raw_str: str
         :return: An instance of the SoundEffectLibrary class.
+        :rtype: SoundEffectLibrary
         """
         parsed = raw_str.strip().split("|")
         parsed_sfx = parsed[0].split(";")
@@ -421,8 +428,8 @@ class SoundEffectLibrary:
                 else:
                     folders.append(folder)
             else:
-                sfx_ = SoundEffect.from_raw(entity)
-                sfx.append(sfx_)
+                soundeffect = SoundEffect.from_raw(entity)
+                sfx.append(soundeffect)
 
         creators = [
             SoundEffectLibrary.Creator.from_raw(creator)
@@ -441,6 +448,7 @@ class SoundEffectLibrary:
         :param name: The name of the folder.
         :type name: str
         :return: A SoundEffectLibrary.Folder class, if not found, returns NoneType.
+        :rtype: SoundEffectLibrary.Folder
         """
         for folder in self.folders:
             if folder.name.lower() == name.lower():
@@ -457,6 +465,7 @@ class SoundEffectLibrary:
         :param folder_id: The ID of the folder.
         :type folder_id: int
         :return: A SoundEffectLibrary.Folder class, if not found, returns NoneType.
+        :rtype: SoundEffectLibrary.Folder
         """
         for folder in self.folders:
             if folder.id == folder_id:
@@ -471,6 +480,7 @@ class SoundEffectLibrary:
         :param sfx_id: The ID of the sound effect.
         :type sfx_id: int
         :return: A SoundEffect class, if not found, returns NoneType.
+        :rtype: SoundEffect
         """
         for sfx in self.sfx:
             if sfx.id == sfx_id:
@@ -478,13 +488,14 @@ class SoundEffectLibrary:
 
         return None
 
-    def search_folders(self, query: str) -> List["SoundEffectLibrary.Folder"]:
+    def search_folders(self, query: str) -> list["SoundEffectLibrary.Folder"]:
         """
         Filter folders by the query. (Different from `.get_folder_by_name`!)
 
         :param query: The query for the search.
         :type query: str
         :return: A list of SoundEffectLibrary.Folder.
+        :rtype: list[SoundEffectLibrary.Folder]
         """
 
         folders = []
@@ -496,13 +507,14 @@ class SoundEffectLibrary:
 
     def search_folders_and_sfx(
         self, query: str
-    ) -> List[Union["SoundEffectLibrary.Folder", "SoundEffect"]]:
+    ) -> list["SoundEffectLibrary.Folder", "SoundEffect"]:
         """
         Filter folders and sfx by the query.
 
         :param query: The query for the search.
         :type query: str
         :return: A list of SoundEffectLibrary.Folder and SoundEffect.
+        :rtype: list[SoundEffectLibrary.Folder, SoundEffect]
         """
 
         result = []
@@ -513,13 +525,14 @@ class SoundEffectLibrary:
 
         return result
 
-    def get_all_sfx_in_folder(self, folder_id: int) -> List["SoundEffect"]:
+    def get_all_sfx_in_folder(self, folder_id: int) -> list["SoundEffect"]:
         """
         Get all sound effects that is in a folder.
 
         :param folder_id: The folder ID to filter.
         :type folder_id: int
         :return: A list of SoundEffect.
+        :rtype: list[SoundEffect]
         """
         result = []
         for sfx in self.sfx:
@@ -579,6 +592,9 @@ class SoundEffect:
     async def content(self) -> BytesIO:
         """
         Gets the song content and returns it as a BytesIO object.
+
+        :return: The bytes of the song content.
+        :rtype: BytesIO
         """
         response = await send_get_request(url=self.url)
 
@@ -590,6 +606,7 @@ class SoundEffect:
 
         :param path: Full path to save the file, including filename.
         :type path: str
+        :rtype: None
         """
 
         if path is None:
@@ -665,7 +682,7 @@ class Song:
         return Song.from_parsed(parsed)
 
     @staticmethod
-    def from_parsed(parsed_str: Dict) -> "Song":
+    def from_parsed(parsed_str: dict[str, any]) -> "Song":
         """
         A static method that converts the parsed string into a Song .
 
@@ -699,6 +716,9 @@ class Song:
     async def content(self) -> BytesIO:
         """
         Gets the song content and returns it as a BytesIO object.
+
+        :return: The bytes of the song content.
+        :rtype: BytesIO
         """
         response = await send_get_request(url=self.link)
 
@@ -710,6 +730,7 @@ class Song:
 
         :param path: Full path to save the file, including filename.
         :type path: str
+        :rtype: None
         """
 
         if path is None:

@@ -5,7 +5,7 @@ The module containing all the classes and methods related to customization and i
 """
 
 from dataclasses import dataclass
-from typing import Union, Dict
+from typing import Union
 from io import BytesIO
 from pathlib import Path
 import asyncio
@@ -17,7 +17,7 @@ from ..helpers import send_get_request
 
 __all__ = ["color_id_to_hex", "Icon", "IconSet"]
 
-COLORS_LIST: Dict[int, int] = {
+COLORS_LIST: dict[int, int] = {
     "0": 0x7DFF00,
     "1": 0x00FF00,
     "2": 0x00FF7D,
@@ -275,7 +275,7 @@ class IconSet:
     jetpack: Icon
 
     @property
-    def all_icons(self) -> Dict[Gamemode, Icon]:
+    def all_icons(self) -> dict[Gamemode, Icon]:
         """
         Returns a dictionary of all icons in the set.
         """
@@ -400,14 +400,14 @@ class IconSet:
             ),
         )
 
-    async def render_all(self, extension: str = "png") -> Dict[Gamemode, BytesIO]:
+    async def render_all(self, extension: str = "png") -> dict[Gamemode, BytesIO]:
         """
-        Renders all icons and returns a dict of BytesIO objects.
+        Renders all icons and returns a dictionary of BytesIO objects.
 
         :param extension: The file extension to get.
         :type extension: str
         :return: BytesIO representation of the icon.
-        :rtype: Dict[Gamemode, io.BytesIO]
+        :rtype: dict[Gamemode, io.BytesIO]
         """
         # Asynchronously gather all icon renders (likely from different 'icon.render()' tasks)
         icons = await asyncio.gather(

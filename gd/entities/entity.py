@@ -4,7 +4,7 @@
 A file containing all the entity classes to inherit from.
 """
 
-from typing import List, Self, Union
+from typing import Self, Union
 from dataclasses import dataclass, field
 from abc import ABC
 
@@ -18,11 +18,11 @@ class Entity(ABC):
 
     Attributes
     ----------
-    clients : List[Client]
+    clients : list[Client]
         The list of clients attached to the object. Used for accounts login and interaction.
     """
 
-    clients: List["Client"] = field(default_factory=list)  # type: ignore
+    clients: list["Client"] = field(default_factory=list)  # type: ignore
     """The list of clients attached to the object. Used for accounts login and interaction."""
     main_client_index: int = 0
     """The main client index to use in the list of clients."""
@@ -71,12 +71,12 @@ class Entity(ABC):
         self.clients.clear()
         return self
 
-    def add_clients(self, clients: List["Client"]) -> Self:  # type: ignore
+    def add_clients(self, clients: list["Client"]) -> Self:  # type: ignore
         """
         Add multiple clients to the list of clients attached.
 
         :param clients: List of clients to add.
-        :type clients: List[Client]
+        :type clients: list[Client]
         :return: The instance of the object itself.
         :rtype: self
         """
@@ -87,7 +87,7 @@ class Entity(ABC):
         self.clients.extend(clients)
         return self
 
-    def get_client(self, index: int) -> Union["Client", None]:  # type: ignore
+    def get_client(self, index: int) -> "Client":  # type: ignore
         """
         Get a client by it's index
 

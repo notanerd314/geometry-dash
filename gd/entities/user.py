@@ -3,13 +3,12 @@
 A module containing all the classes and methods related to users and accounts in Geometry Dash.
 """
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 from dataclasses import dataclass
 from hashlib import sha1
 from collections import namedtuple
 
 from dateutil.relativedelta import relativedelta
-import colorama as color
 
 from ..parse import parse_key_value_pairs, str_to_delta
 from .enums import Gamemode, ModRank
@@ -18,8 +17,6 @@ from .level import Comment, LevelDisplay
 from .entity import Entity
 from ..decode import base64_urlsafe_decode
 from ..helpers import require_client
-
-color.init(autoreset=True)
 
 SECRET = "Wmfd2893gb7"
 PASSWORD_SALT = "mI29fmAnxgTs"
@@ -85,6 +82,7 @@ class Post(Entity):
 
         :type account_id: Union[int, None]
         :return: A Post instance.
+        :rtype: Post
         """
         parsed = raw_str.split(":")
         comment_value = parse_key_value_pairs(parsed[0], "~")
@@ -244,6 +242,7 @@ class Player(Entity):
         :param raw_str: The raw data from the server.
         :type raw_str: str
         :return: An instance of the Player class.
+        :rtype: Player
         """
         parsed = parse_key_value_pairs(raw_str)
         demon_stats = parsed.get("55", None)
@@ -347,7 +346,7 @@ class Player(Entity):
         )
 
     @require_client()
-    async def posts(self, page: int = 0, client: int = None) -> List[Post] | None:
+    async def posts(self, page: int = 0, client: int = None) -> list[Post] | None:
         """
         Load all posts from the user.
 
@@ -356,13 +355,14 @@ class Player(Entity):
         :param client: The client index to use in the attached clients list. Defaults to 0.
         :type client: int
         :return: A list of Post instances or None if the request failed.
+        :rtype: list[Post]
         """
         return await client.get_user_posts(self.player_id, page)
 
     @require_client()
     async def comments(
         self, page: int = 0, display_most_liked: bool = False, client: int = None
-    ) -> List[Comment]:
+    ) -> list[Comment]:
         """
         Get user's comments history.
 
@@ -371,17 +371,19 @@ class Player(Entity):
         :param display_most_liked: If sort by most liked, else sort recent.
         :type display_most_liked: bool
         :return: A list of Comment instances.
+        :rtype: list[Comment]
         """
         return await client.get_user_comments(self.player_id, page, display_most_liked)
 
     @require_client()
-    async def levels(self, page: int = 0, client: int = None) -> List[LevelDisplay]:
+    async def levels(self, page: int = 0, client: int = None) -> list[LevelDisplay]:
         """
         Get user's levels.
 
         :param page: The page number to load, default is 0.
         :type page: int
         :return: A list of LevelDisplay instances.
+        :rtype: list[LevelDisplay]
         """
 
         return await client.get_user_levels(self.player_id, page)

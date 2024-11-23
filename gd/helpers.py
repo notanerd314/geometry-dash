@@ -10,7 +10,6 @@ from functools import wraps
 from time import time
 from typing import Union
 
-from colorama import Fore
 import httpx
 
 from .exceptions import OnCooldown, LoginError
@@ -23,15 +22,18 @@ __all__ = ["cooldown", "send_post_request", "send_get_request"]
 def deprecated(message: str, version: str):
     """
     A decorator to mark a function as deprecated.
+
+    :param message: Deprecated Message
+    :type message: str
+    :param version: Deprecated version
+    :type version: str
     """
 
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             # Print the deprecation message
-            print(
-                f"{Fore.LIGHTYELLOW_EX}DeprecationWarning: {message} (Method will be removed in {version}){Fore.RESET}"
-            )
+            print(f"DeprecationWarning: {message} (Method will be removed in {version})")
             # Call the original function
             return func(*args, **kwargs)
 
@@ -169,6 +171,6 @@ async def send_get_request(**kwargs) -> httpx.Response:
     :return: The full response object or decoded string (depending on decode).
     :rtype: Union[str, bytes, httpx.Response]
     """
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient() as client:
         response = await client.get(**kwargs)  # Make the GET request
         return response  # Return the full response object if decode is False

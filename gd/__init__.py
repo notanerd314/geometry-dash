@@ -59,11 +59,11 @@ Account(account_id=24514763, player_id=218839712, name='notanerd1', password=***
 ```
 """
 
-__title__ = "gdapi"
-__author__ = "notanerd"
-__license__ = "MIT"
-__copyright__ = "Copyright 2024 notanerd"
-__version__ = "0.1.0"
+__title__: str = "gdapi"
+__author__: str = "notanerd"
+__license__: str = "MIT"
+__copyright__: str = "Copyright 2024 notanerd"
+__version__: str = "0.1.0"
 
 from collections import namedtuple
 
@@ -71,6 +71,6 @@ from .gd import *
 from .entities import *
 from .exceptions import *
 
-VersionInfo = namedtuple("VersionInfo", "major minor micro")
+VersionInfo: namedtuple = namedtuple("VersionInfo", "major minor micro")
 
-version_info = VersionInfo(major=0, minor=1, micro=0)
+version_info: tuple[int] = VersionInfo(major=0, minor=1, micro=0)

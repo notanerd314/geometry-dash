@@ -1,12 +1,10 @@
 __doc__ = """Accessing the Geometry Dash API programmatically."""
 
 from datetime import timedelta
-from typing import Union, Tuple, List
+from typing import Union
 from hashlib import sha1
 import base64
 import asyncio
-
-import colorama
 
 from .parse import (
     parse_comma_separated_int_list,
@@ -82,7 +80,7 @@ RS = "8f0l0ClAN1"
 
 def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
     """
-    Convert a password to an encrypted password.
+    Convert a password to a GJP2 encrypted password.
 
     :param password: The password to be encrypted.
     :type password: str
@@ -124,40 +122,8 @@ class Client:
     def __init__(self) -> None:
         pass
 
-    def __str__(self) -> str:
-        account = self.account
-
-        def color_format(text, color):
-            return f"{colorama.Style.BRIGHT + color}{text}{colorama.Style.RESET_ALL}"
-
-        info = [
-            color_format(
-                f"Client object at {hex(id(self))}", colorama.Fore.LIGHTMAGENTA_EX
-            ),
-            "=======================================",
-            color_format(f"ID: {id(self)}", colorama.Fore.LIGHTBLUE_EX),
-            color_format(f"Hash: {self.__hash__()}", colorama.Fore.LIGHTRED_EX),
-            color_format(
-                f"Is logged in: {self.logged_in}", colorama.Fore.LIGHTGREEN_EX
-            ),
-            color_format(
-                f"Account Name: {account.name if account else None}",
-                colorama.Fore.LIGHTYELLOW_EX,
-            ),
-            color_format(
-                f"Account ID: {account.account_id if account else None}",
-                colorama.Fore.LIGHTYELLOW_EX,
-            ),
-            color_format(
-                f"Player ID: {account.player_id if account else None}",
-                colorama.Fore.LIGHTYELLOW_EX,
-            ),
-            color_format(
-                f"Encrypted Password: {account.gjp2 if account else None}",
-                colorama.Fore.LIGHTYELLOW_EX,
-            ),
-        ]
-        return "\n".join(info)
+    def __repr__(self) -> str:
+        return f"<gd.Client account={self.account}>"
 
     @property
     def logged_in(self) -> bool:
@@ -448,7 +414,7 @@ class Client:
     @cooldown(3)
     async def download_special_level(
         self, special: SpecialLevel, time_left: bool = False
-    ) -> Union[Level, Tuple[Level, timedelta]]:
+    ) -> Union[Level, tuple[Level, timedelta]]:
         """
         Downloads the daily or weekly level from the Geometry Dash servers.
 
@@ -495,7 +461,7 @@ class Client:
         page: int = 0,
         level_rating: LevelRating = None,
         length: Length = None,
-        difficulty: List[Difficulty] = None,
+        difficulty: list[Difficulty] = None,
         demon_difficulty: DemonDifficulty = None,
         two_player_mode: bool = False,
         has_coins: bool = False,
@@ -503,7 +469,7 @@ class Client:
         song_id: int = None,
         gd_world: bool = False,
         src_filter: SearchFilter = 0,
-    ) -> List[LevelDisplay]:
+    ) -> list[LevelDisplay]:
         """
         Searches for levels matching the given query string and filters them.
 
@@ -522,7 +488,7 @@ class Client:
         :param length: The length filter.
         :type length: Optional[Length]
         :param difficulty: The difficulty filter.
-        :type difficulty: Optional[List[Difficulty]]
+        :type difficulty: Optional[list[Difficulty]]
         :param demon_difficulty: The demon difficulty filter.
         :type demon_difficulty: Optional[DemonDifficulty]
         :param two_player_mode: Filters level that has two player mode enabled.
@@ -542,7 +508,7 @@ class Client:
         :raises: ValueError
 
         :return: A list of `LevelDisplay` instances.
-        :rtype: List[:class:`gd.entities.LevelDisplay`]
+        :rtype: list[:class:`gd.entities.LevelDisplay`]
         """
         if src_filter == SearchFilter.FRIENDS and self.logged_in:
             raise ValueError("Cannot filter by friends without being logged in.")
@@ -610,7 +576,7 @@ class Client:
     @require_login("You need to log in before you can view the leaderboard.")
     async def level_leaderboard(
         self, level_id: int, friends: bool = False, week: bool = False
-    ) -> List[Player]:
+    ) -> list[Player]:
         """
         Gets the leaderboard for a given level.
 
@@ -618,7 +584,7 @@ class Client:
         :type level_id: int
         :param friends: Whether to include get friends' scores in the leaderboard. Defaults to False.
         :return: A list of Player instances representing the leaderboard.
-        :rtype: List[:class:`gd.entities.Player`]
+        :rtype: list[:class:`gd.entities.Player`]
         """
         if friends and week:
             raise ValueError("Cannot fetch both friends and weekly leaderboard.")
@@ -649,9 +615,7 @@ class Client:
 
         response = response.text.split("#")[0].split("|")
 
-        return [
-            Player.from_raw(player_data).add_client(self)
-            for player_data in response
+        return [            Player.from_raw(player_data).add_client(self) for player_data in response
         ]
 
     @cooldown(10)
@@ -715,7 +679,7 @@ class Client:
 
     async def search_user(self, query: Union[str, int], use_id: bool = False) -> Player:
         """
-        Get an user profile by account ID or name. 
+        Get an user profile by account ID or name.
 
         :param query: The account ID/name to retrieve the profile.
         :type query: Union[str, int]
@@ -729,7 +693,7 @@ class Client:
         if use_id:
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
             data = {
-                "secret": SECRET, 
+                "secret": SECRET,
                 "targetAccountID": query,
                 "gjp2": self.account.gjp2 if self.logged_in else None,
                 "accountID": self.account.account_id if self.logged_in else None,
@@ -744,7 +708,7 @@ class Client:
         check_errors(response, InvalidID, f"Invalid account name/ID {query}.")
         return Player.from_raw(response.split("#")[0]).add_client(self)
 
-    async def get_level_comments(self, level_id: int, page: int = 0) -> List[Comment]:
+    async def get_level_comments(self, level_id: int, page: int = 0) -> list[Comment]:
         """
         Get level's comments by level ID.
 
@@ -771,7 +735,7 @@ class Client:
             for comment_data in response.split("|")
         ]
 
-    async def get_user_posts(self, account_id: int, page: int = 0) -> List[Post]:
+    async def get_user_posts(self, account_id: int, page: int = 0) -> list[Post]:
         """
         Get an user's posts by Account ID.
 
@@ -781,7 +745,7 @@ class Client:
         :type page: int
         :raises: gd.InvalidID
         :return: A list of `Post` instances or None if there are no posts.
-        :rtype: List[:class:`gd.entities.user.Post`]
+        :rtype: list[:class:`gd.entities.user.Post`]
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
@@ -805,7 +769,7 @@ class Client:
 
     async def get_user_comments(
         self, player_id: int, page: int = 0, display_most_liked: bool = False
-    ) -> List[Comment]:
+    ) -> list[Comment]:
         """
         Get an user's comments history by player ID.
 
@@ -817,7 +781,7 @@ class Client:
         :type display_most_liked: bool
         :raises: gd.InvalidID
         :return: A list of `Comment` instances or None if no comments were found.
-        :rtype: List[:class:`gd.entities.level.Comment`]
+        :rtype: list[:class:`gd.entities.level.Comment`]
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
@@ -842,7 +806,7 @@ class Client:
 
     async def get_user_levels(
         self, player_id: int, page: int = 0
-    ) -> List[LevelDisplay]:
+    ) -> list[LevelDisplay]:
         """
         Get an user's levels by player ID.
 
@@ -851,7 +815,7 @@ class Client:
         :param page: The page number to load, default is 0.
         :type page: int
         :return: A list of LevelDisplay instances.
-        :rtype: List[:class:`gd.entities.level.LevelDisplay`]
+        :rtype: list[:class:`gd.entities.level.LevelDisplay`]
         """
 
         response = await send_post_request(
@@ -870,7 +834,7 @@ class Client:
             for level_data in response.split("#")[0].split("|")
         ]
 
-    async def map_packs(self, page: int = 0) -> List[MapPack]:
+    async def map_packs(self, page: int = 0) -> list[MapPack]:
         """
         Get the full list of map packs available (in a specific page).
 
@@ -878,7 +842,7 @@ class Client:
         :type page: int
         :raises: gd.LoadError
         :return: A list of `MapPack` instances.
-        :rtype: List[:class:`gd.entities.level.MapPack`]
+        :rtype: list[:class:`gd.entities.level.MapPack`]
         """
         if page < 0:
             raise ValueError("Page must be a non-negative number.")
@@ -899,7 +863,7 @@ class Client:
             for map_pack_data in map_packs
         ]
 
-    async def gauntlets(self, ncs: bool = True) -> List[Gauntlet]:
+    async def gauntlets(self, ncs: bool = True) -> list[Gauntlet]:
         """
         Get the list of gauntlets objects.
 
@@ -907,7 +871,7 @@ class Client:
         :type ncs: bool
         :raises: gd.LoadError
         :return: A list of `Gauntlet` instances.
-        :rtype: List[:class:`gd.entities.level.Gauntlet`]
+        :rtype: list[:class:`gd.entities.level.Gauntlet`]
         """
         data = {"secret": SECRET}
         if ncs:
@@ -931,10 +895,10 @@ class Client:
         query: str = None,
         src_filter: SearchFilter = 0,
         page: int = 0,
-        difficulty: List[Difficulty] = None,
+        difficulty: list[Difficulty] = None,
         demon_difficulty: DemonDifficulty = None,
         only_rated: bool = False,
-    ) -> List[LevelList]:
+    ) -> list[LevelList]:
         """
         Search for lists.
 
@@ -945,14 +909,14 @@ class Client:
         :param page: Page number (starting with 0)
         :type page: int
         :param difficulty: Filters by a specific difficulty.
-        :type difficulty: List[Difficulty]
+        :type difficulty: list[Difficulty]
         :param demon_difficulty: Filters by a specific demon difficulty.
         :type demon_difficulty: DemonDifficulty
         :param only_rated: Filters only rated lists.
         :type only_rated: bool
         :raises: gd.LoadError
         :return: A list of `LevelList` instances.
-        :rtype: List[:class:`gd.entities.level.LevelList`]
+        :rtype: list[:class:`gd.entities.level.LevelList`]
         """
         if src_filter == SearchFilter.FRIENDS and not self.account:
             raise ValueError("Only friends search is available when logged in.")
@@ -1001,29 +965,34 @@ class Client:
 
     async def leaderboard(
         self, leaderboard: Leaderboard = Leaderboard.TOP, count: int = 100
-    ) -> List[Player]:
+    ) -> list[Player]:
         """
         Get the leaderboard for the given type.
 
         :param leaderboard: The type of leaderboard to retrieve.
         :type leaderboard: Leaderboard
         :param count: The number of players to retrieve, limits to 100.
-        :raises: gd.LoadError
+        :raises: gd.LoadError, ValueError
         :return: A list of `Player` instances.
         :rtype: list[Player]
         """
         if count < 1 or count > 100:
             raise ValueError("Count must be between 1 and 100.")
 
-        if leaderboard == Leaderboard.FRIENDS and not self.logged_in:
-            raise ValueError("Only friends leaderboard is available when logged in.")
+        if (
+            leaderboard in (Leaderboard.FRIENDS, Leaderboard.RELATIVE)
+            and not self.logged_in
+        ):
+            raise ValueError(
+                "Only friends or relative leaderboards is available when logged in."
+            )
 
         data = {
             "secret": SECRET,
             "type": leaderboard,
             "count": count,
-            "accountID": self.account.account_id if self.account else None,
-            "gjp2": self.account.gjp2 if self.account else None,
+            "accountID": self.account.account_id if self.logged_in else None,
+            "gjp2": self.account.gjp2 if self.logged_in else None,
         }
 
         response = await send_post_request(
@@ -1040,9 +1009,25 @@ class Client:
 
         return [Player.from_raw(player).add_client(self) for player in response]
 
-    def _data_like(
+    async def like(
         self, item_id: int, like_type: int, dislike: bool = False, special: int = 0
-    ):
+    ) -> None:
+        """
+        Liking a level/list/comment/post.
+
+        **This is a helper function, please use the individual liking methods instead**
+
+        :param item_id: ID of the item.
+        :type item_id: int
+        :param like_type: 1 for level, 2 for comment, 3 for post, 4 for list
+        :type like_type: int
+        :param dislike: Whether to dislike or not
+        :type dislike: bool
+        :param special: For type 2, put level ID. For type 3, put post ID. For type 1 and 4, put 0.
+        :type special: int
+        :return: None
+        :rtype: None
+        """
         data = {
             "itemID": item_id,
             "type": like_type,
@@ -1073,7 +1058,9 @@ class Client:
             salt=CHKSalt.LIKE,
         )
 
-        return data
+        await send_post_request(
+            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
+        )
 
     @require_login("An account is required to perform this action.")
     async def like_level(self, level_id: int, dislike: bool = False) -> None:
@@ -1083,12 +1070,10 @@ class Client:
         :param level_id: The ID of the level to like or dislike.
         :type level_id: int
         :param dislike: Whether to dislike the level. Defaults to False.
+        :return: None
+        :rtype: None
         """
-        data = self._data_like(level_id, 1, dislike)
-
-        await send_post_request(
-            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
-        )
+        await self.like(level_id, 1, dislike)
 
     @require_login("An account is required to perform this action.")
     async def like_list(self, list_id: int, dislike: bool = False) -> None:
@@ -1098,12 +1083,10 @@ class Client:
         :param list_id: The ID of the list to like or dislike.
         :type list_id: int
         :param dislike: Whether to dislike the level. Defaults to False.
+        :return: None
+        :rtype: None
         """
-        data = self._data_like(list_id, 4, dislike)
-
-        await send_post_request(
-            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
-        )
+        await self.like(list_id, 4, dislike)
 
     @require_login("An account is required to perform this action.")
     async def like_comment(
@@ -1121,11 +1104,7 @@ class Client:
         :return: None
         :rtype: None
         """
-        data = self._data_like(comment_id, 2, dislike, level_id)
-
-        await send_post_request(
-            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
-        )
+        await self.like(comment_id, 2, dislike, level_id)
 
     @require_login("An account is required to perform this action.")
     async def like_post(self, post_id: int, dislike: bool = False) -> None:
@@ -1139,8 +1118,4 @@ class Client:
         :return: None
         :rtype: None
         """
-        data = self._data_like(post_id, 3, dislike, post_id)
-
-        await send_post_request(
-            url="http://www.boomlings.com/database/likeGJItem211.php", data=data
-        )
+        await self.like(post_id, 3, dislike, post_id)

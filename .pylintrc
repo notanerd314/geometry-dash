@@ -1,5 +1,5 @@
 [MESSAGES CONTROL]
-disable=E0402,R0902
+disable=E0402,R0902,C0302
 
 [FORMAT]
 max-line-length=150

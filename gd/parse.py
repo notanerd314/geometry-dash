@@ -14,7 +14,7 @@ __all__ = [
     "parse_comma_separated_int_list",
 ]
 
-from typing import List, Dict, Union
+from typing import Union
 
 from dateutil.relativedelta import relativedelta
 
@@ -24,7 +24,7 @@ from .decode import base64_decompress, base64_urlsafe_decode
 
 def parse_key_value_pairs(
     text: str, separator: str = ":"
-) -> Dict[str, Union[str, int, None]]:
+) -> dict[str, Union[str, int, None]]:
     """
     Parse key-value pairs from a separator-separated string.
 
@@ -48,7 +48,7 @@ def parse_key_value_pairs(
     :param separator: The separator to parse the string (Default is `:`)
     :type separator: str
     :return: A dictionary containing the parsed key-value pairs.
-    :rtype: Dict[str, Union[str, int, None]]
+    :rtype: dict[str, Union[str, int, None]]
     """
     text = text.split("#")[0]
     pairs = {}
@@ -62,14 +62,14 @@ def parse_key_value_pairs(
     return pairs
 
 
-def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
+def parse_level_data(text: str) -> dict[str, Union[str, int]]:
     """
     Parse level data from a string.
 
     :param text: The string containing level data.
     :type text: str
     :return: A dictionary containing parsed level data.
-    :rtype: Dict[str, Union[str, int]]
+    :rtype: dict[str, Union[str, int]]
     """
     # Parsing the data
     parsed = parse_key_value_pairs(text)
@@ -88,14 +88,14 @@ def parse_level_data(text: str) -> Dict[str, Union[str, int]]:
     return parsed
 
 
-def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
+def parse_search_results(text: str) -> list[dict[str, Union[dict, str]]]:
     """
     Parse search results from a response string.
 
     :param text: The string containing search results.
     :type text: str
     :return: A list of dictionaries containing parsed level, creator, and song data.
-    :rtype: List[Dict[str, Union[Dict, str]]]
+    :rtype: list[dict[str, Union[dict, str]]]
     """
     # Split the text into individual level data, creator data, and song data.
     levels_data, creators_data, songs_data = (
@@ -142,41 +142,41 @@ def parse_search_results(text: str) -> List[Dict[str, Union[Dict, str]]]:
     return parsed_levels
 
 
-def parse_user_data(text: str) -> Dict[str, Union[str, int]]:
+def parse_user_data(text: str) -> dict[str, Union[str, int]]:
     """
     Parse user data from a string.
 
     :param text: The string containing user data.
     :type text: str
     :return: A dictionary containing parsed user data.
-    :rtype: Dict[str, Union[str, int]]
+    :rtype: dict[str, Union[str, int]]
     """
     # Literally parse_key_value_pairs lol
     return parse_key_value_pairs(text)
 
 
-def parse_comments_data(text: str) -> List[Dict[str, Union[str, int]]]:
+def parse_comments_data(text: str) -> list[dict[str, Union[str, int]]]:
     """
     Parse comments data from a string.
 
     :param text: The string containing comments data.
     :type text: str
     :return: A list of dictionaries containing parsed comments.
-    :rtype: List[Dict[str, Union[str, int]]]
+    :rtype: list[dict[str, Union[str, int]]]
     """
     # Parsing multiple comments, not 1 comment.
     items = text.split("|")
     return [{"comment": parse_key_value_pairs(item)} for item in items]
 
 
-def parse_song_data(song: str) -> Dict[str, Union[str, int]]:
+def parse_song_data(song: str) -> dict[str, Union[str, int]]:
     """
     Parse song data from a string.
 
     :param song: The string containing song data.
     :type song: str
     :return: A dictionary containing parsed song data.
-    :rtype: Dict[str, Union[str, int]]
+    :rtype: dict[str, Union[str, int]]
     """
     # Literally parse_key_value_pairs again lol, i'm so funni!!!!!
     return parse_key_value_pairs(song.replace("~", ""), "|")
@@ -345,14 +345,14 @@ def determine_list_difficulty(
 
 
 # Utility Functions
-def parse_comma_separated_int_list(key: str) -> List[int]:
+def parse_comma_separated_int_list(key: str) -> list[int]:
     """
     Split the string by `,` then turn it into a list of integers.
 
     :param key: The string containing comma-separated integers.
     :type key: str
     :return: A list of integers.
-    :rtype: List[int]
+    :rtype: list[int]
     """
     try:
         return [int(x) for x in key.split(",") if x.isdigit()]

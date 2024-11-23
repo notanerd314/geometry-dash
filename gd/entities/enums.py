@@ -203,7 +203,10 @@ class Leaderboard(StrEnum):
     """
 
     TOP = auto()
+    """Gets the top 100 in the global leaderboard."""
     RELATIVE = auto()
+    """Gets the surrounding leaderboard of your rank."""
     FRIENDS = auto()
+    """Gets the leaderboard of your friends."""
     CREATORS = auto()
-    WEEK = auto()
+    """Gets the leaderboard of creators."""

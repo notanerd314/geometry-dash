@@ -4,7 +4,7 @@
 A module containing all the classes and methods related to levels in Geometry Dash.
 """
 
-from typing import List, Union, Tuple
+from typing import Union
 from datetime import datetime
 from dataclasses import dataclass
 from abc import ABC
@@ -121,9 +121,9 @@ class Level(Entity):
         The coins count for the level.
     custom_song_id : Union[int, None]
         The id for the custom song used for the level.
-    song_list_ids : List[int]
+    song_list_ids : list[int]
         The list of the song IDs used in the level.
-    sfx_list_ids : List[int]
+    sfx_list_ids : list[int]
         The list of the song IDs used in the level.
     is_daily : bool
         If the level was a daily level.
@@ -153,8 +153,8 @@ class Level(Entity):
     stars: int = None
     coins: int = None
     custom_song_id: Union[int, None] = None
-    song_list_ids: List[int] = None
-    sfx_list_ids: List[int] = None
+    song_list_ids: list[int] = None
+    sfx_list_ids: list[int] = None
     daily_id: Union[int, None] = None
     copied_level_id: int = None
     low_detail_mode: bool = None
@@ -483,19 +483,22 @@ class ListLevels(Entity, ABC):
     ----------
     id : int
     name : str
-    level_ids : List[int]
+    level_ids : list[int]
     """
 
     id: int = None
     name: str = None
-    level_ids: List[int] = None
+    level_ids: list[int] = None
 
     @require_client()
-    async def levels(self, client: int = None) -> Tuple[LevelDisplay]:
+    async def levels(self, client: int = None) -> tuple[LevelDisplay]:
         """
         A method that gets all the levels in the list with their display information.
-
+        
+        :param client: The client (or client index) to get.
+        :type client: int
         :return: A tuple of LevelDisplay objects.
+        :rtype: tuple[LevelDisplay]
         """
         str_ids = ",".join([str(level) for level in self.levels_id])
 
@@ -508,6 +511,8 @@ class ListLevels(Entity, ABC):
         """
         A coroutine method that downloads a level from the level list based on the index.
 
+        :param client: The client (or client index) to get.
+        :type client: int
         :param index: The index of the level to download.
         :type index: int
         :return: A Level object representing the downloaded level.
@@ -548,7 +553,7 @@ class LevelList(ListLevels):
         The author's account ID.
     author_name : str
         The author's name.
-    level_ids : List[int]
+    level_ids : list[int]
         The list of level IDs inside the list.
     diamonds : int
         The amount of diamonds given when completing the list.
@@ -621,7 +626,7 @@ class MapPack(ListLevels):
         ID of the map pack
     name : str
         Name of the map pack
-    level_ids : List[int]
+    level_ids : list[int]
         The list of the levels' id.
     stars : int
         The star count of the map pack
@@ -629,17 +634,17 @@ class MapPack(ListLevels):
         The coin count of the map pack
     difficulty : Difficulty
         The difficulty of the map pack
-    text_rgb_color : List[int]
+    text_rgb_color : list[int]
         The rgb color of the map pack's text
-    progress_bar_rgb_color : List[int]
+    progress_bar_rgb_color : list[int]
         The rgb color of the map pack's progress bar
     """
 
     stars: int = None
     coins: int = None
     difficulty: Difficulty = None
-    text_rgb_color: List[int] = None
-    progress_bar_rgb_color: List[int] = None
+    text_rgb_color: list[int] = None
+    progress_bar_rgb_color: list[int] = None
 
     @staticmethod
     def from_raw(raw_str: str) -> "MapPack":
@@ -676,7 +681,7 @@ class Gauntlet(ListLevels):
         The ID of the gauntlet.
     name: str
         The name of the gauntlet.
-    level_ids : List[int]
+    level_ids : list[int]
         The IDs of the levels.
     image_url : str
         The URL of the image (from gdbrowser.com)

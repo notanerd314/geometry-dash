@@ -10,7 +10,7 @@ import base64
 import zlib
 import random
 from string import ascii_letters, digits
-from typing import List, Union
+from typing import Union
 from hashlib import sha1
 from enum import StrEnum
 
@@ -186,7 +186,7 @@ def generate_rs(n: int = 10) -> str:
     return ("").join(random.choices(LETTERS, k=n))
 
 
-def generate_chk(values: List[Union[int, str]], key: str = "", salt: str = "") -> str:
+def generate_chk(values: list[Union[int, str]], key: str = "", salt: str = "") -> str:
     """
     Generates CHK data.
 
