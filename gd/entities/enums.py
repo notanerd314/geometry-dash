@@ -183,6 +183,8 @@ class SearchFilter(IntEnum):
     FRIENDS = 13
     """Filter levels made by friends. (Login required)"""
 
+    DEFAULT = MOST_DOWNLOADED
+
 
 class SpecialLevel(IntEnum):
     """
@@ -210,3 +212,18 @@ class Leaderboard(StrEnum):
     """Gets the leaderboard of your friends."""
     CREATORS = auto()
     """Gets the leaderboard of creators."""
+
+    DEFAULT = TOP
+
+
+class Item(Enum):
+    """
+    An Enum class representing items in Geometry Dash.
+    """
+
+    DIAMOND = 1
+    ORBS = 2
+    STARS = 3
+    MOONS = 4
+    COIN = 5
+    SHARD = 6

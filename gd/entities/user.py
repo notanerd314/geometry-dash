@@ -3,7 +3,7 @@
 A module containing all the classes and methods related to users and accounts in Geometry Dash.
 """
 
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 from dataclasses import dataclass
 from hashlib import sha1
 from collections import namedtuple
@@ -11,7 +11,7 @@ from collections import namedtuple
 from dateutil.relativedelta import relativedelta
 
 from ..parse import parse_key_value_pairs, str_to_delta
-from .enums import Gamemode, ModRank
+from .enums import Gamemode, ModRank, Item
 from .cosmetics import IconSet
 from .level import Comment, LevelDisplay
 from .entity import Entity
@@ -387,6 +387,37 @@ class Player(Entity):
         """
 
         return await client.get_user_levels(self.player_id, page)
+
+
+@dataclass
+class Quest:
+    """
+    Represents a quest in Geometry Dash.
+
+    Attributes
+    ==========
+    name: str
+        The name of the quest
+    requirement_value: int
+        The number value of the requirement
+    requirement_type: Literal[Item.STARS, Item.ORBS, Item.COIN]
+        The type of requirement
+    reward: int
+        The total of diamonds get if completed
+    time_left: int
+        Seconds left until next quest is chosen
+    """
+
+    name: str
+    """The name of the quest"""
+    requirement_value: int
+    """The number value of the requirement"""
+    requirement_type: Literal[Item.STARS, Item.ORBS, Item.COIN]
+    """The type of requirement"""
+    reward: int
+    """The total of diamonds get if completed"""
+    time_left: int
+    """Seconds left until next quest is chosen"""
 
 
 @dataclass

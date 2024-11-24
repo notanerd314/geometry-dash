@@ -1,7 +1,7 @@
 __doc__ = """Accessing the Geometry Dash API programmatically."""
 
 from datetime import timedelta
-from typing import Union
+from typing import Union, Optional
 from hashlib import sha1
 import base64
 import asyncio
@@ -18,7 +18,16 @@ from .exceptions import (
     InvalidID,
     LoginError,
 )
-from .decode import CHKSalt, XorKey, generate_chk, base64_decompress, generate_rs
+from .decode import (
+    CHKSalt,
+    XorKey,
+    generate_chk,
+    base64_decompress,
+    generate_rs,
+    generate_digits,
+    cyclic_xor,
+    base64_urlsafe_decode,
+)
 from .entities.enums import (
     Length,
     LevelRating,
@@ -29,10 +38,11 @@ from .entities.enums import (
     Leaderboard,
     ModRank,
     Gamemode,
+    Item
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from .entities.song import MusicLibrary, SoundEffectLibrary, Song, OfficialSong
-from .entities.user import Account, Player, Post
+from .entities.user import Account, Player, Post, Quest
 from .entities.cosmetics import Icon, IconSet
 from .helpers import send_get_request, send_post_request, cooldown, require_login
 
@@ -61,6 +71,7 @@ __all__ = [
     "Account",
     "Player",
     "Post",
+    "Quest",
     "Icon",
     "IconSet",
     "SECRET",
@@ -75,7 +86,6 @@ __all__ = [
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
-RS = "8f0l0ClAN1"
 
 
 def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
@@ -101,26 +111,27 @@ class Client:
 
     Main client class for interacting with Geometry Dash.
 
-    You can login here using `.login` to be used for functions that needed an account.
+    Use `.login()` to perform a safe login.
+    Otherwise use `.unsafe_login()` or put the credientals directly in the parameters to skip the verfication.
 
     Example usage:
     .. code-block::
     >>> import gd
     >>> client = gd.Client()
-    >>> level = await client.search_level("sigma") # Returns a list of "LevelDisplay" instances
+    >>> level = await client.search_levels(query="sigma") # Returns a list of "LevelDisplay" instances
     [LevelDisplay(id=51657783, name='Sigma', downloads=582753, likes=19492, ...), ...]
 
     Attributes
     ==========
-    account : Union[Account, None]:
-        The account associated with this client. The default is None.
+    account : Optional[Account]:
+        The account associated with this client.
     """
 
-    account: Union[Account, None] = None
-    """The account logged in with the client."""
+    account: Optional[Account] = None
+    """The account associated with this client."""
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, account: Optional[Account] = None) -> None:
+        self.account = account
 
     def __repr__(self) -> str:
         return f"<gd.Client account={self.account}>"
@@ -241,9 +252,9 @@ class Client:
 
     @cooldown(15)
     @require_login("You need to login before you can send a post!")
-    async def account_comment(self, message: str) -> int:
+    async def send_post(self, message: str) -> int:
         """
-        Sends an account comment to the account logged in.
+        Sends a post to the account logged in.
 
         Cooldown is 15 seconds.
 
@@ -272,7 +283,9 @@ class Client:
 
     @cooldown(10)
     @require_login("You need to login before you can comment!")
-    async def comment(self, message: str, level_id: int, percentage: int = 0) -> int:
+    async def send_comment(
+        self, message: str, level_id: int, percentage: int = 0
+    ) -> int:
         """
         Sends a comment to a level or list.
 
@@ -439,7 +452,6 @@ class Client:
                 )
             )
 
-        if time_left:
             level, daily_data = await asyncio.gather(*tasks)
             daily_data = daily_data.text
             check_errors(
@@ -615,7 +627,8 @@ class Client:
 
         response = response.text.split("#")[0].split("|")
 
-        return [            Player.from_raw(player_data).add_client(self) for player_data in response
+        return [
+            Player.from_raw(player_data).add_client(self) for player_data in response
         ]
 
     @cooldown(10)
@@ -1015,7 +1028,7 @@ class Client:
         """
         Liking a level/list/comment/post.
 
-        **This is a helper function, please use the individual liking methods instead**
+        **NOTE: This is a helper function, please use the individual liking methods instead.**
 
         :param item_id: ID of the item.
         :type item_id: int
@@ -1119,3 +1132,50 @@ class Client:
         :rtype: None
         """
         await self.like(post_id, 3, dislike, post_id)
+
+    @require_login("An account is required to view quests")
+    async def quests(self) -> list[Quest]:
+        """
+        Get the current quests of the account.
+
+        :return: A list of quests.
+        :rtype: list[Quest]
+        """
+        data = {
+            "secret": SECRET,
+            "accountID": self.account.account_id,
+            "gjp2": self.account.gjp2,
+            "chk": generate_digits(),
+            "udid": "S15213625602582389853976435292167231001",
+            "uuid": self.account.player_id,
+            "gameVersion": 22,
+            "binaryVersion": 42,
+            "world": 0,
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJChallenges.php", data=data
+        )
+        response = response.text
+        check_errors(response, LoadError, "")
+
+        response = cyclic_xor(base64_urlsafe_decode(response.split("|")[0][5:]), XorKey.QUEST).split(":")
+
+        time_left = response[5]
+        quests = (quest.split(",") for quest in response[6:9])
+        reward_type_map = {
+            "1": Item.ORBS,
+            "2": Item.STARS,
+            "3": Item.COIN,
+        }
+
+        return [
+            Quest(
+                name=quest[4],
+                requirement_type=reward_type_map[quest[1]],
+                requirement_value=int(quest[2]),
+                reward=int(quest[3]),
+                time_left=int(time_left),
+            )
+            for quest in quests
+        ]

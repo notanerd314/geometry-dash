@@ -249,6 +249,24 @@ class Level(Entity):
 
         return LevelRating.NO_RATE
 
+    @property
+    def orbs(self) -> int:
+        """
+        Return the amount of orbs earned after beating the level.
+        """
+        star_orbs_map = {
+            2: 50,
+            3: 75,
+            4: 125,
+            5: 175,
+            6: 225,
+            7: 275,
+            8: 350,
+            9: 425,
+            10: 500,
+        }
+        return star_orbs_map.get(self.stars, 0)
+
     @require_client()
     async def comment(
         self, message: str, percentage: int = 0, client: int = None
@@ -494,7 +512,7 @@ class ListLevels(Entity, ABC):
     async def levels(self, client: int = None) -> tuple[LevelDisplay]:
         """
         A method that gets all the levels in the list with their display information.
-        
+
         :param client: The client (or client index) to get.
         :type client: int
         :return: A tuple of LevelDisplay objects.

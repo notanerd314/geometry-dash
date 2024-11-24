@@ -33,7 +33,9 @@ def deprecated(message: str, version: str):
         @wraps(func)
         def wrapper(*args, **kwargs):
             # Print the deprecation message
-            print(f"DeprecationWarning: {message} (Method will be removed in {version})")
+            print(
+                f"DeprecationWarning: {message} (Method will be removed in {version})"
+            )
             # Call the original function
             return func(*args, **kwargs)
 

@@ -45,6 +45,7 @@ class XorKey(StrEnum):
     GJP = "37526"
     COMMENT = "29481"
     LIKE = "58281"
+    QUEST = "19847"
 
 
 class CHKSalt(StrEnum):
@@ -147,7 +148,7 @@ def base64_urlsafe_decode(encrypted: str) -> str:
     :return: The decoded base64-encoded data.
     :rtype: str
     """
-    return base64.urlsafe_b64decode(add_padding(encrypted)).decode()
+    return base64.urlsafe_b64decode(add_padding(encrypted))
 
 
 def base64_encode(value: str) -> str:
@@ -184,6 +185,28 @@ def generate_rs(n: int = 10) -> str:
     :rtype: str
     """
     return ("").join(random.choices(LETTERS, k=n))
+
+
+def generate_digits() -> str:
+    """
+    Generates a random string base64-encoded and a random number XORed then combine it.
+
+    :return: The generated string.
+    :rtype: str
+    """
+    # Generate a 5-character random string
+    random_string = generate_rs(n=5)
+
+    # Generate a random number and encrypt it using XOR cipher
+    random_number = str(random.randint(10000, 1000000))
+    encrypted_number = cyclic_xor(random_number.encode(), "59182")
+
+    # Base64 encode the encrypted number
+    base64_encoded = base64.b64encode(encrypted_number.encode()).decode()
+
+    # Concatenate the random string and the encoded number
+    result = f"{random_string}{base64_encoded}"
+    return result
 
 
 def generate_chk(values: list[Union[int, str]], key: str = "", salt: str = "") -> str:
