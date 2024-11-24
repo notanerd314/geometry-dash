@@ -36,53 +36,12 @@ from .entities.enums import (
     Difficulty,
     SpecialLevel,
     Leaderboard,
-    ModRank,
-    Gamemode,
-    Item
+    Item,
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
-from .entities.song import MusicLibrary, SoundEffectLibrary, Song, OfficialSong
+from .entities.song import MusicLibrary, SoundEffectLibrary, Song
 from .entities.user import Account, Player, Post, Quest
-from .entities.cosmetics import Icon, IconSet
 from .helpers import send_get_request, send_post_request, cooldown, require_login
-
-__all__ = [
-    "LoadError",
-    "InvalidID",
-    "LoginError",
-    "Length",
-    "LevelRating",
-    "SearchFilter",
-    "DemonDifficulty",
-    "Difficulty",
-    "SpecialLevel",
-    "Leaderboard",
-    "ModRank",
-    "Level",
-    "LevelDisplay",
-    "Comment",
-    "MapPack",
-    "LevelList",
-    "Gauntlet",
-    "MusicLibrary",
-    "SoundEffectLibrary",
-    "Song",
-    "OfficialSong",
-    "Account",
-    "Player",
-    "Post",
-    "Quest",
-    "Icon",
-    "IconSet",
-    "SECRET",
-    "LOGIN_SECRET",
-    "gjp2",
-    "Client",
-    "Gamemode",
-    "CHKSalt",
-    "XorKey",
-    "generate_chk",
-]
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
@@ -1022,6 +981,44 @@ class Client:
 
         return [Player.from_raw(player).add_client(self) for player in response]
 
+    async def leaderboard_top_1000(self, html: bool = False) -> Union[str, list[Player]]:
+        """
+        Gets the top 1000 star grinders.
+
+        :param html: Gets the raw html from the servers.
+        :type html: bool
+        :return: The raw HTML as string or a list of Players
+        :rtype: Union[str, list[Player]]
+        """
+        response = await send_get_request(url="http://www.boomlings.com/database/accounts/getTop1000.php")
+        response = response.text
+
+        if html:
+            return response
+
+        table = response.split("<table>")[1].split("</table>")[0]
+        table = (
+            table.replace("<tr>", "")
+            .replace("</tr>", "|")
+            .replace("<td>", "")
+            .replace("</td>", ",")
+        )
+        rows = table.split("|")[1:]
+        players = [row.split(",") for row in rows if row]
+
+        return [
+            Player(
+                rank=int(player[0]),
+                account_id=int(player[1]),
+                name=player[2],
+                stars=int(player[3]),
+                demons=int(player[4]),
+                user_coins=int(player[5]),
+                secret_coins=int(player[6])
+            ).add_client(self)
+            for player in players
+        ]
+
     async def like(
         self, item_id: int, like_type: int, dislike: bool = False, special: int = 0
     ) -> None:
@@ -1159,7 +1156,9 @@ class Client:
         response = response.text
         check_errors(response, LoadError, "")
 
-        response = cyclic_xor(base64_urlsafe_decode(response.split("|")[0][5:]), XorKey.QUEST).split(":")
+        response = cyclic_xor(
+            base64_urlsafe_decode(response.split("|")[0][5:]), XorKey.QUEST
+        ).split(":")
 
         time_left = response[5]
         quests = (quest.split(",") for quest in response[6:9])

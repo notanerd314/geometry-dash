@@ -493,7 +493,7 @@ class Comment(Entity):
 
 
 @dataclass
-class ListLevels(Entity, ABC):
+class _ListLevels(Entity, ABC):
     """
     An abstract class representing a list of levels. (Not to be confused with LevelList)
 
@@ -543,7 +543,7 @@ class ListLevels(Entity, ABC):
 
 
 @dataclass
-class LevelList(ListLevels):
+class LevelList(_ListLevels):
     """
     A class representing a list.
 
@@ -634,7 +634,7 @@ class LevelList(ListLevels):
 
 
 @dataclass
-class MapPack(ListLevels):
+class MapPack(_ListLevels):
     """
     A class representing a map pack.
 
@@ -689,7 +689,7 @@ class MapPack(ListLevels):
 
 
 @dataclass
-class Gauntlet(ListLevels):
+class Gauntlet(_ListLevels):
     """
     A class representing a gauntlet.
 

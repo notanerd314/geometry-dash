@@ -174,5 +174,5 @@ async def send_get_request(**kwargs) -> httpx.Response:
     :rtype: Union[str, bytes, httpx.Response]
     """
     async with httpx.AsyncClient() as client:
-        response = await client.get(**kwargs)  # Make the GET request
+        response = await client.get(**kwargs, headers={"User-Agent": ""})  # Make the GET request
         return response  # Return the full response object if decode is False

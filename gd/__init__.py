@@ -65,11 +65,108 @@ __license__: str = "MIT"
 __copyright__: str = "Copyright 2024 notanerd"
 __version__: str = "0.1.0"
 
+__description__ = "API wrapper for Geometry Dash written in Python 3."
+__url__ = "https://github.com/notanerd314/gdapi"
+
 from collections import namedtuple
 
-from .gd import *
-from .entities import *
-from .exceptions import *
+from .gd import SECRET, LOGIN_SECRET, Client, gjp2
+from .exceptions import (
+    LoadError,
+    InvalidID,
+    LoginError,
+    NoPremission,
+    OnCooldown,
+)
+from .decode import (
+    CHKSalt,
+    XorKey,
+    generate_chk,
+    cyclic_xor,
+    xor_singular,
+)
+from .entities.enums import (
+    Length,
+    LevelRating,
+    SearchFilter,
+    DemonDifficulty,
+    Difficulty,
+    SpecialLevel,
+    Leaderboard,
+    ModRank,
+    Gamemode,
+    Item,
+)
+from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
+from .entities.song import MusicLibrary, SoundEffectLibrary, Song, OfficialSong, SoundEffect
+from .entities.user import Account, Player, Post, Quest
+from .entities.cosmetics import Icon, IconSet, COLORS_LIST
+from .entities.entity import Entity
+
+__all__ = [
+    # Main client
+    "Client",
+
+    # Exceptions
+    "LoadError",
+    "InvalidID",
+    "LoginError",
+    "NoPremission",
+    "OnCooldown",
+
+    # Enums
+    "Length",
+    "LevelRating",
+    "SearchFilter",
+    "DemonDifficulty",
+    "Difficulty",
+    "SpecialLevel",
+    "Leaderboard",
+    "ModRank",
+    "Gamemode",
+    "Item",
+
+    # Entities - Levels
+    "Level",
+    "LevelDisplay",
+    "Comment",
+    "MapPack",
+    "LevelList",
+    "Gauntlet",
+
+    # Entities - Songs
+    "MusicLibrary",
+    "SoundEffectLibrary",
+    "Song",
+    "OfficialSong",
+    "SoundEffect",
+
+    # Entities - Users
+    "Account",
+    "Player",
+    "Post",
+    "Quest",
+
+    # Entities - Cosmetics
+    "Icon",
+    "IconSet",
+
+    # Constants
+    "SECRET",
+    "LOGIN_SECRET",
+    "COLORS_LIST",
+
+    # Cryptography
+    "gjp2",
+    "generate_chk",
+    "CHKSalt",
+    "XorKey",
+    "cyclic_xor",
+    "xor_singular",
+
+    # Misc
+    "Entity"
+]
 
 VersionInfo: namedtuple = namedtuple("VersionInfo", "major minor micro")
 

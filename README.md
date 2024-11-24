@@ -1,80 +1,104 @@
 # `gdapi`
 
-An asynchronous API wrapper for **Geometry Dash** and **Pointercrate (soon)**.
+An asynchronous API wrapper for **Geometry Dash**. *(Pointercrate support coming soon)*
 
-For right now, it packs:
-- Account Login
-- Level Download and Search
-- Map packs, gauntlets, lists
+![WIP](Https://img.shields.io/badge/Work%20In%20Progress-dark_green)
+![License](https://img.shields.io/github/license/notanerd314/gdapi?color=yellow)
+![Commits](https://img.shields.io/github/commit-activity/w/notanerd314/gdapi?label=commits&logo=github)
+![Discord](https://img.shields.io/discord/1292437262155382816?label=discord&logo=discord&color=blue&logoColor=white)
+
+---
+
+## Features
+
+`gdapi` currently supports:
+- Account login
+- Level download and search
+- Map packs, gauntlets, and level lists
 - Cosmetics
 - Leaderboards
-- Comments/Account Posts
+- Comments and account posts
 
-<!-- # Installation and Information
-### *why the heck did i put that???? it's unfinished!!!!!*
-Install GDAPI via PyPI:
+<!-- ---
+
+## Installation
+
+Install `gdapi` via PyPI:
 
 ```bash
 $ python -m pip install gdapi
 ```
-**GDAPI** supports Python version 3.7 or greater officially.
 
-The package requires the following dependencies:
+**Requirements:** Python 3.7 or greater
+
+**Dependencies:**
 - aiohttp
-- aiofiles
-- colorama (For useless eye candy) -->
+- aiofiles -->
+
+---
 
 # Usage
-### Downloading a level:
-```py
->>> from gd import Client
->>> client = Client()
->>> level = await client.download_level(13519)
->>> level.name
-"The Nightmare"
->>> level.difficulty
-<DemonDifficulty.EASY_DEMON: 3>
->>> level.description
-"Hard map by Jax. 7813"
->>> level.official_song
-<OfficialSong.POLARGEIST: 2>
+- Downloading a Level:
+
+```python
+import gd
+
+client = gd.Client()
+level = await client.download_level(13519)
+
+print(level.name)          # "The Nightmare"
+print(level.difficulty)    # <DemonDifficulty.EASY_DEMON: 3>
+print(level.description)   # "Hard map by Jax. 7813"
+print(level.official_song) # <OfficialSong.POLARGEIST: 2>
 ```
 
-### Fetching a song and downloading it:
-```py
->>> from gd import Client
->>> client = Client()
->>> song = await client.get_song(1)
->>> song.name
-"Chilled 1"
->>> song.size
-0.07
->>> song.link
-"http://audio.ngfiles.com/0/1_newgrounds_consin.mp3"
->>> await song.download_to("chilled.mp3") # Download the song and name it "chilled.mp3" in the relative path.
+- Fetching and Downloading a Song:
+
+```python
+import gd
+
+client = gd.Client()
+song = await client.get_song(1)
+
+print(song.name)  # "Chilled 1"
+print(song.size)  # 0.07
+print(song.link)  # "http://audio.ngfiles.com/0/1_newgrounds_consin.mp3"
+
+# Download the song and save it as "chilled.mp3" in the current directory
+await song.download_to("chilled.mp3")
 ```
 
-### Getting the Music Library:
-```py
->>> from gd import Client
->>> client = Client()
->>> library = await client.music_library()
->>> library.version
-127
->>> library.artists
-{10002716: Artist(id=10002716, name='Raul Ojamaa', website=None, youtube_channel_id=None),
- 10002717: Artist(id=10002717, name='Malou', website=None, youtube_channel_id=None), ...}
->>> library.tags
-{234: '8bit', 251: 'action', 239: 'ambiance', 246: 'ambient', 247: 'battle', 248: 'boss', 250: 'calm', 249: 'casual', ...}
+- Getting the Music Library
+```python
+import gd
+
+client = gd.Client()
+library = await client.music_library()
+
+print(library.version)  # 127
+print(library.artists)  # Dictionary of artist IDs to artist details
+print(library.tags)     # Dictionary of tag IDs to tag names
 ```
 
-### Login and comment:
-```py
->>> from gd import Client
->>> client = Client()
->>> credientals = await client.login("notanerd1", "*********") # Password is intentionally redacted for security reasons.
->>> credientals
-Account(account_id=24514763, player_id=218839712, name='notanerd1', password=********) # Hidden when printing the instance
->>> comment_id = await client.comment("I am high", level_id=111663149, percentage=0) # Comment on the level with the percentage of 0
-2994273
+- Logging in and Commenting
+```python
+import gd
+
+client = gd.Client()
+credentials = await client.login("notanerd1", "*********")  # Replace with your credentials
+
+print(credentials)  # Account(account_id=24514763, player_id=218839712, name='notanerd1', password=********)
+
+# Post a comment on a level with 0% progress
+comment_id = await client.comment("I am high", level_id=111663149, percentage=0)
+print(comment_id)  # 2994273
 ```
+---
+
+# Notes
+- This project is a **work in progress**. Expect some features to change or improve over time.
+- Contributions and feedback are welcome!
+
+## License
+This project is licensed under the MIT License. See the LICENSE file for more details.
+
