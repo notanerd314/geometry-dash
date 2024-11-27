@@ -78,9 +78,10 @@ from .exceptions import (
     NoPremission,
     OnCooldown,
 )
-from .decode import (
-    CHKSalt,
+from .cryptography import (
+    Salt,
     XorKey,
+    gjp2,
     generate_chk,
     cyclic_xor,
     xor_singular,
@@ -98,7 +99,13 @@ from .entities.enums import (
     Item,
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
-from .entities.song import MusicLibrary, SoundEffectLibrary, Song, OfficialSong, SoundEffect
+from .entities.song import (
+    MusicLibrary,
+    SoundEffectLibrary,
+    Song,
+    OfficialSong,
+    SoundEffect,
+)
 from .entities.user import Account, Player, Post, Quest
 from .entities.cosmetics import Icon, IconSet, COLORS_LIST
 from .entities.entity import Entity
@@ -106,14 +113,12 @@ from .entities.entity import Entity
 __all__ = [
     # Main client
     "Client",
-
     # Exceptions
     "LoadError",
     "InvalidID",
     "LoginError",
     "NoPremission",
     "OnCooldown",
-
     # Enums
     "Length",
     "LevelRating",
@@ -125,7 +130,6 @@ __all__ = [
     "ModRank",
     "Gamemode",
     "Item",
-
     # Entities - Levels
     "Level",
     "LevelDisplay",
@@ -133,39 +137,33 @@ __all__ = [
     "MapPack",
     "LevelList",
     "Gauntlet",
-
     # Entities - Songs
     "MusicLibrary",
     "SoundEffectLibrary",
     "Song",
     "OfficialSong",
     "SoundEffect",
-
     # Entities - Users
     "Account",
     "Player",
     "Post",
     "Quest",
-
     # Entities - Cosmetics
     "Icon",
     "IconSet",
-
     # Constants
     "SECRET",
     "LOGIN_SECRET",
     "COLORS_LIST",
-
     # Cryptography
     "gjp2",
     "generate_chk",
-    "CHKSalt",
+    "Salt",
     "XorKey",
     "cyclic_xor",
     "xor_singular",
-
     # Misc
-    "Entity"
+    "Entity",
 ]
 
 VersionInfo: namedtuple = namedtuple("VersionInfo", "major minor micro")

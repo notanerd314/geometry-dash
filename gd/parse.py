@@ -19,7 +19,7 @@ from typing import Union
 from dateutil.relativedelta import relativedelta
 
 from .entities.enums import Difficulty, DemonDifficulty
-from .decode import base64_decompress, base64_urlsafe_decode
+from .cryptography import base64_decompress, base64_urlsafe_decode
 
 
 def parse_key_value_pairs(

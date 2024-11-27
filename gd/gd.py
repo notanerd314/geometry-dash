@@ -2,7 +2,6 @@ __doc__ = """Accessing the Geometry Dash API programmatically."""
 
 from datetime import timedelta
 from typing import Union, Optional
-from hashlib import sha1
 import base64
 import asyncio
 
@@ -18,9 +17,10 @@ from .exceptions import (
     InvalidID,
     LoginError,
 )
-from .decode import (
-    CHKSalt,
+from .cryptography import (
+    Salt,
     XorKey,
+    gjp2,
     generate_chk,
     base64_decompress,
     generate_rs,
@@ -45,22 +45,7 @@ from .helpers import send_get_request, send_post_request, cooldown, require_logi
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
-
-
-def gjp2(password: str = "", salt: str = "mI29fmAnxgTs") -> str:
-    """
-    Convert a password to a GJP2 encrypted password.
-
-    :param password: The password to be encrypted.
-    :type password: str
-    :param salt: The salt to use for encryption.
-    :type salt: str
-    :return: An encrypted password.
-    """
-    password += salt
-    result = sha1(password.encode()).hexdigest()
-
-    return result
+UDID = "S15213625602582389853976435292167231001"
 
 
 class Client:
@@ -88,9 +73,16 @@ class Client:
 
     account: Optional[Account] = None
     """The account associated with this client."""
+    udid: str = "S15213625602582389853976435292167231001"
+    """The UDID of the client"""
 
-    def __init__(self, account: Optional[Account] = None) -> None:
+    def __init__(
+        self,
+        account: Optional[Account] = None,
+        udid: str = "S15213625602582389853976435292167231001",
+    ) -> None:
         self.account = account
+        self.udid = udid
 
     def __repr__(self) -> str:
         return f"<gd.Client account={self.account}>"
@@ -281,7 +273,7 @@ class Client:
                 data["percent"],
             ],
             key=XorKey.COMMENT,
-            salt=CHKSalt.COMMENT,
+            salt=Salt.COMMENT,
         )
 
         response = await send_post_request(
@@ -981,7 +973,9 @@ class Client:
 
         return [Player.from_raw(player).add_client(self) for player in response]
 
-    async def leaderboard_top_1000(self, html: bool = False) -> Union[str, list[Player]]:
+    async def leaderboard_top_1000(
+        self, html: bool = False
+    ) -> Union[str, list[Player]]:
         """
         Gets the top 1000 star grinders.
 
@@ -990,7 +984,9 @@ class Client:
         :return: The raw HTML as string or a list of Players
         :rtype: Union[str, list[Player]]
         """
-        response = await send_get_request(url="http://www.boomlings.com/database/accounts/getTop1000.php")
+        response = await send_get_request(
+            url="http://www.boomlings.com/database/accounts/getTop1000.php"
+        )
         response = response.text
 
         if html:
@@ -1014,7 +1010,7 @@ class Client:
                 stars=int(player[3]),
                 demons=int(player[4]),
                 user_coins=int(player[5]),
-                secret_coins=int(player[6])
+                secret_coins=int(player[6]),
             ).add_client(self)
             for player in players
         ]
@@ -1065,7 +1061,7 @@ class Client:
                 data["uuid"],
             ],
             key=XorKey.LIKE,
-            salt=CHKSalt.LIKE,
+            salt=Salt.LIKE,
         )
 
         await send_post_request(
@@ -1130,7 +1126,7 @@ class Client:
         """
         await self.like(post_id, 3, dislike, post_id)
 
-    @require_login("An account is required to view quests")
+    @require_login("An account is required to view quests.")
     async def quests(self) -> list[Quest]:
         """
         Get the current quests of the account.
@@ -1143,7 +1139,7 @@ class Client:
             "accountID": self.account.account_id,
             "gjp2": self.account.gjp2,
             "chk": generate_digits(),
-            "udid": "S15213625602582389853976435292167231001",
+            "udid": self.udid,
             "uuid": self.account.player_id,
             "gameVersion": 22,
             "binaryVersion": 42,

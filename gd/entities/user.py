@@ -15,7 +15,7 @@ from .enums import Gamemode, ModRank, Item
 from .cosmetics import IconSet
 from .level import Comment, LevelDisplay
 from .entity import Entity
-from ..decode import base64_urlsafe_decode
+from ..cryptography import base64_urlsafe_decode
 from ..helpers import require_client
 
 SECRET = "Wmfd2893gb7"

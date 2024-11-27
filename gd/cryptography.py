@@ -16,16 +16,13 @@ from enum import StrEnum
 
 # Constants
 XOR_KEY = "26364"
-START_ID_SONG_LIB = 10000000
 BASE64_PADDING_CHAR = "="
 AW_CODE = "Aw=="
-DEFAULT_TIMEOUT = 60
-UDID_PREFIX = "S"
 LETTERS = ascii_letters + digits
 
 __all__ = [
     "XorKey",
-    "CHKSalt",
+    "Salt",
     "cyclic_xor",
     "xor_singular",
     "base64_urlsafe_decode",
@@ -48,9 +45,9 @@ class XorKey(StrEnum):
     QUEST = "19847"
 
 
-class CHKSalt(StrEnum):
+class Salt(StrEnum):
     """
-    An enum class for CHK salts, typically used for encryption.
+    An enum class for salts, typically used for encryption.
     """
 
     LEVEL = "xI25fpAapCQg"
@@ -59,6 +56,23 @@ class CHKSalt(StrEnum):
     RATE = "ysg6pUrtjn0J"
     PROFILE = "xI35fsAapCRg"
     LEADERBOARD = "yPg6pUrtWn0J"
+    PASSWORD = "mI29fmAnxgTs"
+
+
+def gjp2(password: str = "", salt: str = Salt.PASSWORD) -> str:
+    """
+    Convert a password to a GJP2 encrypted password.
+
+    :param password: The password to be encrypted.
+    :type password: str
+    :param salt: The salt to use for encryption.
+    :type salt: str
+    :return: An encrypted password.
+    """
+    password += salt
+    result = sha1(password.encode()).hexdigest()
+
+    return result
 
 
 def add_padding(data: str) -> str:
@@ -70,7 +84,7 @@ def add_padding(data: str) -> str:
     :return: The base64-encoded data with padding added.
     :rtype: str
     """
-    return data + "=" * ((4 - len(data) % 4) % 4)
+    return data + BASE64_PADDING_CHAR * ((4 - len(data) % 4) % 4)
 
 
 def cyclic_xor(input_bytes: bytes, key: str) -> str:
@@ -175,6 +189,16 @@ def base64_decompress(encrypted: str) -> str:
     return zlib.decompress(decoded_data, 15 | 32).decode()
 
 
+def udid() -> str:
+    """
+    Generates a Universally Unique Indentifier for device
+
+    :return: UDID
+    :rtype: str
+    """
+    return "".join(random.choices(digits, k=36))
+
+
 def generate_rs(n: int = 10) -> str:
     """
     Generates a random seed.
@@ -226,7 +250,7 @@ def generate_chk(values: list[Union[int, str]], key: str = "", salt: str = "") -
     values.append(salt)
     combined_str = "".join(map(str, values))
 
-    hashed = sha1(combined_str.encode()).hexdigest()
+    hashed = gjp2(combined_str, "")
     xored = cyclic_xor(hashed.encode(), key)
 
     return base64.urlsafe_b64encode(xored.encode()).decode()

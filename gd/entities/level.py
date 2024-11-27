@@ -22,7 +22,7 @@ from ..parse import (
     determine_list_difficulty,
     str_to_delta,
 )
-from ..decode import base64_urlsafe_decode
+from ..cryptography import base64_urlsafe_decode
 from .enums import LevelRating, ModRank, Gamemode, Length, Difficulty, SearchFilter
 from .cosmetics import Icon
 
