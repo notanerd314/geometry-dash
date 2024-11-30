@@ -402,7 +402,9 @@ class Client:
         special_map = tuple(filter(None, get_args(SpecialLevel)))
 
         if special not in special_map:
-            raise ValueError("Invalid special level. Expected 'DAILY' or 'WEEKLY' or 'EVENT'.")
+            raise ValueError(
+                "Invalid special level. Expected 'DAILY' or 'WEEKLY' or 'EVENT'."
+            )
 
         special = special_map.index(special)
 
@@ -1200,7 +1202,9 @@ class Client:
         elif open_chest == "LARGE":
             open_chest = 2
         else:
-            raise ValueError("Invalid chest type. Use None, 'SMALL' or 'LARGE' instead.")
+            raise ValueError(
+                "Invalid chest type. Use None, 'SMALL' or 'LARGE' instead."
+            )
 
         data = {
             "secret": SECRET,
@@ -1241,13 +1245,13 @@ class Client:
                 diamonds=int(small_chest[1]),
                 extra=Item.from_extra_id(int(small_chest[2])),
                 time_left=small_chest_time,
-                times_opened=small_chest_open
+                times_opened=small_chest_open,
             ),
             Chest(
                 orbs=int(large_chest[0]),
                 diamonds=int(large_chest[1]),
                 extra=Item.from_extra_id(int(large_chest[2])),
                 time_left=large_chest_time,
-                times_opened=large_chest_open
-            )
+                times_opened=large_chest_open,
+            ),
         )

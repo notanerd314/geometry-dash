@@ -419,6 +419,7 @@ class Quest:
     time_left: int
     """Seconds left until next quest is chosen"""
 
+
 @dataclass
 class Chest:
     """

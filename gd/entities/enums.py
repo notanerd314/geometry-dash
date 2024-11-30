@@ -11,6 +11,7 @@ from typing import Literal, Union
 SpecialLevel = Literal["DAILY", "WEEKLY", "EVENT"]
 ChestType = Literal["SMALL", "LARGE"]
 
+
 # Enum
 class Difficulty(Enum):
     """
@@ -238,6 +239,7 @@ class Item(Enum):
             return Item.DEMON_KEY
 
         return Shard(item_id)
+
 
 class Shard(Enum):
     """
