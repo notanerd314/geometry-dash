@@ -1192,6 +1192,8 @@ class Client:
         """
         Get the remaining time for each chest type in the account.
 
+        :param open_chest: Opens a small chest or large chest or view the details only.
+        :type open_chest: Optional[ChestType]
         :return: A list of chest objects, the first one is small chest and second one is large chest.
         :rtype: list[Chest]
         """

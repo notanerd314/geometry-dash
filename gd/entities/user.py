@@ -8,9 +8,7 @@ from dataclasses import dataclass
 from hashlib import sha1
 from collections import namedtuple
 
-from dateutil.relativedelta import relativedelta
-
-from ..parse import parse_key_value_pairs, str_to_delta
+from ..parse import parse_key_value_pairs
 from .enums import Gamemode, ModRank, Item, Shard
 from .cosmetics import IconSet
 from .level import Comment, LevelDisplay
@@ -66,7 +64,7 @@ class Post(Entity):
     """The number of likes of the post."""
     post_id: int = None
     """The ID of the post."""
-    posted_ago: relativedelta = None
+    posted_ago: str = None
     """The time when the post was posted, e.g., '5 months'."""
     author_account_id: Union[int, None] = None
     """The ID of the author, or None if it doesn't exist."""
@@ -91,11 +89,11 @@ class Post(Entity):
             content=base64_urlsafe_decode(comment_value.get("2", "")),
             likes=int(comment_value.get("4", 0)),
             post_id=int(comment_value.get("6", 0)),
-            posted_ago=str_to_delta(comment_value.get("9", "0 seconds")),
+            posted_ago=comment_value.get("9", "0 seconds"),
             author_account_id=account_id,
         )
 
-    @require_client()
+    @require_client(login=True)
     async def like(self, dislike: bool = False, client: int = None) -> None:
         """
         Like or dislike the post.
@@ -231,7 +229,7 @@ class Player(Entity):
     platformer_stats: Optional[DifficultyStats] = None
     """The stats of platformer non-demon levels beaten."""
 
-    set_ago: Optional[relativedelta] = None
+    set_ago: Optional[str] = None
     """The last time the score was set on a level."""
 
     @staticmethod
@@ -342,7 +340,7 @@ class Player(Entity):
                 secondary_color=secondary_color,
                 glow_color=glow_color,
             ),
-            set_ago=str_to_delta(parsed.get("42", "0 seconds")),
+            set_ago=parsed.get("42", "0 seconds"),
         )
 
     @require_client()
@@ -420,15 +418,18 @@ class Quest:
     """Seconds left until next quest is chosen"""
 
 
+# * Chests
+
+
 @dataclass
-class Chest:
+class Chest(Entity):
     """
     Represents a chest in Geometry Dash.
 
     Attributes
     ==========
     orbs : int
-    The amount of orbs in the chest.
+        The amount of orbs in the chest.
     diamonds : int
         The amount of diamonds in the chest.
     extra : Union[Item.DEMON_KEY, Shard, None]

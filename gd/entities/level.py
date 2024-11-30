@@ -267,7 +267,7 @@ class Level(Entity):
         }
         return star_orbs_map.get(self.stars, 0)
 
-    @require_client()
+    @require_client(login=True)
     async def comment(
         self, message: str, percentage: int = 0, client: int = None
     ) -> int:
@@ -286,11 +286,11 @@ class Level(Entity):
         :return: The comment ID of the sent comment.
         :rtype: int
         """
-        return await client.comment(
+        return await client.send_comment(
             message=message, level_id=self.id, percentage=percentage
         )
 
-    @require_client()
+    @require_client(login=True)
     async def like(self, dislike: bool = False, client: int = None) -> None:
         """
         Sends a like to the level.
@@ -477,7 +477,7 @@ class Comment(Entity):
             author_has_glow=bool(int(user_value.get("15", 0))),
         )
 
-    @require_client()
+    @require_client(login=True)
     async def like(self, dislike: bool = False, client: int = None):
         """
         Like or dislike the comment.
@@ -618,7 +618,7 @@ class LevelList(_ListLevels):
             minimum_levels=int(parsed.get("56", 0)),
         )
 
-    @require_client()
+    @require_client(login=True)
     async def like(self, dislike: bool = False, client: int = None) -> None:
         """
         Like or dislike a list.
@@ -631,6 +631,23 @@ class LevelList(_ListLevels):
         :rtype: None
         """
         return await client.like_list(self.id, dislike)
+
+    @require_client(login=True)
+    async def comment(self, message: str, client: int = None) -> int:
+        """
+        Sends a comment to the list.
+
+        Cooldown is 15 seconds.
+
+        :param message: The message to send.
+        :type message: str
+        :param client: The client (or client index) to send the comment as.
+        :type client: int
+        :raises: gd.CommentError
+        :return: The comment ID of the sent comment.
+        :rtype: int
+        """
+        return await client.send_comment(message=message, level_id=-self.id)
 
 
 @dataclass
