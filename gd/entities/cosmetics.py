@@ -1,5 +1,5 @@
 """
-## .models.icons
+## .entities.icons
 
 The module containing all the classes and methods related to customization and icons.
 """

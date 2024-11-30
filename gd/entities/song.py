@@ -1,5 +1,5 @@
 """
-## .models.song
+## .entities.song
 A module containing all the classes and methods related to songs in Geometry Dash.
 """
 

@@ -1,7 +1,8 @@
 __doc__ = """Accessing the Geometry Dash API programmatically."""
 
 from datetime import timedelta
-from typing import Union, Optional
+from typing import Union, Optional, get_args
+import random
 import base64
 import asyncio
 
@@ -35,17 +36,23 @@ from .entities.enums import (
     DemonDifficulty,
     Difficulty,
     SpecialLevel,
+    ChestType,
     Leaderboard,
     Item,
 )
 from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from .entities.song import MusicLibrary, SoundEffectLibrary, Song
-from .entities.user import Account, Player, Post, Quest
+from .entities.user import Account, Player, Post, Quest, Chest
 from .helpers import send_get_request, send_post_request, cooldown, require_login
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
 UDID = "S15213625602582389853976435292167231001"
+QUEST_ITEM_TYPE_MAP = {
+    "1": Item.ORBS,
+    "2": Item.STARS,
+    "3": Item.USERCOIN,
+}
 
 
 class Client:
@@ -392,6 +399,13 @@ class Client:
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
         """
+        special_map = tuple(filter(None, get_args(SpecialLevel)))
+
+        if special not in special_map:
+            raise ValueError("Invalid special level. Expected 'DAILY' or 'WEEKLY' or 'EVENT'.")
+
+        special = special_map.index(special)
+
         # Use asyncio.gather to download the level and time left concurrently if needed
         tasks = [self.download_level(special)]
 
@@ -1127,7 +1141,7 @@ class Client:
         await self.like(post_id, 3, dislike, post_id)
 
     @require_login("An account is required to view quests.")
-    async def quests(self) -> list[Quest]:
+    async def quests(self) -> tuple[Quest]:
         """
         Get the current quests of the account.
 
@@ -1152,25 +1166,88 @@ class Client:
         response = response.text
         check_errors(response, LoadError, "")
 
+        # Cryptography shit, removes salt and cyclic XOR them.
         response = cyclic_xor(
             base64_urlsafe_decode(response.split("|")[0][5:]), XorKey.QUEST
         ).split(":")
 
         time_left = response[5]
         quests = (quest.split(",") for quest in response[6:9])
-        reward_type_map = {
-            "1": Item.ORBS,
-            "2": Item.STARS,
-            "3": Item.COIN,
-        }
 
-        return [
+        return (
             Quest(
                 name=quest[4],
-                requirement_type=reward_type_map[quest[1]],
+                requirement_type=QUEST_ITEM_TYPE_MAP[quest[1]],
                 requirement_value=int(quest[2]),
                 reward=int(quest[3]),
                 time_left=int(time_left),
             )
             for quest in quests
-        ]
+        )
+
+    @require_login("An account is required to view chests.")
+    async def chests(self, open_chest: Optional[ChestType] = None) -> tuple[Chest]:
+        """
+        Get the remaining time for each chest type in the account.
+
+        :return: A list of chest objects, the first one is small chest and second one is large chest.
+        :rtype: list[Chest]
+        """
+        if open_chest is None:
+            open_chest = 0
+        elif open_chest == "SMALL":
+            open_chest = 1
+        elif open_chest == "LARGE":
+            open_chest = 2
+        else:
+            raise ValueError("Invalid chest type. Use None, 'SMALL' or 'LARGE' instead.")
+
+        data = {
+            "secret": SECRET,
+            "accountID": self.account.account_id,
+            "gjp2": self.account.gjp2,
+            "chk": generate_digits(),
+            "udid": self.udid,
+            "uuid": self.account.player_id,
+            "gameVersion": 22,
+            "binaryVersion": 42,
+            "world": 0,
+            "r1": random.randint(100, 99999),
+            "r2": random.randint(100, 99999),
+            "rewardType": open_chest,
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJRewards.php", data=data
+        )
+        response = response.text
+        check_errors(response, LoadError, "")
+
+        # Cryptography shit, removes salt and cyclic XOR them.
+        response = cyclic_xor(
+            base64_urlsafe_decode(response.split("|")[0][5:]), XorKey.CHEST
+        ).split(":")
+
+        small_chest_time = int(response[5])
+        small_chest = response[6].split(",")
+        small_chest_open = int(response[7])
+        large_chest_time = int(response[8])
+        large_chest = response[9].split(",")
+        large_chest_open = int(response[10])
+
+        return (
+            Chest(
+                orbs=int(small_chest[0]),
+                diamonds=int(small_chest[1]),
+                extra=Item.from_extra_id(int(small_chest[2])),
+                time_left=small_chest_time,
+                times_opened=small_chest_open
+            ),
+            Chest(
+                orbs=int(large_chest[0]),
+                diamonds=int(large_chest[1]),
+                extra=Item.from_extra_id(int(large_chest[2])),
+                time_left=large_chest_time,
+                times_opened=large_chest_open
+            )
+        )

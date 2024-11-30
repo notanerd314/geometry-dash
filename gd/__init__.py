@@ -70,7 +70,7 @@ __url__ = "https://github.com/notanerd314/gdapi"
 
 from collections import namedtuple
 
-from .gd import SECRET, LOGIN_SECRET, Client, gjp2
+from .gd import SECRET, LOGIN_SECRET, Client
 from .exceptions import (
     LoadError,
     InvalidID,

@@ -1,11 +1,15 @@
 """
-# .models.enums
+# .entities.enums
 
 A module containing all enumerations of various things.
 """
 
 from enum import IntEnum, Enum, StrEnum, auto
+from typing import Literal, Union
 
+# Literals
+SpecialLevel = Literal["DAILY", "WEEKLY", "EVENT"]
+ChestType = Literal["SMALL", "LARGE"]
 
 # Enum
 class Difficulty(Enum):
@@ -178,25 +182,14 @@ class SearchFilter(IntEnum):
     """Filter daily levels."""
     WEEKLY = 22
     """Filter weekly levels."""
+    EVENT = 23
+    """Filter event levels."""
     LIST_SENT = 27
     """Filter lists sent by moderators."""
     FRIENDS = 13
     """Filter levels made by friends. (Login required)"""
 
     DEFAULT = MOST_DOWNLOADED
-
-
-class SpecialLevel(IntEnum):
-    """
-    An **Enum** class representing special levels in Geometry Dash.
-    """
-
-    DAILY = -1
-    """Daily level."""
-    WEEKLY = -2
-    """Weekly level."""
-    EVENT = -3
-    """Event level."""
 
 
 class Leaderboard(StrEnum):
@@ -225,5 +218,39 @@ class Item(Enum):
     ORBS = 2
     STARS = 3
     MOONS = 4
-    COIN = 5
-    SHARD = 6
+    USERCOIN = 5
+    SHARDS = 6
+    DEMON_KEY = 7
+
+    @staticmethod
+    def from_extra_id(item_id: int) -> Union["Item.DEMON_KEY", "Shard", None]:
+        """
+        Returns the corresponding `Item` or `Shard` from the given `item_id` in the chest response.
+
+        :param item_id: The `item_id` returned from the chest response.
+        :type item_id: int
+        :return: The corresponding `Item` or `Shard`.
+        :rtype: Union["Item.DEMON_KEY", "Shard", None]
+        """
+        if item_id == 0:
+            return None
+        if item_id == 5:
+            return Item.DEMON_KEY
+
+        return Shard(item_id)
+
+class Shard(Enum):
+    """
+    An Enum class representing shard types in Geometry Dash
+    """
+
+    FIRE = 1
+    ICE = 2
+    POISON = 3
+    SHADOW = 4
+    LAVA = 5
+    EARTH = 10
+    BLOOD = 11
+    METAL = 12
+    LIGHT = 13
+    SOUL = 14

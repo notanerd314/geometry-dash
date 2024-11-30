@@ -11,7 +11,7 @@ from collections import namedtuple
 from dateutil.relativedelta import relativedelta
 
 from ..parse import parse_key_value_pairs, str_to_delta
-from .enums import Gamemode, ModRank, Item
+from .enums import Gamemode, ModRank, Item, Shard
 from .cosmetics import IconSet
 from .level import Comment, LevelDisplay
 from .entity import Entity
@@ -412,12 +412,42 @@ class Quest:
     """The name of the quest"""
     requirement_value: int
     """The number value of the requirement"""
-    requirement_type: Literal[Item.STARS, Item.ORBS, Item.COIN]
+    requirement_type: Literal[Item.STARS, Item.ORBS, Item.USERCOIN]
     """The type of requirement"""
     reward: int
     """The total of diamonds get if completed"""
     time_left: int
     """Seconds left until next quest is chosen"""
+
+@dataclass
+class Chest:
+    """
+    Represents a chest in Geometry Dash.
+
+    Attributes
+    ==========
+    orbs : int
+    The amount of orbs in the chest.
+    diamonds : int
+        The amount of diamonds in the chest.
+    extra : Union[Item.DEMON_KEY, Shard, None]
+        The extra item type (Demon Key, Shard, None)
+    time_left : int
+        Seconds left until next quest is chosen.
+    times_opened: int
+        How many times the chest is opened.
+    """
+
+    orbs: int
+    """The amount of orbs in the chest."""
+    diamonds: int
+    """The amount of diamonds in the chest."""
+    extra: Union[Item.DEMON_KEY, Shard, None]
+    """The extra item type (Demon Key, Shard, None)"""
+    time_left: int
+    """Seconds left until next quest is chosen."""
+    times_opened: int
+    """How many times the chest is open."""
 
 
 @dataclass

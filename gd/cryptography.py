@@ -43,6 +43,7 @@ class XorKey(StrEnum):
     COMMENT = "29481"
     LIKE = "58281"
     QUEST = "19847"
+    CHEST = "59182"
 
 
 class Salt(StrEnum):

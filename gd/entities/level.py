@@ -1,5 +1,5 @@
 """
-## .models.level
+## .entities.level
 
 A module containing all the classes and methods related to levels in Geometry Dash.
 """
