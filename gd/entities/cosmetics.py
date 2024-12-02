@@ -5,15 +5,16 @@ The module containing all the classes and methods related to customization and i
 """
 
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, Optional
 from io import BytesIO
 from pathlib import Path
 import asyncio
 
 import aiofiles
 
-from .enums import Gamemode
-from ..helpers import send_get_request
+from gd.entities.enums import Gamemode
+from gd.helpers import send_get_request
+from gd.type_hints import ColorId, IconId
 
 __all__ = ["color_id_to_hex", "Icon", "IconSet"]
 
@@ -146,12 +147,12 @@ GAMEMODE_MAP = {
 }
 
 
-def color_id_to_hex(color_id: int) -> Union[int, None]:
+def color_id_to_hex(color_id: ColorId) -> Union[int, None]:
     """
     Returns the hexadecimal color code for the given color ID. If not found, returns None.
 
     :param color_id: The ID of the color.
-    :type color_id: int
+    :type color_id: ColorId
     :return: The hexadecimal color code if found, otherwise None.
     """
     return COLORS_LIST.get(color_id, None)
@@ -164,23 +165,23 @@ class Icon:
 
     Attributes
     ----------
-    id : int
+    id : IconId
         The ID of the icon
     gamemode : Gamemode
         The gamemode of
-    primary_color_id : int
+    primary_color_id : ColorId
         The primary color ID of the icon
-    secondary_color_id : int
+    secondary_color_id : ColorId
         The secondary color ID of the icon
-    glow_color_id : Union[int, None]
+    glow_color_id : Optional[ColorId]
         The glow color ID of the icon, if doesn't exist then None.
     """
 
-    id: int
+    id: IconId
     gamemode: Gamemode
-    primary_color_id: int = 1
-    secondary_color_id: int = 1
-    glow_color_id: Union[int, None] = None
+    primary_color_id: ColorId = 1
+    secondary_color_id: ColorId = 1
+    glow_color_id: Optional[ColorId] = None
 
     @property
     def primary_color_hex(self) -> int:
@@ -293,46 +294,48 @@ class IconSet:
 
     @staticmethod
     def load(
-        cube: int = 1,
-        ship: int = 1,
-        ball: int = 1,
-        ufo: int = 1,
-        wave: int = 1,
-        robot: int = 1,
-        spider: int = 1,
-        swing: int = 1,
-        jetpack: int = 1,
-        primary_color: int = 0,
-        secondary_color: int = 0,
-        glow_color: int = None,
+        cube: IconId = 1,
+        ship: IconId = 1,
+        ball: IconId = 1,
+        ufo: IconId = 1,
+        wave: IconId = 1,
+        robot: IconId = 1,
+        spider: IconId = 1,
+        swing: IconId = 1,
+        jetpack: IconId = 1,
+        primary_color: ColorId = 0,
+        secondary_color: ColorId = 0,
+        glow_color: Optional[ColorId] = None,
     ) -> "IconSet":
         """
         A function to creator an user's icon set fast.
 
         :param cube: Cube icon ID.
-        :type cube: int
+        :type cube: IconId
         :param ship: Ship icon ID.
-        :type ship: int
+        :type ship: IconId
         :param ball: Ball icon ID.
-        :type ball: int
+        :type ball: IconId
         :param ufo: UFO icon ID.
-        :type ufo: int
+        :type ufo: IconId
         :param wave: Wave icon ID.
-        :type wave: int
+        :type wave: IconId
         :param robot: Robot icon ID.
-        :type robot: int
+        :type robot: IconId
         :param spider: Spider icon ID.
-        :type spider: int
+        :type spider: IconId
         :param swing: Swing icon ID.
-        :type swing: int
+        :type swing: IconId
         :param jetpack: Jetpack icon ID.
-        :type jetpack: int
+        :type jetpack: IconId
         :param primary_color: Primary color ID.
-        :type primary_color: int
+        :type primary_color: ColorId
         :param secondary_color: Secondary color ID.
-        :type secondary_color: int
+        :type secondary_color: ColorId
         :param glow_color: Glow color ID.
-        :type glow_color: int
+        :type glow_color: Optional[ColorId]
+        :return: IconSet instance.
+        :rtype: IconSet
         """
         return IconSet(
             cube=Icon(

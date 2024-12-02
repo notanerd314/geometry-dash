@@ -4,27 +4,24 @@
 A module containing all the classes and methods related to levels in Geometry Dash.
 """
 
-from typing import Union
+from typing import Union, Optional
 from datetime import datetime
 from dataclasses import dataclass
-from abc import ABC
 
-from dateutil.relativedelta import relativedelta
-
-from .song import Song, OfficialSong
-from .entity import Entity
-from ..helpers import require_client
-from ..parse import (
+from gd.entities.song import Song, OfficialSong
+from gd.entities.entity import Entity
+from gd.helpers import require_client
+from gd.parse import (
     parse_level_data,
     parse_comma_separated_int_list,
     parse_key_value_pairs,
     determine_difficulty,
     determine_list_difficulty,
-    str_to_delta,
 )
-from ..cryptography import base64_urlsafe_decode
-from .enums import LevelRating, ModRank, Gamemode, Length, Difficulty, SearchFilter
-from .cosmetics import Icon
+from gd.cryptography import base64_urlsafe_decode
+from gd.entities.enums import LevelRating, ModRank, Gamemode, Length, Difficulty, SearchFilter
+from gd.entities.cosmetics import Icon
+from gd.type_hints import LevelId, PlayerId, SoundEffectId, SongId, AccountId, CommentId, ColorId
 
 __all__ = ["Level", "LevelDisplay", "LevelList", "Comment", "Gauntlet", "MapPack"]
 
@@ -93,7 +90,7 @@ class Level(Entity):
     ----------
     raw_str : str
         The original unparsed data from the servers.
-    id : int
+    id : LevelId
         The ID of the level.
     name : str
         The name of the level.
@@ -103,7 +100,7 @@ class Level(Entity):
         The level's data.
     version : int
         The level's version.
-    creator_player_id : int
+    creator_player_id : PlayerId
         The player ID of the creator of the level.
     downloads : int
         The download count of the level.
@@ -113,17 +110,17 @@ class Level(Entity):
         Whether the level can be copied or not.
     length : Length
         The length of the level. (Not the exact length)
-    requested_stars : int]
+    requested_stars : int
         The level rating requested by the creator.
     stars : int
         The star count for the level.
     coins : int
         The coins count for the level.
-    custom_song_id : Union[int, None]
+    custom_song_id : Optional[SongId]
         The id for the custom song used for the level.
-    song_list_ids : list[int]
+    song_list_ids : list[SongId]
         The list of the song IDs used in the level.
-    sfx_list_ids : list[int]
+    sfx_list_ids : list[SoundEffectId]
         The list of the song IDs used in the level.
     is_daily : bool
         If the level was a daily level.
@@ -133,18 +130,18 @@ class Level(Entity):
         The rating of the level. (None, Featured, Epic, etc.)
     difficulty : Union[Difficulty, DemonDifficulty]
         The difficulty of the level.
-    level_password: Union[int, None]
+    level_password: Optional[int]
         The password for the level to copy.
-    official_song: Union[OfficialSong, None]
+    official_song: Optional[OfficialSong]
         The official song used in the level. Returns None if the level uses a custom song.
     """
 
-    id: int = None
+    id: LevelId = None
     name: str = None
     description: str = None
     level_data: str = None
     version: int = None
-    creator_player_id: int = None
+    creator_player_id: PlayerId = None
     downloads: int = None
     likes: int = None
     copyable: bool = None
@@ -152,9 +149,9 @@ class Level(Entity):
     requested_stars: int = None
     stars: int = None
     coins: int = None
-    custom_song_id: Union[int, None] = None
-    song_list_ids: list[int] = None
-    sfx_list_ids: list[int] = None
+    custom_song_id: Optional[SongId] = None
+    song_list_ids: list[SongId] = None
+    sfx_list_ids: list[SoundEffectId] = None
     daily_id: Union[int, None] = None
     copied_level_id: int = None
     low_detail_mode: bool = None
@@ -167,7 +164,7 @@ class Level(Entity):
     rating: "LevelRating" = None
     difficulty: "Difficulty" = None
     level_password: str = None
-    official_song: OfficialSong = None
+    official_song: Optional[OfficialSong] = None
 
     @staticmethod
     def from_raw(raw_str: str) -> "Level":
@@ -188,7 +185,7 @@ class Level(Entity):
         A staticmethod that converts a raw level string into a Level object.
 
         :param parsed_str: The raw string returned from the server.
-        :type raw_str: str
+        :type parsed_str: str
         :return: A Level object created from the parsed data.
         """
         parsed = parsed_str
@@ -312,17 +309,17 @@ class LevelDisplay(Level):
 
     Attributes
     ----------
-    creator_name : str]
+    creator_name : str
         The creator name of the level.
-    creator_account_id : int]
+    creator_account_id : int
         The creator's account ID.
-    song_data : Union[Song, None]
+    song_data : Optional[Song]
         The custom song object of the level.
     """
 
     creator_name: str = None
-    creator_account_id: int = None
-    song_data: "Song" = None
+    creator_account_id: AccountId = None
+    song_data: Optional[Song] = None
 
     @staticmethod
     def from_parsed(parsed_str: dict) -> "LevelDisplay":
@@ -386,31 +383,31 @@ class Comment(Entity):
 
     Attributes
     ----------
-    level_id : int
+    level_id : LevelId
         The ID of the level the comment belongs to.
     content : str
         The content of the comment.
     likes : int
         The current likes count for the comment.
-    comment_id : int
+    id : CommentId
         The ID of the comment.
     is_spam : bool
         If the comment is spam.
-    posted_ago : relativedelta
+    posted_ago : str
         Time passed since the comment was posted.
     precentage : int
         The perecentage of the comment.
     mod_level : ModRank
         The mod level of the author.
-    author_player_id : int
+    author_player_id : PlayerId
         The ID of the author's player.
-    author_account_id : int
+    author_account_id : AccountId
         The ID of the author's account.
     author_name : str
         The name of the author.
-    author_primary_color : Color
+    author_primary_color : ColorId
         The primary color of the author.
-    author_secondary_color : Color
+    author_secondary_color : ColorId
         The secondary color of the author.
     author_has_glow : bool
         If the author has a glow effect.
@@ -420,20 +417,20 @@ class Comment(Entity):
         The gamemode the author chooses to display in their comment.
     """
 
-    level_id: int = None
+    level_id: LevelId = None
     content: str = None
     likes: int = None
-    id: int = None
+    id: CommentId = None
     is_spam: bool = None
-    posted_ago: relativedelta = None
+    posted_ago: str = None
     precentage: int = None
     mod_level: ModRank = None
 
-    author_player_id: int = None
-    author_account_id: int = None
+    author_player_id: PlayerId = None
+    author_account_id: AccountId = None
     author_name: str = None
-    author_primary_color_id: int = None
-    author_secondary_color_id: int = None
+    author_primary_color: ColorId = None
+    author_secondary_color: ColorId = None
     author_has_glow: bool = None
     author_icon: Icon = None
     author_icon_display_gamemode: Gamemode = None
@@ -460,7 +457,7 @@ class Comment(Entity):
             likes=int(comment_value.get("4", 0)),
             id=int(comment_value.get("6", 0)),
             is_spam=bool(int(comment_value.get("7", 0))),
-            posted_ago=str_to_delta(comment_value.get("9", "0 seconds")),
+            posted_ago=comment_value.get("9", "0 seconds"),
             precentage=int(comment_value.get("10", 0)),
             mod_level=ModRank(int(comment_value.get("11", 0))),
             author_name=user_value.get("1", ""),
@@ -472,8 +469,8 @@ class Comment(Entity):
                 glow_color_id=None,
             ),
             author_icon_display_gamemode=Gamemode(int(user_value.get("14", 0))),
-            author_primary_color_id=int(user_value.get("10", 1)),
-            author_secondary_color_id=int(user_value.get("11", 1)),
+            author_primary_color=int(user_value.get("10", 1)),
+            author_secondary_color=int(user_value.get("11", 1)),
             author_has_glow=bool(int(user_value.get("15", 0))),
         )
 
@@ -493,20 +490,20 @@ class Comment(Entity):
 
 
 @dataclass
-class _ListLevels(Entity, ABC):
+class _ListLevels(Entity):
     """
-    An abstract class representing a list of levels. (Not to be confused with LevelList)
+    A class representing a list of levels. (Not to be confused with LevelList)
 
     Attributes
     ----------
     id : int
     name : str
-    level_ids : list[int]
+    level_ids : list[LevelId]
     """
 
     id: int = None
     name: str = None
-    level_ids: list[int] = None
+    level_ids: list[LevelId] = None
 
     @require_client()
     async def levels(self, client: int = None) -> tuple[LevelDisplay]:
@@ -518,7 +515,7 @@ class _ListLevels(Entity, ABC):
         :return: A tuple of LevelDisplay objects.
         :rtype: tuple[LevelDisplay]
         """
-        str_ids = ",".join([str(level) for level in self.levels_id])
+        str_ids = ",".join([str(level) for level in self.level_ids])
 
         return await client.search_level(
             query=str_ids, src_filter=SearchFilter.LIST_OF_LEVELS
@@ -535,10 +532,10 @@ class _ListLevels(Entity, ABC):
         :type index: int
         :return: A Level object representing the downloaded level.
         """
-        if index < 0 or index >= len(self.levels_id):
+        if index < 0 or index >= len(self.level_ids):
             raise IndexError("Invalid level index.")
 
-        level_id = self.levels_id[index]
+        level_id = self.level_ids[index]
         return await client.download_level(level_id=level_id)
 
 
@@ -549,7 +546,7 @@ class LevelList(_ListLevels):
 
     Attributes
     ----------
-    id : int
+    id : ListId
         The list ID.
     name : str
         The name of the list.
@@ -571,7 +568,7 @@ class LevelList(_ListLevels):
         The author's account ID.
     author_name : str
         The author's name.
-    level_ids : list[int]
+    level_ids : list[LevelId]
         The list of level IDs inside the list.
     diamonds : int
         The amount of diamonds given when completing the list.
@@ -661,7 +658,7 @@ class MapPack(_ListLevels):
         ID of the map pack
     name : str
         Name of the map pack
-    level_ids : list[int]
+    level_ids : list[LevelId]
         The list of the levels' id.
     stars : int
         The star count of the map pack
@@ -716,7 +713,7 @@ class Gauntlet(_ListLevels):
         The ID of the gauntlet.
     name: str
         The name of the gauntlet.
-    level_ids : list[int]
+    level_ids : list[LevelId]
         The IDs of the levels.
     image_url : str
         The URL of the image (from gdbrowser.com)

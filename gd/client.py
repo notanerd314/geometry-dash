@@ -6,19 +6,19 @@ import random
 import base64
 import asyncio
 
-from .parse import (
+from gd.parse import (
     parse_comma_separated_int_list,
     determine_search_difficulty,
     parse_search_results,
     determine_demon_search_difficulty,
 )
-from .exceptions import (
+from gd.exceptions import (
     check_errors,
     LoadError,
     InvalidID,
     LoginError,
 )
-from .cryptography import (
+from gd.cryptography import (
     Salt,
     XorKey,
     gjp2,
@@ -29,7 +29,7 @@ from .cryptography import (
     cyclic_xor,
     base64_urlsafe_decode,
 )
-from .entities.enums import (
+from gd.entities.enums import (
     Length,
     LevelRating,
     SearchFilter,
@@ -40,10 +40,11 @@ from .entities.enums import (
     Leaderboard,
     Item,
 )
-from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
-from .entities.song import MusicLibrary, SoundEffectLibrary, Song
-from .entities.user import Account, Player, Post, Quest, Chest
-from .helpers import send_get_request, send_post_request, cooldown, require_login
+from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
+from gd.entities.song import MusicLibrary, SoundEffectLibrary, Song
+from gd.entities.user import Account, Player, Post, Quest, Chest
+from gd.helpers import send_get_request, send_post_request, cooldown, require_login
+from gd.type_hints import PlayerId, AccountId, LevelId, ListId, PostId, CommentId, SongId
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
@@ -53,7 +54,6 @@ QUEST_ITEM_TYPE_MAP = {
     "2": Item.STARS,
     "3": Item.USERCOIN,
 }
-
 
 class Client:
     """
@@ -177,7 +177,7 @@ class Client:
         return self.account
 
     def unsafe_login(
-        self, name: str, password: str, account_id: int, player_id: int
+        self, name: str, password: str, account_id: AccountId, player_id: PlayerId
     ) -> Account:
         """
         Login account with given name and password without any additional checks.
@@ -187,9 +187,9 @@ class Client:
         :param password: The account password.
         :type password: str
         :param account_id: The account ID.
-        :type account_id: int
+        :type account_id: AccountId
         :param player_id: The player ID.
-        :type player_id: int
+        :type player_id: PlayerId
 
         :return: The Account instance
         :rtype: :class:`gd.entities.Account`
@@ -242,7 +242,7 @@ class Client:
     @cooldown(10)
     @require_login("You need to login before you can comment!")
     async def send_comment(
-        self, message: str, level_id: int, percentage: int = 0
+        self, message: str, level_id: LevelId, percentage: int = 0
     ) -> int:
         """
         Sends a comment to a level or list.
@@ -254,7 +254,7 @@ class Client:
         :param message: The message to send.
         :type message: str
         :param level_id: The ID of the level to comment on.
-        :type level_id: int
+        :type level_id: LevelId
         :param percentage: The percentage of the level completed, optional. Defaults to 0.
         :type percentage: int
         :raises: gd.InvalidID
@@ -297,12 +297,12 @@ class Client:
         return int(response)
 
     @require_login("You need to login before you can use this function!")
-    async def delete_post(self, post_id: int) -> None:
+    async def delete_post(self, post_id: PostId) -> None:
         """
         Deletes a post using comment ID.
 
         :param post_id: The ID of the post to delete.
-        :type post_id: int
+        :type post_id: PostId
         :raises: gd.InvalidID
         :return: None
         :rtype: None
@@ -325,14 +325,14 @@ class Client:
         )
 
     @require_login("You need to login before you can use this function!")
-    async def delete_comment(self, comment_id: int, level_id: int) -> None:
+    async def delete_comment(self, comment_id: CommentId, level_id: LevelId) -> None:
         """
         Deletes a comment using the comment's level ID and ID.
 
         :param comment_id: The ID of the comment to delete.
-        :type comment_id: int
+        :type comment_id: CommentId
         :param level_id: The ID of the level the comment belongs to.
-        :type level_id: int
+        :type level_id: LevelId
         :raises: gd.InvalidID
         :return: None
         :rtype: None
@@ -356,20 +356,18 @@ class Client:
         )
 
     @cooldown(3)
-    async def download_level(self, level_id: int) -> Level:
+    async def download_level(self, level_id: LevelId) -> Level:
         """
         Downloads a specific level from the Geometry Dash servers using the provided ID.
 
         Cooldown is 3 seconds.
 
         :param id: The ID of the level.
-        :type id: int
+        :type id: LevelId
         :raises: gd.InvalidID
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
         """
-        if not isinstance(level_id, int):
-            raise ValueError("ID must be an int.")
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/downloadGJLevel22.php",
@@ -554,13 +552,13 @@ class Client:
 
     @require_login("You need to log in before you can view the leaderboard.")
     async def level_leaderboard(
-        self, level_id: int, friends: bool = False, week: bool = False
+        self, level_id: LevelId, friends: bool = False, week: bool = False
     ) -> list[Player]:
         """
         Gets the leaderboard for a given level.
 
         :param level_id: The ID of the level.
-        :type level_id: int
+        :type level_id: LevelId
         :param friends: Whether to include get friends' scores in the leaderboard. Defaults to False.
         :return: A list of Player instances representing the leaderboard.
         :rtype: list[:class:`gd.entities.Player`]
@@ -635,14 +633,14 @@ class Client:
         return SoundEffectLibrary.from_raw(sfx_library)
 
     @cooldown(1)
-    async def get_song(self, song_id: int) -> Song:
+    async def get_song(self, song_id: SongId) -> Song:
         """
         Gets song by ID, either from Newgrounds or the music library.
 
         Cooldown is 2 seconds.
 
         :param id: The ID of the song.
-        :type id: int
+        :type id: SongId
         :return: A `Song` instance containing the song data.
         :raises: gd.InvalidID
         :rtype: :class:`gd.entities.song.Song`
@@ -657,14 +655,14 @@ class Client:
 
         return Song.from_raw(response)
 
-    async def search_user(self, query: Union[str, int], use_id: bool = False) -> Player:
+    async def search_user(self, query: Union[str, AccountId], use_id: bool = False) -> Player:
         """
         Get an user profile by account ID or name.
 
         :param query: The account ID/name to retrieve the profile.
-        :type query: Union[str, int]
+        :type query: Union[str, AccountId]
         :param use_id: If searches the user using the account ID.
-        :type use_id: Optional[bool]
+        :type use_id: bool
         :raises: gd.InvalidID
         :return: A `Player` instance containing the user's profile data.
         :rtype: :class:`gd.entities.user.Player`
@@ -688,12 +686,12 @@ class Client:
         check_errors(response, InvalidID, f"Invalid account name/ID {query}.")
         return Player.from_raw(response.split("#")[0]).add_client(self)
 
-    async def get_level_comments(self, level_id: int, page: int = 0) -> list[Comment]:
+    async def get_level_comments(self, level_id: LevelId, page: int = 0) -> list[Comment]:
         """
         Get level's comments by level ID.
 
         :param level_id: The ID of the level.
-        :type level_id: int
+        :type level_id: LevelId
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
         :raises: gd.InvalidID
@@ -715,12 +713,12 @@ class Client:
             for comment_data in response.split("|")
         ]
 
-    async def get_user_posts(self, account_id: int, page: int = 0) -> list[Post]:
+    async def get_user_posts(self, account_id: AccountId, page: int = 0) -> list[Post]:
         """
         Get an user's posts by Account ID.
 
         :param account_id: The account ID to retrieve the posts.
-        :type account_id: int
+        :type account_id: AccountId
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
         :raises: gd.InvalidID
@@ -748,13 +746,13 @@ class Client:
         return posts_list
 
     async def get_user_comments(
-        self, player_id: int, page: int = 0, display_most_liked: bool = False
+        self, player_id: PlayerId, page: int = 0, display_most_liked: bool = False
     ) -> list[Comment]:
         """
         Get an user's comments history by player ID.
 
         :param player_id: The player ID to retrieve the comments history.
-        :type player_id: int
+        :type player_id: PlayerId
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
         :param display_most_liked: Whether to display the most liked comments. Defaults to False.
@@ -785,13 +783,13 @@ class Client:
         ]
 
     async def get_user_levels(
-        self, player_id: int, page: int = 0
+        self, player_id: PlayerId, page: int = 0
     ) -> list[LevelDisplay]:
         """
         Get an user's levels by player ID.
 
         :param player_id: The player ID to retrieve the levels.
-        :type player_id: int
+        :type player_id: PlayerId
         :param page: The page number to load, default is 0.
         :type page: int
         :return: A list of LevelDisplay instances.
@@ -1032,7 +1030,7 @@ class Client:
         ]
 
     async def like(
-        self, item_id: int, like_type: int, dislike: bool = False, special: int = 0
+        self, item_id: Union[LevelId, CommentId, PostId, ListId], like_type: int, dislike: bool = False, special: Union[LevelId, PostId, int] = 0
     ) -> None:
         """
         Liking a level/list/comment/post.
@@ -1040,13 +1038,13 @@ class Client:
         **NOTE: This is a helper function, please use the individual liking methods instead.**
 
         :param item_id: ID of the item.
-        :type item_id: int
+        :type item_id: Union[LevelId, CommentId, PostId, ListId]
         :param like_type: 1 for level, 2 for comment, 3 for post, 4 for list
         :type like_type: int
         :param dislike: Whether to dislike or not
         :type dislike: bool
         :param special: For type 2, put level ID. For type 3, put post ID. For type 1 and 4, put 0.
-        :type special: int
+        :type special: Union[LevelId, PostId, int]
         :return: None
         :rtype: None
         """
@@ -1085,12 +1083,12 @@ class Client:
         )
 
     @require_login("An account is required to perform this action.")
-    async def like_level(self, level_id: int, dislike: bool = False) -> None:
+    async def like_level(self, level_id: LevelId, dislike: bool = False) -> None:
         """
         Like or dislike a level.
 
         :param level_id: The ID of the level to like or dislike.
-        :type level_id: int
+        :type level_id: LevelId
         :param dislike: Whether to dislike the level. Defaults to False.
         :return: None
         :rtype: None
@@ -1098,12 +1096,12 @@ class Client:
         await self.like(level_id, 1, dislike)
 
     @require_login("An account is required to perform this action.")
-    async def like_list(self, list_id: int, dislike: bool = False) -> None:
+    async def like_list(self, list_id: ListId, dislike: bool = False) -> None:
         """
         Like or dislike a list.
 
         :param list_id: The ID of the list to like or dislike.
-        :type list_id: int
+        :type list_id: ListId
         :param dislike: Whether to dislike the level. Defaults to False.
         :return: None
         :rtype: None
@@ -1112,15 +1110,15 @@ class Client:
 
     @require_login("An account is required to perform this action.")
     async def like_comment(
-        self, comment_id: int, level_id: int, dislike: bool = False
+        self, comment_id: CommentId, level_id: LevelId, dislike: bool = False
     ) -> None:
         """
         Like or dislike a comment in a level or list.
 
         :param comment_id: The ID of the comment to like or dislike.
-        :type comment_id: int
+        :type comment_id: CommentId
         :param level_id: The ID of the level the comment belongs to. (Use negative ID for lists)
-        :type level_id: int
+        :type level_id: LevelId
         :param dislike: Whether to dislike the comment. Defaults to False.
         :type dislike: bool
         :return: None
@@ -1129,12 +1127,12 @@ class Client:
         await self.like(comment_id, 2, dislike, level_id)
 
     @require_login("An account is required to perform this action.")
-    async def like_post(self, post_id: int, dislike: bool = False) -> None:
+    async def like_post(self, post_id: PostId, dislike: bool = False) -> None:
         """
         Like or dislike an account post.
 
         :param post_id: The ID of the post to like or dislike.
-        :type post_id: int
+        :type post_id: PostId
         :param dislike: Whether to dislike the comment. Defaults to False.
         :type dislike: bool
         :return: None
@@ -1181,7 +1179,7 @@ class Client:
                 name=quest[4],
                 requirement_type=QUEST_ITEM_TYPE_MAP[quest[1]],
                 requirement_value=int(quest[2]),
-                reward=int(quest[3]),
+                diamonds_reward=int(quest[3]),
                 time_left=int(time_left),
             )
             for quest in quests

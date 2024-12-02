@@ -8,13 +8,14 @@ from dataclasses import dataclass
 from hashlib import sha1
 from collections import namedtuple
 
-from ..parse import parse_key_value_pairs
-from .enums import Gamemode, ModRank, Item, Shard
-from .cosmetics import IconSet
-from .level import Comment, LevelDisplay
-from .entity import Entity
-from ..cryptography import base64_urlsafe_decode
-from ..helpers import require_client
+from gd.parse import parse_key_value_pairs
+from gd.entities.enums import Gamemode, ModRank, Item, Shard
+from gd.entities.cosmetics import IconSet
+from gd.entities.level import Comment, LevelDisplay
+from gd.entities.entity import Entity
+from gd.cryptography import base64_urlsafe_decode
+from gd.helpers import require_client
+from gd.type_hints import AccountId, PlayerId, PostId, ColorId
 
 SECRET = "Wmfd2893gb7"
 PASSWORD_SALT = "mI29fmAnxgTs"
@@ -50,11 +51,11 @@ class Post(Entity):
         The content of the post.
     likes : int
         The number of likes of the post.
-    post_id : int
-        The id of the post.
+    id : PostId
+        The ID of the post.
     posted_ago : relativedelta
         Time passed after the post was created.
-    author_account_id : Union[int, None]
+    author_account_id : Optional[AccountId]
         The ID of the author, or None if doesn't exist.
     """
 
@@ -62,11 +63,11 @@ class Post(Entity):
     """The content of the post."""
     likes: int = None
     """The number of likes of the post."""
-    post_id: int = None
+    id: PostId = None
     """The ID of the post."""
     posted_ago: str = None
     """The time when the post was posted, e.g., '5 months'."""
-    author_account_id: Union[int, None] = None
+    author_account_id: Optional[AccountId] = None
     """The ID of the author, or None if it doesn't exist."""
 
     @staticmethod
@@ -88,7 +89,7 @@ class Post(Entity):
         return Post(
             content=base64_urlsafe_decode(comment_value.get("2", "")),
             likes=int(comment_value.get("4", 0)),
-            post_id=int(comment_value.get("6", 0)),
+            id=int(comment_value.get("6", 0)),
             posted_ago=comment_value.get("9", "0 seconds"),
             author_account_id=account_id,
         )
@@ -117,9 +118,9 @@ class Player(Entity):
     ----------
     name : str
         The name of the user.
-    player_id : int
+    player_id : PlayerId
         The player ID of the user.
-    account_id : int
+    account_id : AccountId
         The account ID of the user.
     stars : int
         The amount of stars the user has.
@@ -145,19 +146,19 @@ class Player(Entity):
         If the player is a friend.
     accept_requests : bool = False
         If the player accept all friend requests.
-    primary_color_id : Optional[int]
+    primary_color_id : Optional[ColorId]
         The primary color id of the user's icon.
-    secondary_color_id : Optional[int]
+    secondary_color_id : Optional[ColorId]
         The secondary color id of the user's icon.
-    glow_color_id : Optional[int]
+    glow_color_id : Optional[ColorId]
         The glow color id of the user's icon.
     profile_icon_type : Optional[Gamemode]
         The gamemode that the user primarily chooses to display.
-    youtube : Union[str, None]
+    youtube : Optional[str]
         The YouTube channel link of the user.
-    twitter_or_x : Union[str, None]
+    twitter_or_x : Optional[str]
         The Twitter (or X) username of the user.
-    twitch : Union[str, None]
+    twitch : Optional[str]
         The Twitch username of the user.
     classic_demon_stats : Optional[DemonStats]
         The stats of classic demon levels beaten.
@@ -167,15 +168,15 @@ class Player(Entity):
         The stats of non-demon classic levels beaten.
     platformer_stats: Optional[DifficultyStats]
         The stats of platformer non-demon levels beaten.
-    set_ago : Optional[relativedelta] = None
+    set_ago : Optional[str] = None
         The last time the score was set on a level.
     """
 
     name: str = None
     """The name of the user."""
-    player_id: int = None
+    player_id: PlayerId = None
     """The player ID of the user."""
-    account_id: int = None
+    account_id: AccountId = None
     """The account ID of the user."""
     stars: Optional[int] = None
     """The amount of stars the user has."""
@@ -202,11 +203,11 @@ class Player(Entity):
     accept_requests: bool = False
     """If the player accept all friend requests."""
 
-    primary_color_id: Optional[int] = None
+    primary_color_id: Optional[ColorId] = None
     """The primary color id of the user's icon."""
-    secondary_color_id: Optional[int] = None
+    secondary_color_id: Optional[ColorId] = None
     """The secondary color id of the user's icon."""
-    glow_color_id: Optional[int] = None
+    glow_color_id: Optional[ColorId] = None
     """The glow color id of the user's icon."""
     profile_icon_type: Optional[Gamemode] = None
     """The gamemode that the user primarily chooses to display."""
@@ -400,7 +401,7 @@ class Quest:
         The number value of the requirement
     requirement_type: Literal[Item.STARS, Item.ORBS, Item.COIN]
         The type of requirement
-    reward: int
+    diamonds_reward: int
         The total of diamonds get if completed
     time_left: int
         Seconds left until next quest is chosen
@@ -412,7 +413,7 @@ class Quest:
     """The number value of the requirement"""
     requirement_type: Literal[Item.STARS, Item.ORBS, Item.USERCOIN]
     """The type of requirement"""
-    reward: int
+    diamonds_reward: int
     """The total of diamonds get if completed"""
     time_left: int
     """Seconds left until next quest is chosen"""
@@ -422,7 +423,7 @@ class Quest:
 
 
 @dataclass
-class Chest(Entity):
+class Chest:
     """
     Represents a chest in Geometry Dash.
 
@@ -459,9 +460,9 @@ class Account:
 
     Attributes
     ==========
-    account_id: int
+    account_id: AccountId
         Account ID associated with the accoount
-    player_id: int
+    player_id: PlayerId
         Player ID associated with the account.
     name: Optional[str]
         Name of the account holder.
@@ -469,9 +470,9 @@ class Account:
         Plaintext password of the account.
     """
 
-    account_id: int
+    account_id: AccountId
     """Account ID associated with the accoount."""
-    player_id: int
+    player_id: PlayerId
     """Player ID associated with the account."""
     name: Optional[str]
     """Name of the account holder."""

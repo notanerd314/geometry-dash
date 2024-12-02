@@ -15,7 +15,7 @@ ChestType = Literal["SMALL", "LARGE"]
 # Enum
 class Difficulty(Enum):
     """
-    Enum representing the non-demon difficulty levels in Geometry Dash.
+    Represents the non-demon difficulty levels.
     """
 
     NA = 0
@@ -38,12 +38,7 @@ class Difficulty(Enum):
 
 class DemonDifficulty(Enum):
     """
-    Enum representing the demon difficulty levels in Geometry Dash.
-    - EASY_DEMON (3): Easy Demon difficulty.
-    - MEDIUM_DEMON (4): Medium Demon difficulty.
-    - HARD_DEMON (0): Hard Demon difficulty.
-    - INSANE_DEMON (5): Insane Demon difficulty.
-    - EXTREME_DEMON (6): Extreme Demon difficulty.
+    Represents the demon difficulty levels.
     """
 
     HARD_DEMON = 0
@@ -60,14 +55,7 @@ class DemonDifficulty(Enum):
 
 class Length(IntEnum):
     """
-    An **Enum** class representing the length of a Geometry Dash level.
-
-    - `TINY` (0): Very short level.
-    - `SHORT` (1): Short level.
-    - `MEDIUM` (2): Medium length.
-    - `LONG` (3): Long level.
-    - `XL` (4): Extra long level.
-    - `PLATFORMER` (5): Platformer level type.
+    Represents the length of a level.
     """
 
     TINY = 0
@@ -86,14 +74,7 @@ class Length(IntEnum):
 
 class LevelRating(Enum):
     """
-    An **Enum** class representing the rating of a Geometry Dash level.
-
-    - `NO_RATE` (-2): No rating given.
-    - `RATED` (-1): Rated level.
-    - `FEATURED` (0): Featured level.
-    - `EPIC` (1): Epic-rated level.
-    - `MYTHIC` (3): Mythic-rated level.
-    - `LEGENDARY` (2): Legendary-rated level.
+    Represents the rating of a level.
     """
 
     NO_RATE = -2
@@ -112,11 +93,7 @@ class LevelRating(Enum):
 
 class ModRank(IntEnum):
     """
-    An **Enum** class representing the moderator status of a Geometry Dash level.
-
-    - `NONE` (0): No moderator status.
-    - `MOD` (1): Moderator.
-    - `ELDER_MOD` (2): Elder moderator.
+    Represents the moderator status of a level.
     """
 
     NONE = 0
@@ -129,16 +106,7 @@ class ModRank(IntEnum):
 
 class Gamemode(Enum):
     """
-    An **Enum** class representing the different game modes in Geometry Dash.
-
-    - `CUBE` (0): Cube mode.
-    - `SHIP` (1): Ship mode.
-    - `BALL` (2): Ball mode.
-    - `UFO` (3): UFO mode.
-    - `WAVE` (4): Wave mode.
-    - `ROBOT` (5): Robot mode.
-    - `SPIDER` (6): Spider mode.
-    - `SWING` (7): Swingcopter mode.
+    Represents the different gamemodes.
     """
 
     CUBE = 0
@@ -154,7 +122,7 @@ class Gamemode(Enum):
 
 class SearchFilter(IntEnum):
     """
-    An **Enum** class representing sorting options in Geometry Dash.
+    Represents search options.
     """
 
     MOST_DOWNLOADED = 1
@@ -195,7 +163,7 @@ class SearchFilter(IntEnum):
 
 class Leaderboard(StrEnum):
     """
-    A class representing the leaderboard types.
+    Represents the leaderboard types.
     """
 
     TOP = auto()
@@ -212,7 +180,7 @@ class Leaderboard(StrEnum):
 
 class Item(Enum):
     """
-    An Enum class representing items in Geometry Dash.
+    Represents items/collectables.
     """
 
     DIAMOND = 1
@@ -243,7 +211,7 @@ class Item(Enum):
 
 class Shard(Enum):
     """
-    An Enum class representing shard types in Geometry Dash
+    Represents shards.
     """
 
     FIRE = 1

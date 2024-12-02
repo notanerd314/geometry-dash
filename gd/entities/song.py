@@ -13,8 +13,9 @@ from io import BytesIO
 
 from aiofiles import open as aioopen
 
-from ..parse import parse_song_data
-from ..helpers import send_get_request
+from gd.parse import parse_song_data
+from gd.helpers import send_get_request
+from gd.type_hints import SongId, SoundEffectId, MusicLibrarySongId, MusicLibraryArtistId, SoundEffectFolderId, ArtistId
 
 __all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song", "OfficialSong"]
 
@@ -54,7 +55,7 @@ class MusicLibrary:
 
         Attributes
         ----------
-        id : int
+        id : MusicLibraryArtistId
             The ID of the artist.
         name : str
             The name of the artist.
@@ -64,7 +65,7 @@ class MusicLibrary:
             The artist's YouTube channel ID.
         """
 
-        id: int
+        id: MusicLibraryArtistId
         """The ID of the artist."""
         name: str
         """The name of the artist."""
@@ -98,11 +99,11 @@ class MusicLibrary:
 
         Attributes
         ----------
-        id : int
+        id : MusicLibrarySongId
             The ID of the song.
         name : str
             The name of the song.
-        artist : Union[MusicLibraryArtist, None]
+        artist : Optional["MusicLibrary.Artist"]
             The artist of the song, returns None if it doesn't exist.
         tags : set[str]
             The tags associated with the song.
@@ -114,7 +115,7 @@ class MusicLibrary:
             If the song was made by NCS.
         """
 
-        id: int
+        id: MusicLibrarySongId
         name: str
         artist: Optional["MusicLibrary.Artist"]
         tags: set[str]
@@ -249,26 +250,28 @@ class MusicLibrary:
                 songs.append(song)
         return songs
 
-    def get_song_by_name(self, name: str) -> Song | None:
+    def get_song_by_name(self, name: str) -> Optional[Song]:
         """
         Get a song by it's name.
 
         :param name: The name of the song to search for.
         :type name: str
         :return: A `MusicLibrarySong` instance if found, otherwise None.
+        :rtype: Optional[Song]
         """
         for song in self.songs.values():
             if song.name.lower() == name.lower():
                 return song
         return None
 
-    def get_song_by_id(self, song_id: int) -> Song | None:
+    def get_song_by_id(self, song_id: MusicLibrarySongId) -> Optional[Song]:
         """
         Get a song by it's ID.
 
         :param song_id: The ID of the song.
-        :type song_id: int
+        :type song_id: MusicLibrarySongId
         :return: A `MusicLibrarySong` instance if found, otherwise None.
+        :rtype: Optional[Song]
         """
         for song in self.songs.values():
             if song_id == song.id:
@@ -282,6 +285,7 @@ class MusicLibrary:
         :param query: The query string to search for.
         :type query: str
         :return: A list of songs that match the query.
+        :rtype: list[Song]
         """
         query = query.rstrip()
         songs = []
@@ -298,6 +302,7 @@ class MusicLibrary:
         :param artist: The name of the artist to filter by.
         :type artist: str
         :return: A list of songs made by the artist.
+        :rtype: list[Song]
         """
         songs = []
 
@@ -326,6 +331,8 @@ class SoundEffectLibrary:
         All the folders of the SoundEffectLibrary that also contains the songs in each value.
     creators : list[SoundEffectLibrary.Creator]
         The list of all the creators in the library.
+    sfx : list[SoundEffect]
+        The list of all sound effects in the library.
     """
 
     version: int
@@ -344,11 +351,9 @@ class SoundEffectLibrary:
             The id of the folder.
         name : str
             The name of the folder.
-        sfx : list[SFX]
-            The sound effects that the folder contains.
         """
 
-        id: int
+        id: SoundEffectFolderId
         name: str
 
         @staticmethod
@@ -457,7 +462,7 @@ class SoundEffectLibrary:
         return None
 
     def get_folder_by_id(
-        self, folder_id: int
+        self, folder_id: SoundEffectFolderId
     ) -> Union["SoundEffectLibrary.Folder", None]:
         """
         Get a folder by it's ID.
@@ -473,7 +478,7 @@ class SoundEffectLibrary:
 
         return None
 
-    def get_sfx_by_id(self, sfx_id: int) -> Union["SoundEffect", None]:
+    def get_sfx_by_id(self, sfx_id: SoundEffectId) -> Union["SoundEffect", None]:
         """
         Get a sound effect by it's ID.
 
@@ -525,7 +530,7 @@ class SoundEffectLibrary:
 
         return result
 
-    def get_all_sfx_in_folder(self, folder_id: int) -> list["SoundEffect"]:
+    def get_all_sfx_in_folder(self, folder_id: SoundEffectFolderId) -> list["SoundEffect"]:
         """
         Get all sound effects that is in a folder.
 
@@ -549,11 +554,11 @@ class SoundEffect:
 
     Attributes
     ----------
-    id : int
+    id : SoundEffectId
         The id of the sound effect.
     name : str
         The name of the sound effect.
-    parent_folder_id : int
+    parent_folder_id : SoundEffectFolderId
         The folder id of the sound effect belongs to.
     size : float
         The size of the sound effect.
@@ -563,9 +568,9 @@ class SoundEffect:
         The duration of the sound effect in seconds.
     """
 
-    id: int
+    id: SoundEffectId
     name: str
-    parent_folder_id: str
+    parent_folder_id: SoundEffectFolderId
     size: float
     url: str
     duration: timedelta
@@ -636,11 +641,11 @@ class Song:
 
     Attributes
     ----------
-    id : int
+    id : SongId
         The ID of the song.
     name : str
         The name of the song.
-    artist_id : Optional[int]
+    artist_id : Optional[ArtistId]
         The ID of the song's artist.
     artist_name : Optional[str]
         The name of the song's artist.
@@ -658,9 +663,9 @@ class Song:
         If the song belongs to the music library.
     """
 
-    id: int
+    id: SongId
     name: str
-    artist_id: Optional[int]
+    artist_id: Optional[ArtistId]
     artist_name: Optional[str]
     artist_verified: Optional[bool]
     size: float

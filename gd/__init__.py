@@ -70,15 +70,15 @@ __url__ = "https://github.com/notanerd314/gdapi"
 
 from collections import namedtuple
 
-from .gd import SECRET, LOGIN_SECRET, Client
-from .exceptions import (
+from gd.client import SECRET, LOGIN_SECRET, Client
+from gd.exceptions import (
     LoadError,
     InvalidID,
     LoginError,
     NoPremission,
     OnCooldown,
 )
-from .cryptography import (
+from gd.cryptography import (
     Salt,
     XorKey,
     gjp2,
@@ -86,7 +86,7 @@ from .cryptography import (
     cyclic_xor,
     xor_singular,
 )
-from .entities.enums import (
+from gd.entities.enums import (
     Length,
     LevelRating,
     SearchFilter,
@@ -98,17 +98,16 @@ from .entities.enums import (
     Gamemode,
     Item,
 )
-from .entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
-from .entities.song import (
+from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
+from gd.entities.song import (
     MusicLibrary,
     SoundEffectLibrary,
     Song,
     OfficialSong,
     SoundEffect,
 )
-from .entities.user import Account, Player, Post, Quest
-from .entities.cosmetics import Icon, IconSet, COLORS_LIST
-from .entities.entity import Entity
+from gd.entities.user import Account, Player, Post, Quest
+from gd.entities.cosmetics import Icon, IconSet, COLORS_LIST
 
 __all__ = [
     # Main client
@@ -162,8 +161,6 @@ __all__ = [
     "XorKey",
     "cyclic_xor",
     "xor_singular",
-    # Misc
-    "Entity",
 ]
 
 VersionInfo: namedtuple = namedtuple("VersionInfo", "major minor micro")
