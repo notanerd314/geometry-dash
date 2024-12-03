@@ -44,7 +44,15 @@ from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, 
 from gd.entities.song import MusicLibrary, SoundEffectLibrary, Song
 from gd.entities.user import Account, Player, Post, Quest, Chest
 from gd.helpers import send_get_request, send_post_request, cooldown, require_login
-from gd.type_hints import PlayerId, AccountId, LevelId, ListId, PostId, CommentId, SongId
+from gd.type_hints import (
+    PlayerId,
+    AccountId,
+    LevelId,
+    ListId,
+    PostId,
+    CommentId,
+    SongId,
+)
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
@@ -54,6 +62,7 @@ QUEST_ITEM_TYPE_MAP = {
     "2": Item.STARS,
     "3": Item.USERCOIN,
 }
+
 
 class Client:
     """
@@ -378,7 +387,7 @@ class Client:
         # Check if response is valid
         check_errors(response, InvalidID, f"Invalid level ID {level_id}.")
 
-        return Level.from_raw(response).add_client(self)
+        return Level.from_raw(response).attach_client(self)
 
     @cooldown(3)
     async def download_special_level(
@@ -546,7 +555,7 @@ class Client:
         parsed_results = parse_search_results(search_data)
 
         return [
-            LevelDisplay.from_parsed(result).add_client(self)
+            LevelDisplay.from_parsed(result).attach_client(self)
             for result in parsed_results
         ]
 
@@ -593,7 +602,7 @@ class Client:
         response = response.text.split("#")[0].split("|")
 
         return [
-            Player.from_raw(player_data).add_client(self) for player_data in response
+            Player.from_raw(player_data).attach_client(self) for player_data in response
         ]
 
     @cooldown(10)
@@ -655,7 +664,9 @@ class Client:
 
         return Song.from_raw(response)
 
-    async def search_user(self, query: Union[str, AccountId], use_id: bool = False) -> Player:
+    async def search_user(
+        self, query: Union[str, AccountId], use_id: bool = False
+    ) -> Player:
         """
         Get an user profile by account ID or name.
 
@@ -684,9 +695,11 @@ class Client:
         response = response.text
 
         check_errors(response, InvalidID, f"Invalid account name/ID {query}.")
-        return Player.from_raw(response.split("#")[0]).add_client(self)
+        return Player.from_raw(response.split("#")[0]).attach_client(self)
 
-    async def get_level_comments(self, level_id: LevelId, page: int = 0) -> list[Comment]:
+    async def get_level_comments(
+        self, level_id: LevelId, page: int = 0
+    ) -> list[Comment]:
         """
         Get level's comments by level ID.
 
@@ -709,7 +722,7 @@ class Client:
 
         check_errors(response, InvalidID, f"Invalid level ID {level_id}.")
         return [
-            Comment.from_raw(comment_data).add_client(self)
+            Comment.from_raw(comment_data).attach_client(self)
             for comment_data in response.split("|")
         ]
 
@@ -741,7 +754,7 @@ class Client:
         parsed_res = response.split("|")
 
         for post in parsed_res:
-            posts_list.append(Post.from_raw(post, account_id).add_client(self))
+            posts_list.append(Post.from_raw(post, account_id).attach_client(self))
 
         return posts_list
 
@@ -778,7 +791,7 @@ class Client:
             return None
 
         return [
-            Comment.from_raw(comment_data).add_client(self)
+            Comment.from_raw(comment_data).attach_client(self)
             for comment_data in response.split("#")[0].split("|")
         ]
 
@@ -808,7 +821,7 @@ class Client:
             return None
 
         return [
-            LevelDisplay.from_raw(level_data).add_client(self)
+            LevelDisplay.from_raw(level_data).attach_client(self)
             for level_data in response.split("#")[0].split("|")
         ]
 
@@ -837,7 +850,7 @@ class Client:
         check_errors(response, LoadError, "An error occurred when getting map packs.")
         map_packs = response.split("#")[0].split("|")
         return [
-            MapPack.from_raw(map_pack_data).add_client(self)
+            MapPack.from_raw(map_pack_data).attach_client(self)
             for map_pack_data in map_packs
         ]
 
@@ -863,7 +876,7 @@ class Client:
         check_errors(response, LoadError, "An error occurred when getting gauntlets.")
         guantlets = response.split("#")[0].split("|")
         list_guantlets = [
-            Gauntlet.from_raw(guantlet).add_client(self) for guantlet in guantlets
+            Gauntlet.from_raw(guantlet).attach_client(self) for guantlet in guantlets
         ]
 
         return list_guantlets
@@ -937,7 +950,7 @@ class Client:
         response = response.split("#")[0]
 
         return [
-            LevelList.from_raw(level_list_data).add_client(self)
+            LevelList.from_raw(level_list_data).attach_client(self)
             for level_list_data in response.split("|")
         ]
 
@@ -985,7 +998,7 @@ class Client:
         response = response.text.split("#")[0].split("|")
         del response[-1]
 
-        return [Player.from_raw(player).add_client(self) for player in response]
+        return [Player.from_raw(player).attach_client(self) for player in response]
 
     async def leaderboard_top_1000(
         self, html: bool = False
@@ -1025,12 +1038,16 @@ class Client:
                 demons=int(player[4]),
                 user_coins=int(player[5]),
                 secret_coins=int(player[6]),
-            ).add_client(self)
+            ).attach_client(self)
             for player in players
         ]
 
     async def like(
-        self, item_id: Union[LevelId, CommentId, PostId, ListId], like_type: int, dislike: bool = False, special: Union[LevelId, PostId, int] = 0
+        self,
+        item_id: Union[LevelId, CommentId, PostId, ListId],
+        like_type: int,
+        dislike: bool = False,
+        special: Union[LevelId, PostId, int] = 0,
     ) -> None:
         """
         Liking a level/list/comment/post.

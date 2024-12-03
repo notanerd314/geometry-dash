@@ -15,7 +15,13 @@ import httpx
 from .exceptions import OnCooldown, LoginError
 
 MAX_LENGTH = 15
-__all__ = ["cooldown", "send_post_request", "send_get_request"]
+__all__ = [
+    "require_client",
+    "require_login",
+    "cooldown",
+    "send_post_request",
+    "send_get_request",
+]
 
 
 # Decorators for Client, Cooldown, and Login Logic
@@ -60,32 +66,12 @@ def require_client(
     def decorator(func):
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
-            # Safely get the client from kwargs or use default logic
-            client = kwargs.get("client", None)
+            if not self.client:
+                raise ValueError(error_message)
 
-            if not self.clients:
-                raise ValueError(
-                    error_message
-                )  # Raise an error if no clients are attached
+            if login and not self.client.logged_in:
+                raise LoginError("The client is not logged in.")
 
-            # If no client was passed, use the main client index
-            if client is None:
-                client = self.main_client_index
-
-            # Ensure `client` is a valid instance (in case it's an index)
-            if isinstance(client, int):
-                if client >= len(self.clients) or client < 0:
-                    raise ValueError("Invalid client index.")
-                client = self.clients[client]
-
-            # Check if client is logged in (if required)
-            if login and not client.logged_in:
-                raise LoginError("The client chosen is not logged in.")
-
-            # Update kwargs with the correct client if modified
-            kwargs["client"] = client
-
-            # Now call the original async function and await it
             return await func(self, *args, **kwargs)
 
         return wrapper

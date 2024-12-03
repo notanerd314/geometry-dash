@@ -19,9 +19,24 @@ from gd.parse import (
     determine_list_difficulty,
 )
 from gd.cryptography import base64_urlsafe_decode
-from gd.entities.enums import LevelRating, ModRank, Gamemode, Length, Difficulty, SearchFilter
+from gd.entities.enums import (
+    LevelRating,
+    ModRank,
+    Gamemode,
+    Length,
+    Difficulty,
+    SearchFilter,
+)
 from gd.entities.cosmetics import Icon
-from gd.type_hints import LevelId, PlayerId, SoundEffectId, SongId, AccountId, CommentId, ColorId
+from gd.type_hints import (
+    LevelId,
+    PlayerId,
+    SoundEffectId,
+    SongId,
+    AccountId,
+    CommentId,
+    ColorId,
+)
 
 __all__ = ["Level", "LevelDisplay", "LevelList", "Comment", "Gauntlet", "MapPack"]
 
@@ -265,9 +280,7 @@ class Level(Entity):
         return star_orbs_map.get(self.stars, 0)
 
     @require_client(login=True)
-    async def comment(
-        self, message: str, percentage: int = 0, client: int = None
-    ) -> int:
+    async def comment(self, message: str, percentage: int = 0) -> int:
         """
         Sends a comment to the level.
 
@@ -277,29 +290,25 @@ class Level(Entity):
         :type message: str
         :param percentage: The percentage of the level completed. Defaults to 0.
         :type percentage: int
-        :param client: The client (or client index) to send the comment as.
-        :type client: int
         :raises: gd.CommentError
         :return: The comment ID of the sent comment.
         :rtype: int
         """
-        return await client.send_comment(
+        return await self.client.send_comment(
             message=message, level_id=self.id, percentage=percentage
         )
 
     @require_client(login=True)
-    async def like(self, dislike: bool = False, client: int = None) -> None:
+    async def like(self, dislike: bool = False) -> None:
         """
         Sends a like to the level.
 
         :param dislike: If True, dislike the level, else like it.
         :type dislike: bool
-        :param client: The client (or client index) to like.
-        :type client: int
         :return: None
         :rtype: None
         """
-        await client.like_level(level_id=self.id, dislike=dislike)
+        await self.client.like_level(level_id=self.id, dislike=dislike)
 
 
 @dataclass
@@ -475,18 +484,16 @@ class Comment(Entity):
         )
 
     @require_client(login=True)
-    async def like(self, dislike: bool = False, client: int = None):
+    async def like(self, dislike: bool = False):
         """
         Like or dislike the comment.
 
         :param dislike: If True, dislike the comment, else like it.
         :type dislike: bool
-        :param client: The client (or client index) to like.
-        :type client: int
         :return: None
         :rtype: None
         """
-        await client.like_comment(self.id, self.level_id, dislike)
+        await self.client.like_comment(self.id, self.level_id, dislike)
 
 
 @dataclass
@@ -506,7 +513,7 @@ class _ListLevels(Entity):
     level_ids: list[LevelId] = None
 
     @require_client()
-    async def levels(self, client: int = None) -> tuple[LevelDisplay]:
+    async def levels(self) -> tuple[LevelDisplay]:
         """
         A method that gets all the levels in the list with their display information.
 
@@ -517,17 +524,15 @@ class _ListLevels(Entity):
         """
         str_ids = ",".join([str(level) for level in self.level_ids])
 
-        return await client.search_level(
+        return await self.client.search_level(
             query=str_ids, src_filter=SearchFilter.LIST_OF_LEVELS
         )
 
     @require_client()
-    async def download_level(self, index: int, client: int = None) -> Level:
+    async def download_level(self, index: int) -> Level:
         """
         A coroutine method that downloads a level from the level list based on the index.
 
-        :param client: The client (or client index) to get.
-        :type client: int
         :param index: The index of the level to download.
         :type index: int
         :return: A Level object representing the downloaded level.
@@ -536,7 +541,7 @@ class _ListLevels(Entity):
             raise IndexError("Invalid level index.")
 
         level_id = self.level_ids[index]
-        return await client.download_level(level_id=level_id)
+        return await self.client.download_level(level_id=level_id)
 
 
 @dataclass
@@ -616,21 +621,19 @@ class LevelList(_ListLevels):
         )
 
     @require_client(login=True)
-    async def like(self, dislike: bool = False, client: int = None) -> None:
+    async def like(self, dislike: bool = False) -> None:
         """
         Like or dislike a list.
 
         :param dislike: If True, dislike the level, else like it.
         :type dislike: bool
-        :param client: The client (or client index) to like.
-        :type client: int
         :return: None
         :rtype: None
         """
-        return await client.like_list(self.id, dislike)
+        return await self.client.like_list(self.id, dislike)
 
     @require_client(login=True)
-    async def comment(self, message: str, client: int = None) -> int:
+    async def comment(self, message: str) -> int:
         """
         Sends a comment to the list.
 
@@ -638,13 +641,11 @@ class LevelList(_ListLevels):
 
         :param message: The message to send.
         :type message: str
-        :param client: The client (or client index) to send the comment as.
-        :type client: int
         :raises: gd.CommentError
         :return: The comment ID of the sent comment.
         :rtype: int
         """
-        return await client.send_comment(message=message, level_id=-self.id)
+        return await self.client.send_comment(message=message, level_id=-self.id)
 
 
 @dataclass

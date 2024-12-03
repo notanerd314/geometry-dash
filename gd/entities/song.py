@@ -15,7 +15,14 @@ from aiofiles import open as aioopen
 
 from gd.parse import parse_song_data
 from gd.helpers import send_get_request
-from gd.type_hints import SongId, SoundEffectId, MusicLibrarySongId, MusicLibraryArtistId, SoundEffectFolderId, ArtistId
+from gd.type_hints import (
+    SongId,
+    SoundEffectId,
+    MusicLibrarySongId,
+    MusicLibraryArtistId,
+    SoundEffectFolderId,
+    ArtistId,
+)
 
 __all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song", "OfficialSong"]
 
@@ -143,14 +150,20 @@ class MusicLibrary:
 
             parsed = raw_str.strip().split(",")
 
-            artist_id = int(parsed[2]) if parsed[2].strip().isdigit() else None
-            raw_song_tag_list = [tag for tag in parsed[5].split(".") if tag]
-            song_tag_list = {tags_list.get(int(tag)) for tag in raw_song_tag_list}
+            artist = (
+                artists_list.get(int(parsed[2]))
+                if parsed[2].strip().isdigit()
+                else None
+            )
+            raw_song_tag_list = parsed[5].split(".")
+            song_tag_list = {
+                tags_list.get(int(tag)) for tag in raw_song_tag_list if tag.strip()
+            }
 
             return MusicLibrary.Song(
                 id=int(parsed[0]),
                 name=parsed[1],
-                artist=artists_list.get(artist_id),
+                artist=artist,
                 tags=song_tag_list,
                 size=float(parsed[3]),
                 duration_seconds=timedelta(seconds=int(parsed[4])),
@@ -175,15 +188,14 @@ class MusicLibrary:
             Downloads the song to a specified path.
 
             :param path: Full path to save the file, including filename.
-            :type path: str
+            :type path: Union[str, Path]
             :rtype: None
             """
 
             if path is None:
                 path = Path.cwd() / f"{self.id}.ogg"
 
-            if not isinstance(path, Path):
-                path = Path(path)
+            path = Path(path)
 
             if not path.suffix:
                 raise ValueError("Path must end with an extension!")
@@ -238,10 +250,10 @@ class MusicLibrary:
         :rtype: list[Song]
         """
         songs = []
-        tags = {tag.lower() for tag in tags}
 
+        existing_tags = {tag.lower() for tag in self.tags.values()}
         for tag in tags:
-            if tag not in [tag.lower() for tag in self.tags.values()]:
+            if tag not in existing_tags:
                 raise ValueError(f"The tag {tag} doesn't exist in the music library!")
 
         for song in self.songs.values():
@@ -307,11 +319,9 @@ class MusicLibrary:
         songs = []
 
         for song in self.songs.values():
-            try:
-                if song.artist.name.lower() == artist.lower():
-                    songs.append(song)
-            except AttributeError:
-                pass
+            if song.artist and song.artist.name.lower() == artist.lower():
+                songs.append(song)
+
         return songs
 
 
@@ -325,7 +335,7 @@ class SoundEffectLibrary:
 
     Attributes
     ----------
-    version : int
+    version : Optional[int]
         The version of the library.
     folders : list[SoundEffectLibrary.Folder]
         All the folders of the SoundEffectLibrary that also contains the songs in each value.
@@ -335,7 +345,7 @@ class SoundEffectLibrary:
         The list of all sound effects in the library.
     """
 
-    version: int
+    version: Optional[int]
     folders: list["SoundEffectLibrary.Folder"]
     creators: list["SoundEffectLibrary.Creator"]
     sfx: list["SoundEffect"]
@@ -367,10 +377,7 @@ class SoundEffectLibrary:
             :rtype: SoundEffectLibrary.Folder
             """
             parsed = raw_str.strip().split(",")
-            return SoundEffectLibrary.Folder(
-                id=int(parsed[0]),
-                name=parsed[1],
-            )
+            return SoundEffectLibrary.Folder(id=int(parsed[0]), name=parsed[1])
 
     @dataclass
     class Creator:
@@ -411,20 +418,23 @@ class SoundEffectLibrary:
         :return: An instance of the SoundEffectLibrary class.
         :rtype: SoundEffectLibrary
         """
+        # Split raw data once and strip unnecessary spaces
         parsed = raw_str.strip().split("|")
         parsed_sfx = parsed[0].split(";")
         parsed_creators = parsed[1].split(";")
 
         version_name = None
-
-        # Check if the entity is a folder or a sound effect and sorts them.
         folders = []
         sfx = []
-        for entity in parsed_sfx:
-            is_folder = entity.strip().split(",")[2:3] == ["1"]
 
-            if not entity:
+        # Iterate over sound effects and folders
+        for entity in parsed_sfx:
+            entity = entity.strip()
+            if not entity:  # Skip empty entries
                 continue
+
+            parts = entity.split(",")
+            is_folder = parts[2] == "1"  # Direct comparison instead of slicing
 
             if is_folder:
                 folder = SoundEffectLibrary.Folder.from_raw(entity)
@@ -436,17 +446,54 @@ class SoundEffectLibrary:
                 soundeffect = SoundEffect.from_raw(entity)
                 sfx.append(soundeffect)
 
+        # Filter creators directly to remove empty strings
         creators = [
             SoundEffectLibrary.Creator.from_raw(creator)
             for creator in parsed_creators
-            if creator != ""
+            if creator.strip()
         ]
 
+        # Return the SoundEffectLibrary instance
         return SoundEffectLibrary(
-            version=int(version_name), folders=folders, creators=creators, sfx=sfx
+            version=int(version_name) if version_name else None,
+            folders=folders,
+            creators=creators,
+            sfx=sfx,
         )
 
-    def get_folder_by_name(self, name: str) -> Union["SoundEffectLibrary.Folder", None]:
+    def _find_by_attribute(
+        self, collection: list[any], attribute: str, value: any
+    ) -> Union[object, None]:
+        """
+        A helper function to find an item by an attribute.
+
+        :param collection: The collection of items to search.
+        :type collection: list
+        :param attribute: The attribute of the item to compare.
+        :type attribute: str
+        :param value: The value to match against the attribute.
+        :return: The found object or None if not found.
+        :rtype: object or None
+        """
+        for item in collection:
+            if getattr(item, attribute) == value:
+                return item
+        return None
+
+    def _search_by_name(self, collection: list[any], query: str) -> list:
+        """
+        A helper function to search for items by their name.
+
+        :param collection: The collection of items to search.
+        :type collection: list
+        :param query: The query string to search for.
+        :type query: str
+        :return: A list of items that match the query.
+        :rtype: list
+        """
+        return [item for item in collection if query.lower() in item.name.lower()]
+
+    def get_folder_by_name(self, name: str) -> Optional["SoundEffectLibrary.Folder"]:
         """
         Get a folder by it's name.
 
@@ -455,15 +502,11 @@ class SoundEffectLibrary:
         :return: A SoundEffectLibrary.Folder class, if not found, returns NoneType.
         :rtype: SoundEffectLibrary.Folder
         """
-        for folder in self.folders:
-            if folder.name.lower() == name.lower():
-                return folder
-
-        return None
+        return self._find_by_attribute(self.folders, "name", name.lower())
 
     def get_folder_by_id(
         self, folder_id: SoundEffectFolderId
-    ) -> Union["SoundEffectLibrary.Folder", None]:
+    ) -> Optional["SoundEffectLibrary.Folder"]:
         """
         Get a folder by it's ID.
 
@@ -472,13 +515,9 @@ class SoundEffectLibrary:
         :return: A SoundEffectLibrary.Folder class, if not found, returns NoneType.
         :rtype: SoundEffectLibrary.Folder
         """
-        for folder in self.folders:
-            if folder.id == folder_id:
-                return folder
+        return self._find_by_attribute(self.folders, "id", folder_id)
 
-        return None
-
-    def get_sfx_by_id(self, sfx_id: SoundEffectId) -> Union["SoundEffect", None]:
+    def get_sfx_by_id(self, sfx_id: SoundEffectId) -> Optional["SoundEffect"]:
         """
         Get a sound effect by it's ID.
 
@@ -487,11 +526,7 @@ class SoundEffectLibrary:
         :return: A SoundEffect class, if not found, returns NoneType.
         :rtype: SoundEffect
         """
-        for sfx in self.sfx:
-            if sfx.id == sfx_id:
-                return sfx
-
-        return None
+        return self._find_by_attribute(self.sfx, "id", sfx_id)
 
     def search_folders(self, query: str) -> list["SoundEffectLibrary.Folder"]:
         """
@@ -502,13 +537,7 @@ class SoundEffectLibrary:
         :return: A list of SoundEffectLibrary.Folder.
         :rtype: list[SoundEffectLibrary.Folder]
         """
-
-        folders = []
-        for folder in self.folders:
-            if query.lower() in folder.name.lower():
-                folders.append(folder)
-
-        return folders
+        return self._search_by_name(self.folders, query)
 
     def search_folders_and_sfx(
         self, query: str
@@ -521,16 +550,12 @@ class SoundEffectLibrary:
         :return: A list of SoundEffectLibrary.Folder and SoundEffect.
         :rtype: list[SoundEffectLibrary.Folder, SoundEffect]
         """
-
-        result = []
         folder_sfx = self.folders + self.sfx
-        for item in folder_sfx:
-            if query.lower() in item.name.lower():
-                result.append(item)
+        return self._search_by_name(folder_sfx, query)
 
-        return result
-
-    def get_all_sfx_in_folder(self, folder_id: SoundEffectFolderId) -> list["SoundEffect"]:
+    def get_all_sfx_in_folder(
+        self, folder_id: SoundEffectFolderId
+    ) -> list["SoundEffect"]:
         """
         Get all sound effects that is in a folder.
 
@@ -539,12 +564,7 @@ class SoundEffectLibrary:
         :return: A list of SoundEffect.
         :rtype: list[SoundEffect]
         """
-        result = []
-        for sfx in self.sfx:
-            if sfx.parent_folder_id == folder_id:
-                result.append(sfx)
-
-        return result
+        return [sfx for sfx in self.sfx if sfx.parent_folder_id == folder_id]
 
 
 @dataclass

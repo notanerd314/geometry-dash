@@ -3,10 +3,9 @@
 A module containing all the classes and methods related to users and accounts in Geometry Dash.
 """
 
-from typing import Optional, Union, Literal
+from typing import Optional, Union, Literal, NamedTuple
 from dataclasses import dataclass
 from hashlib import sha1
-from collections import namedtuple
 
 from gd.parse import parse_key_value_pairs
 from gd.entities.enums import Gamemode, ModRank, Item, Shard
@@ -28,14 +27,32 @@ __all__ = [
     "DemonStats",
 ]
 
-DifficultyStats = namedtuple(
+DifficultyStats = NamedTuple(
     "DifficultyStats",
-    ["auto", "easy", "normal", "hard", "harder", "insane", "daily", "guantlet"],
+    [
+        ("auto", int),
+        ("easy", int),
+        ("normal", int),
+        ("hard", int),
+        ("harder", int),
+        ("insane", int),
+        ("daily", int),
+        ("gauntlet", int),
+    ],
 )
 """A class representing how many different levels of difficulty the player has beaten."""
 
-DemonStats = namedtuple(
-    "DemonStats", ["easy", "medium", "hard", "insane", "extreme", "weekly", "guantlet"]
+DemonStats = NamedTuple(
+    "DemonStats",
+    [
+        ("easy", int),
+        ("medium", int),
+        ("hard", int),
+        ("insane", int),
+        ("extreme", int),
+        ("weekly", int),
+        ("gauntlet", int),
+    ],
 )
 """A class representing how many different demon levels the player has beaten."""
 
@@ -95,18 +112,16 @@ class Post(Entity):
         )
 
     @require_client(login=True)
-    async def like(self, dislike: bool = False, client: int = None) -> None:
+    async def like(self, dislike: bool = False) -> None:
         """
         Like or dislike the post.
 
         :param dislike: If True, dislike the post, else like it.
         :type dislike: bool
-        :param client: The client (or client index) to like.
-        :type client: int
         :return: None
         :rtype: None
         """
-        await client.like_post(self.id, dislike)
+        await self.client.like_post(self.id, dislike)
 
 
 @dataclass
@@ -345,22 +360,20 @@ class Player(Entity):
         )
 
     @require_client()
-    async def posts(self, page: int = 0, client: int = None) -> list[Post] | None:
+    async def posts(self, page: int = 0) -> list[Post] | None:
         """
         Load all posts from the user.
 
         :param page: The page number to load, default is 0.
         :type page: int
-        :param client: The client index to use in the attached clients list. Defaults to 0.
-        :type client: int
         :return: A list of Post instances or None if the request failed.
         :rtype: list[Post]
         """
-        return await client.get_user_posts(self.player_id, page)
+        return await self.client.get_user_posts(self.player_id, page)
 
     @require_client()
     async def comments(
-        self, page: int = 0, display_most_liked: bool = False, client: int = None
+        self, page: int = 0, display_most_liked: bool = False
     ) -> list[Comment]:
         """
         Get user's comments history.
@@ -372,10 +385,12 @@ class Player(Entity):
         :return: A list of Comment instances.
         :rtype: list[Comment]
         """
-        return await client.get_user_comments(self.player_id, page, display_most_liked)
+        return await self.client.get_user_comments(
+            self.player_id, page, display_most_liked
+        )
 
     @require_client()
-    async def levels(self, page: int = 0, client: int = None) -> list[LevelDisplay]:
+    async def levels(self, page: int = 0) -> list[LevelDisplay]:
         """
         Get user's levels.
 
@@ -385,7 +400,7 @@ class Player(Entity):
         :rtype: list[LevelDisplay]
         """
 
-        return await client.get_user_levels(self.player_id, page)
+        return await self.client.get_user_levels(self.player_id, page)
 
 
 @dataclass
