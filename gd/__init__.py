@@ -84,7 +84,7 @@ from gd.cryptography import (
     gjp2,
     generate_chk,
     cyclic_xor,
-    xor_singular,
+    singular_xor,
 )
 from gd.entities.enums import (
     Length,
@@ -93,20 +93,21 @@ from gd.entities.enums import (
     DemonDifficulty,
     Difficulty,
     SpecialLevel,
+    ChestType,
     Leaderboard,
     ModRank,
     Gamemode,
     Item,
+    OfficialSong,
 )
 from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from gd.entities.song import (
     MusicLibrary,
     SoundEffectLibrary,
     Song,
-    OfficialSong,
     SoundEffect,
 )
-from gd.entities.user import Account, Player, Post, Quest
+from gd.entities.user import Account, Player, AccountComment, Quest, Chest
 from gd.entities.cosmetics import Icon, IconSet, COLORS_LIST
 
 __all__ = [
@@ -125,10 +126,12 @@ __all__ = [
     "DemonDifficulty",
     "Difficulty",
     "SpecialLevel",
+    "ChestType",
     "Leaderboard",
     "ModRank",
     "Gamemode",
     "Item",
+    "OfficialSong",
     # Entities - Levels
     "Level",
     "LevelDisplay",
@@ -140,13 +143,13 @@ __all__ = [
     "MusicLibrary",
     "SoundEffectLibrary",
     "Song",
-    "OfficialSong",
     "SoundEffect",
     # Entities - Users
     "Account",
     "Player",
-    "Post",
+    "AccountComment",
     "Quest",
+    "Chest",
     # Entities - Cosmetics
     "Icon",
     "IconSet",
@@ -160,7 +163,7 @@ __all__ = [
     "Salt",
     "XorKey",
     "cyclic_xor",
-    "xor_singular",
+    "singular_xor",
 ]
 
 VersionInfo: namedtuple = namedtuple("VersionInfo", "major minor micro")

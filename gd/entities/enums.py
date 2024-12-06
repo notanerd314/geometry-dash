@@ -13,6 +13,36 @@ ChestType = Literal["SMALL", "LARGE"]
 
 
 # Enum
+class OfficialSong(Enum):
+    """
+    An **Enum** class representing official songs in the game.
+    """
+
+    STAY_INSIDE_ME = -1
+    STEREO_MADNESS = 0
+    BACK_ON_TRACK = 1
+    POLARGEIST = 2
+    DRY_OUT = 3
+    BASE_AFTER_BASE = 4
+    CANT_LET_GO = 5
+    JUMPER = 6
+    TIME_MACHINE = 7
+    CYCLES = 8
+    XSTEP = 9
+    CLUTTERFUNK = 10
+    THEORY_OF_EVERYTHING = 11
+    ELECTROMAN_ADVENTURES = 12
+    CLUBSTEP = 13
+    ELECTRODYNAMIX = 14
+    HEXAGON_FORCE = 15
+    BLAST_PROCESSING = 16
+    THEORY_OF_EVERYTHING_2 = 17
+    GEOMETRICAL_DOMINATOR = 18
+    DEADLOCKED = 19
+    FINGERDASH = 20
+    DASH = 21
+
+
 class Difficulty(Enum):
     """
     Represents the non-demon difficulty levels.

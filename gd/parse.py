@@ -20,24 +20,17 @@ from .entities.enums import Difficulty, DemonDifficulty
 from .cryptography import base64_decompress, base64_urlsafe_decode
 
 
-def parse_key_value_pairs(
-    text: str, separator: str = ":"
-) -> dict[str, Union[str, int, None]]:
+def parse_key_value_pairs(text: str, separator: str = ":") -> dict[str, any]:
     """
     Parse key-value pairs from a separator-separated string.
 
-    Plain:
+    Raw:
     ```
     1:25:2:65:3:okay
     ```
-
     Parsed:
     ```
-    {
-        "1": "25",
-        "2": "65",
-        "3": "okay"
-    }
+    {"1": "25", "2": "65", "3": "okay"}
     ```
 
 
@@ -46,7 +39,7 @@ def parse_key_value_pairs(
     :param separator: The separator to parse the string (Default is `:`)
     :type separator: str
     :return: A dictionary containing the parsed key-value pairs.
-    :rtype: dict[str, Union[str, int, None]]
+    :rtype: dict[str, any]
     """
     text = text.split("#")[0]
     pairs = {}
@@ -60,14 +53,14 @@ def parse_key_value_pairs(
     return pairs
 
 
-def parse_level_data(text: str) -> dict[str, Union[str, int]]:
+def parse_level_data(text: str) -> dict[str, any]:
     """
     Parse level data from a string.
 
     :param text: The string containing level data.
     :type text: str
     :return: A dictionary containing parsed level data.
-    :rtype: dict[str, Union[str, int]]
+    :rtype: dict[str, any]
     """
     # Parsing the data
     parsed = parse_key_value_pairs(text)
@@ -86,14 +79,14 @@ def parse_level_data(text: str) -> dict[str, Union[str, int]]:
     return parsed
 
 
-def parse_search_results(text: str) -> list[dict[str, Union[dict, str]]]:
+def parse_search_results(text: str) -> list[dict[str, any]]:
     """
     Parse search results from a response string.
 
     :param text: The string containing search results.
     :type text: str
     :return: A list of dictionaries containing parsed level, creator, and song data.
-    :rtype: list[dict[str, Union[dict, str]]]
+    :rtype: list[dict[str, any]]
     """
     # Split the text into individual level data, creator data, and song data.
     levels_data, creators_data, songs_data = (
@@ -140,65 +133,50 @@ def parse_search_results(text: str) -> list[dict[str, Union[dict, str]]]:
     return parsed_levels
 
 
-def parse_user_data(text: str) -> dict[str, Union[str, int]]:
+def parse_user_data(text: str) -> dict[str, any]:
     """
     Parse user data from a string.
 
     :param text: The string containing user data.
     :type text: str
     :return: A dictionary containing parsed user data.
-    :rtype: dict[str, Union[str, int]]
+    :rtype: dict[str, any]
     """
     # Literally parse_key_value_pairs lol
     return parse_key_value_pairs(text)
 
 
-def parse_comments_data(text: str) -> list[dict[str, Union[str, int]]]:
+def parse_comments_data(text: str) -> list[dict[str, any]]:
     """
     Parse comments data from a string.
 
     :param text: The string containing comments data.
     :type text: str
     :return: A list of dictionaries containing parsed comments.
-    :rtype: list[dict[str, Union[str, int]]]
+    :rtype: list[dict[str, any]]
     """
     # Parsing multiple comments, not 1 comment.
     items = text.split("|")
     return [{"comment": parse_key_value_pairs(item)} for item in items]
 
 
-def parse_song_data(song: str) -> dict[str, Union[str, int]]:
+def parse_song_data(song: str) -> dict[str, any]:
     """
     Parse song data from a string.
 
     :param song: The string containing song data.
     :type song: str
     :return: A dictionary containing parsed song data.
-    :rtype: dict[str, Union[str, int]]
+    :rtype: dict[str, any]
     """
     # Literally parse_key_value_pairs again lol, i'm so funni!!!!!
     return parse_key_value_pairs(song.replace("~", ""), "|")
 
 
-# Difficulty Determination
-_DIFFICULTY_ = {
-    -1: Difficulty.NA,
-    0: Difficulty.AUTO,
-    1: Difficulty.EASY,
-    2: Difficulty.NORMAL,
-    3: Difficulty.HARD,
-    4: Difficulty.HARDER,
-    5: Difficulty.INSANE,
-    6: DemonDifficulty.EASY_DEMON,
-    7: DemonDifficulty.MEDIUM_DEMON,
-    8: DemonDifficulty.HARD_DEMON,
-    9: DemonDifficulty.INSANE_DEMON,
-    10: DemonDifficulty.EXTREME_DEMON,
-}
-"""Difficulty mapping but kinda useless don't you think?"""
+# Difficulty Determinatiom
 
 
-def determine_difficulty(
+def determine_level_difficulty(
     parsed: dict, return_demon_diff: bool = True
 ) -> Union[Difficulty, DemonDifficulty]:
     """
@@ -302,13 +280,27 @@ def determine_list_difficulty(
     :return: Corresponding Difficulty or DemonDifficulty object.
     :rtype: Union[:class:`gd.entities.enums.Difficulty`, :class:`gd.entities.enums.DemonDifficulty`]
     """
-    return _DIFFICULTY_.get(raw_integer_difficulty, Difficulty.NA)
+    difficulty_map = {
+        -1: Difficulty.NA,
+        0: Difficulty.AUTO,
+        1: Difficulty.EASY,
+        2: Difficulty.NORMAL,
+        3: Difficulty.HARD,
+        4: Difficulty.HARDER,
+        5: Difficulty.INSANE,
+        6: DemonDifficulty.EASY_DEMON,
+        7: DemonDifficulty.MEDIUM_DEMON,
+        8: DemonDifficulty.HARD_DEMON,
+        9: DemonDifficulty.INSANE_DEMON,
+        10: DemonDifficulty.EXTREME_DEMON,
+    }
+    return difficulty_map.get(raw_integer_difficulty, Difficulty.NA)
 
 
 # Utility Functions
 def parse_comma_separated_int_list(key: str) -> list[int]:
     """
-    Split the string by `,` then turn it into a list of integers.
+    Split the string by `,` then turn it into a list of integers (non-integers are filtered out).
 
     :param key: The string containing comma-separated integers.
     :type key: str

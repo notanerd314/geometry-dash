@@ -10,130 +10,129 @@ from io import BytesIO
 from pathlib import Path
 import asyncio
 
-import aiofiles
-
 from gd.entities.enums import Gamemode
 from gd.helpers import send_get_request
-from gd.type_hints import ColorId, IconId
+from gd.type_hints import ColorId, IconId, ColorHex
+from gd.helpers import write
 
 __all__ = ["color_id_to_hex", "Icon", "IconSet"]
 
-COLORS_LIST: dict[int, int] = {
-    "0": 0x7DFF00,
-    "1": 0x00FF00,
-    "2": 0x00FF7D,
-    "3": 0x00FFFF,
-    "4": 0x007DFF,
-    "5": 0x0000FF,
-    "6": 0x7D00FF,
-    "7": 0xFF00FF,
-    "8": 0xFF007D,
-    "9": 0xFF0000,
-    "10": 0xFF7D00,
-    "11": 0xFFFF00,
-    "12": 0xFFFFFF,
-    "13": 0xB900FF,
-    "14": 0xFFB900,
-    "15": 0x000000,
-    "16": 0x00C8FF,
-    "17": 0xAFAFAF,
-    "18": 0x5A5A5A,
-    "19": 0xFF7D7D,
-    "20": 0x00AF4B,
-    "21": 0x007D7D,
-    "22": 0x004BB1,
-    "23": 0x4B00AF,
-    "24": 0x7D007D,
-    "25": 0xAF004B,
-    "26": 0xAF4B00,
-    "27": 0x7D7D00,
-    "28": 0x4BAF00,
-    "29": 0xFF4B00,
-    "30": 0x962800,
-    "31": 0x966400,
-    "32": 0x64AF00,
-    "33": 0x00AF64,
-    "34": 0x0064AF,
-    "35": 0x6400AF,
-    "36": 0x960064,
-    "37": 0x960000,
-    "38": 0x00AF00,
-    "39": 0x0000AF,
-    "40": 0x7DFFAF,
-    "41": 0x7D7DFF,
-    "42": 0xFFFA7F,
-    "43": 0xFA7FFF,
-    "44": 0x00FFBF,
-    "45": 0x50320E,
-    "46": 0xCDA576,
-    "47": 0xB680FF,
-    "48": 0xFF3A3A,
-    "49": 0x4D4D8F,
-    "50": 0x000A4C,
-    "51": 0xFDD4CE,
-    "52": 0xBEB5FF,
-    "53": 0x700000,
-    "54": 0x520200,
-    "55": 0x380106,
-    "56": 0x805050,
-    "57": 0x7A3535,
-    "58": 0x512424,
-    "59": 0xA36246,
-    "60": 0x753736,
-    "61": 0x563528,
-    "62": 0xFFB972,
-    "63": 0xFFA040,
-    "64": 0x66311E,
-    "65": 0x5B2700,
-    "66": 0x472000,
-    "67": 0xA77B4D,
-    "68": 0x6D5339,
-    "69": 0x513E2A,
-    "70": 0xFFFFC0,
-    "71": 0xFDD0A0,
-    "72": 0xB8FFA0,
-    "73": 0xB1FF6D,
-    "74": 0xB8FFDC,
-    "75": 0x94FFEC,
-    "76": 0x43A18A,
-    "77": 0x316D5F,
-    "78": 0x265453,
-    "79": 0x006000,
-    "80": 0x004000,
-    "81": 0x006060,
-    "82": 0x004040,
-    "83": 0xA0FFFF,
-    "84": 0x010770,
-    "85": 0x00496D,
-    "86": 0x003238,
-    "87": 0x002638,
-    "88": 0x5080AD,
-    "89": 0x335375,
-    "90": 0x233C56,
-    "91": 0xDCDCDC,
-    "92": 0x3D068C,
-    "93": 0x370860,
-    "94": 0x404040,
-    "95": 0x6F49A4,
-    "96": 0x56367F,
-    "97": 0x422A63,
-    "98": 0xFCD5FF,
-    "99": 0xAF57AF,
-    "100": 0x823D82,
-    "101": 0x5E315E,
-    "102": 0x808080,
-    "103": 0x66033E,
-    "104": 0x470132,
-    "105": 0xD2FF32,
-    "106": 0x76BDFF,
+COLORS_LIST: dict[ColorId, ColorHex] = {
+    0: 0x7DFF00,
+    1: 0x00FF00,
+    2: 0x00FF7D,
+    3: 0x00FFFF,
+    4: 0x007DFF,
+    5: 0x0000FF,
+    6: 0x7D00FF,
+    7: 0xFF00FF,
+    8: 0xFF007D,
+    9: 0xFF0000,
+    10: 0xFF7D00,
+    11: 0xFFFF00,
+    12: 0xFFFFFF,
+    13: 0xB900FF,
+    14: 0xFFB900,
+    15: 0x000000,
+    16: 0x00C8FF,
+    17: 0xAFAFAF,
+    18: 0x5A5A5A,
+    19: 0xFF7D7D,
+    20: 0x00AF4B,
+    21: 0x007D7D,
+    22: 0x004BB1,
+    23: 0x4B00AF,
+    24: 0x7D007D,
+    25: 0xAF004B,
+    26: 0xAF4B00,
+    27: 0x7D7D00,
+    28: 0x4BAF00,
+    29: 0xFF4B00,
+    30: 0x962800,
+    31: 0x966400,
+    32: 0x64AF00,
+    33: 0x00AF64,
+    34: 0x0064AF,
+    35: 0x6400AF,
+    36: 0x960064,
+    37: 0x960000,
+    38: 0x00AF00,
+    39: 0x0000AF,
+    40: 0x7DFFAF,
+    41: 0x7D7DFF,
+    42: 0xFFFA7F,
+    43: 0xFA7FFF,
+    44: 0x00FFBF,
+    45: 0x50320E,
+    46: 0xCDA576,
+    47: 0xB680FF,
+    48: 0xFF3A3A,
+    49: 0x4D4D8F,
+    50: 0x000A4C,
+    51: 0xFDD4CE,
+    52: 0xBEB5FF,
+    53: 0x700000,
+    54: 0x520200,
+    55: 0x380106,
+    56: 0x805050,
+    57: 0x7A3535,
+    58: 0x512424,
+    59: 0xA36246,
+    60: 0x753736,
+    61: 0x563528,
+    62: 0xFFB972,
+    63: 0xFFA040,
+    64: 0x66311E,
+    65: 0x5B2700,
+    66: 0x472000,
+    67: 0xA77B4D,
+    68: 0x6D5339,
+    69: 0x513E2A,
+    70: 0xFFFFC0,
+    71: 0xFDD0A0,
+    72: 0xB8FFA0,
+    73: 0xB1FF6D,
+    74: 0xB8FFDC,
+    75: 0x94FFEC,
+    76: 0x43A18A,
+    77: 0x316D5F,
+    78: 0x265453,
+    79: 0x006000,
+    80: 0x004000,
+    81: 0x006060,
+    82: 0x004040,
+    83: 0xA0FFFF,
+    84: 0x010770,
+    85: 0x00496D,
+    86: 0x003238,
+    87: 0x002638,
+    88: 0x5080AD,
+    89: 0x335375,
+    90: 0x233C56,
+    91: 0xDCDCDC,
+    92: 0x3D068C,
+    93: 0x370860,
+    94: 0x404040,
+    95: 0x6F49A4,
+    96: 0x56367F,
+    97: 0x422A63,
+    98: 0xFCD5FF,
+    99: 0xAF57AF,
+    100: 0x823D82,
+    101: 0x5E315E,
+    102: 0x808080,
+    103: 0x66033E,
+    104: 0x470132,
+    105: 0xD2FF32,
+    106: 0x76BDFF,
 }
+
 """A dictionary mapping all the color ids to their corresponding hex colors.
 
 **Minimum ID:** 0, **Maximum ID:** 106
 """
 
 ICON_RENDERER = "https://gdicon.oat.zone/icon"
-USER_AGENT = ""
 GAMEMODE_MAP = {
     "CUBE": "player",
     "SHIP": "ship",
@@ -155,7 +154,7 @@ def color_id_to_hex(color_id: ColorId) -> Union[int, None]:
     :type color_id: ColorId
     :return: The hexadecimal color code if found, otherwise None.
     """
-    return COLORS_LIST.get(color_id, None)
+    return COLORS_LIST[color_id]
 
 
 @dataclass
@@ -184,21 +183,21 @@ class Icon:
     glow_color_id: Optional[ColorId] = None
 
     @property
-    def primary_color_hex(self) -> int:
+    def primary_color_hex(self) -> ColorHex:
         """
         Returns the primary color ID as a hexadecimal color code.
         """
-        return color_id_to_hex(self.primary_color_id)
+        return hex(color_id_to_hex(self.primary_color_id)).replace("0x", "")
 
     @property
-    def secondary_color_hex(self) -> int:
+    def secondary_color_hex(self) -> ColorHex:
         """
         Returns the secondary color ID as a hexadecimal color code.
         """
-        return color_id_to_hex(self.secondary_color_id)
+        return hex(color_id_to_hex(self.secondary_color_id)).replace("0x", "")
 
     @property
-    def glow_color_hex(self) -> Union[int, None]:
+    def glow_color_hex(self) -> ColorHex:
         """
         Returns the glow color ID as a hexadecimal color code if it exists.
 
@@ -206,32 +205,23 @@ class Icon:
         """
         if self.glow_color_id is None:
             raise ValueError("This icon has no glow color.")
-        return color_id_to_hex(self.glow_color_id)
 
-    async def download_to(self, path: Union[str, Path] = None) -> None:
+        return hex(color_id_to_hex(self.glow_color_id)).replace("0x", "")
+
+    async def download_to(self, path: Union[str, Path] = "*/") -> None:
         """
         Downloads the icon to a specified path.
 
         :param path: Full path to save the file, including filename.
         :type path: Union[str, Path]
+        :raises ValueError: If the file extension is invalid.
+        :raises FileExistsError: If the file already exists at the specified path.
+        :return: None
+        :rtype: None
         """
-        if path is None:
-            path = Path.cwd() / f"{self.gamemode.name.lower()}_{self.id}.png"
-        elif not path.suffix in {".png", ".webp", ".jpg", ".jpeg", ".ico"}:
-            raise ValueError(
-                "Path must end with .png, .webp, or another image extension!"
-            )
-
-        if not isinstance(path, Path):
-            path = Path(path)
-
-        # Ensure the directory exists
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        response = await self.render(extension=path.suffix.lstrip("."))
-
-        async with aiofiles.open(path, "wb") as file:
-            await file.write(response.getvalue())
+        path = Path(path)
+        content = await self.render(extension=path.suffix)
+        await write(content, path)
 
     async def render(self, extension: str = "png") -> BytesIO:
         """
@@ -245,15 +235,15 @@ class Icon:
         params = {
             "type": self.gamemode.name.lower(),
             "value": self.id,
-            "color1": self.primary_color_id,
-            "color2": self.secondary_color_id,
+            "color1": self.primary_color_hex,
+            "color2": self.secondary_color_hex,
         }
 
         if self.glow_color_id:
-            params["glow"] = self.glow_color_id
+            params["glow"] = self.glow_color_hex
 
         response = await send_get_request(
-            url=f"{ICON_RENDERER}.{extension}", params=params
+            url=f"{ICON_RENDERER}.{extension}", params=params, timeout=30
         )
 
         return BytesIO(response.content)
@@ -263,6 +253,18 @@ class Icon:
 class IconSet:
     """
     A **dataclass** representing a set of icons.
+
+    Attributes
+    ==========
+    cube : Icon
+    ship : Icon
+    ball : Icon
+    ufo : Icon
+    wave : Icon
+    robot : Icon
+    spider : Icon
+    swing : Icon
+    jetpack : Icon
     """
 
     cube: Icon
@@ -279,6 +281,9 @@ class IconSet:
     def all_icons(self) -> dict[Gamemode, Icon]:
         """
         Returns a dictionary of all icons in the set.
+
+        :return: Dictionary of all icons.
+        :rtype: dict[Gamemode, Icon]
         """
         return {
             Gamemode.CUBE: self.cube,
@@ -412,43 +417,26 @@ class IconSet:
         :return: BytesIO representation of the icon.
         :rtype: dict[Gamemode, io.BytesIO]
         """
-        # Asynchronously gather all icon renders (likely from different 'icon.render()' tasks)
-        icons = await asyncio.gather(
-            *[icon.render(extension) for icon in self.all_icons.values()]
+        results = await asyncio.gather(
+            *(icon.render(extension) for icon in self.all_icons.values()),
+            return_exceptions=True,
         )
+        return {
+            gamemode: result
+            for gamemode, result in zip(self.all_icons.keys(), results)
+            if not isinstance(result, Exception)
+        }
 
-        # Zip gamemodes with their corresponding icon BytesIO object
-        return dict(zip(self.all_icons.keys(), icons))
-
-    async def download_all_to(self, path: Union[str, Path] = None) -> None:
+    async def download_all_to(self, path: Union[str, Path] = "*/") -> None:
         """
         Downloads all icons to a specified path.
 
         :param path: Full path to save the files, including directory.
         :type path: Union[str, Path]
+        :return: None
+        :rtype: None
         """
-        # Ensure path is provided, if not, raise an error
-        if path is None:
-            path = Path.cwd()
-
-        # Convert path to a Path object if it's a string
         path = Path(path)
-
-        # Create the directory if it doesn't exist
-        path.mkdir(parents=True, exist_ok=True)
-
-        icons = await self.render_all()
-        icons = icons.items()
-
-        # Loop through each gamemode and save the associated BytesIO object to a file
-        for gamemode, icon in icons:
-            # Construct the file path (e.g., "path/gamemode.png")
-            file_path = (
-                path / f"{gamemode.name.lower()}.png"
-            )  # You can use any extension here
-
-            # Write the BytesIO object to the file
-            async with aiofiles.open(file_path, "wb") as file:
-                await file.write(
-                    icon.getvalue()
-                )  # .getvalue() gives the raw byte data from BytesIO
+        icons = await self.render_all(path.suffix)
+        tasks = [write(icon, path) for icon in icons.values()]
+        await asyncio.gather(*tasks)

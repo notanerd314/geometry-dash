@@ -28,6 +28,7 @@ from gd.cryptography import (
     generate_digits,
     cyclic_xor,
     base64_urlsafe_decode,
+    generate_udid,
 )
 from gd.entities.enums import (
     Length,
@@ -42,21 +43,22 @@ from gd.entities.enums import (
 )
 from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from gd.entities.song import MusicLibrary, SoundEffectLibrary, Song
-from gd.entities.user import Account, Player, Post, Quest, Chest
+from gd.entities.user import Account, Player, AccountComment, Quest, Chest
 from gd.helpers import send_get_request, send_post_request, cooldown, require_login
 from gd.type_hints import (
     PlayerId,
     AccountId,
     LevelId,
     ListId,
-    PostId,
+    AccountCommentId,
     CommentId,
     SongId,
+    LevelOrListId,
+    Udid,
 )
 
 SECRET = "Wmfd2893gb7"
 LOGIN_SECRET = "Wmfv3899gc9"
-UDID = "S15213625602582389853976435292167231001"
 QUEST_ITEM_TYPE_MAP = {
     "1": Item.ORBS,
     "2": Item.STARS,
@@ -83,25 +85,30 @@ class Client:
 
     Attributes
     ==========
-    account : Optional[Account]:
+    account : Optional[Account]
         The account associated with this client.
+    udid : Udid
+        The UDID associated with this client. (Generated randomly if left out)
     """
 
     account: Optional[Account] = None
     """The account associated with this client."""
-    udid: str = "S15213625602582389853976435292167231001"
+    udid: Udid = None
     """The UDID of the client"""
 
     def __init__(
         self,
         account: Optional[Account] = None,
-        udid: str = "S15213625602582389853976435292167231001",
+        udid: Udid = None,
     ) -> None:
         self.account = account
         self.udid = udid
 
+        if self.udid is None:
+            self.udid = generate_udid()
+
     def __repr__(self) -> str:
-        return f"<gd.Client account={self.account}>"
+        return f"<gd.Client account={self.account} at {hex(id(self))}>"
 
     @property
     def logged_in(self) -> bool:
@@ -112,21 +119,21 @@ class Client:
     def logged_in(self) -> None:
         raise ValueError("This property is frozen.")
 
+    @require_login()
     async def check_login(self) -> bool:
         """
         Checks if the account credientials are correct.
 
+        :raises: LoginError
         :return: True if the credentials are correct, False otherwise.
         :rtype: bool
         """
-        if not self.account:
-            return False
 
         data = {
             "secret": LOGIN_SECRET,
             "userName": self.account.name,
             "gjp2": self.account.gjp2,
-            "udid": "blah blah placeholder HAHAHHAH",
+            "udid": self.udid,
         }
 
         response = await send_post_request(
@@ -156,7 +163,7 @@ class Client:
             "secret": LOGIN_SECRET,
             "userName": name,
             "gjp2": gjp2(password),
-            "udid": "blah blah placeholder HAHAHHAH",
+            "udid": self.udid,
         }
 
         response = await send_post_request(
@@ -218,10 +225,10 @@ class Client:
         self.account = None
 
     @cooldown(15)
-    @require_login("You need to login before you can send a post!")
-    async def send_post(self, message: str) -> int:
+    @require_login("You need to login before you can send an account comment!")
+    async def send_account_comment(self, message: str) -> AccountCommentId:
         """
-        Sends a post to the account logged in.
+        Sends an account comment to the account logged in.
 
         Cooldown is 15 seconds.
 
@@ -229,7 +236,7 @@ class Client:
         :type message: str
         :raises: gd.LoadError
         :return: The post ID of the sent post.
-        :rtype: int
+        :rtype: AccountCommentId
         """
         if not self.account:
             raise LoginError("The client is not logged in to post!")
@@ -251,8 +258,8 @@ class Client:
     @cooldown(10)
     @require_login("You need to login before you can comment!")
     async def send_comment(
-        self, message: str, level_id: LevelId, percentage: int = 0
-    ) -> int:
+        self, message: str, level_id: LevelOrListId, percentage: int = 0
+    ) -> CommentId:
         """
         Sends a comment to a level or list.
 
@@ -262,13 +269,13 @@ class Client:
 
         :param message: The message to send.
         :type message: str
-        :param level_id: The ID of the level to comment on.
-        :type level_id: LevelId
+        :param level_id: The ID of the level/list to comment on.
+        :type level_id: LevelOrListId
         :param percentage: The percentage of the level completed, optional. Defaults to 0.
         :type percentage: int
         :raises: gd.InvalidID
         :return: The comment ID of the sent comment.
-        :rtype: int
+        :rtype: CommentId
         """
 
         data = {
@@ -306,12 +313,12 @@ class Client:
         return int(response)
 
     @require_login("You need to login before you can use this function!")
-    async def delete_post(self, post_id: PostId) -> None:
+    async def delete_account_comment(self, comment_id: AccountCommentId) -> None:
         """
-        Deletes a post using comment ID.
+        Deletes an account comment using comment ID.
 
-        :param post_id: The ID of the post to delete.
-        :type post_id: PostId
+        :param comment_id: The ID of the post to delete.
+        :type comment_id: AccountCommentId
         :raises: gd.InvalidID
         :return: None
         :rtype: None
@@ -320,7 +327,7 @@ class Client:
             url="http://www.boomlings.com/database/deleteGJAccComment20.php",
             data={
                 "accountID": self.account.account_id,
-                "commentID": post_id,
+                "commentID": comment_id,
                 "gjp2": self.account.gjp2,
                 "secret": SECRET,
             },
@@ -334,14 +341,18 @@ class Client:
         )
 
     @require_login("You need to login before you can use this function!")
-    async def delete_comment(self, comment_id: CommentId, level_id: LevelId) -> None:
+    async def delete_comment(
+        self, comment_id: CommentId, level_id: LevelOrListId
+    ) -> None:
         """
-        Deletes a comment using the comment's level ID and ID.
+        Deletes a comment using the comment's ID and level ID.
+
+        For lists, use a negative ID.
 
         :param comment_id: The ID of the comment to delete.
         :type comment_id: CommentId
         :param level_id: The ID of the level the comment belongs to.
-        :type level_id: LevelId
+        :type level_id: LevelOrListId
         :raises: gd.InvalidID
         :return: None
         :rtype: None
@@ -697,14 +708,16 @@ class Client:
         check_errors(response, InvalidID, f"Invalid account name/ID {query}.")
         return Player.from_raw(response.split("#")[0]).attach_client(self)
 
-    async def get_level_comments(
-        self, level_id: LevelId, page: int = 0
+    async def get_comments(
+        self, level_id: LevelOrListId, page: int = 0
     ) -> list[Comment]:
         """
-        Get level's comments by level ID.
+        Get comments by level/list ID.
 
-        :param level_id: The ID of the level.
-        :type level_id: LevelId
+        For lists, use a negative ID.
+
+        :param level_id: The ID of the level/list.
+        :type level_id: LevelOrListId
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
         :raises: gd.InvalidID
@@ -726,17 +739,17 @@ class Client:
             for comment_data in response.split("|")
         ]
 
-    async def get_user_posts(self, account_id: AccountId, page: int = 0) -> list[Post]:
+    async def get_user_account_comments(self, account_id: AccountId, page: int = 0) -> Optional[list[AccountComment]]:
         """
-        Get an user's posts by Account ID.
+        Get an user's account comments by Account ID.
 
-        :param account_id: The account ID to retrieve the posts.
+        :param account_id: The account ID to retrieve the account comments.
         :type account_id: AccountId
         :param page: The page number for pagination. Defaults to 0.
         :type page: int
         :raises: gd.InvalidID
-        :return: A list of `Post` instances or None if there are no posts.
-        :rtype: list[:class:`gd.entities.user.Post`]
+        :return: A list of `AccountComment` instances or None if there are no account comments.
+        :rtype: list[:class:`gd.entities.user.AccountComment`]
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
@@ -754,7 +767,7 @@ class Client:
         parsed_res = response.split("|")
 
         for post in parsed_res:
-            posts_list.append(Post.from_raw(post, account_id).attach_client(self))
+            posts_list.append(AccountComment.from_raw(post, account_id).attach_client(self))
 
         return posts_list
 
@@ -1006,7 +1019,7 @@ class Client:
         """
         Gets the top 1000 star grinders.
 
-        :param html: Gets the raw html from the servers.
+        :param html: Gets the raw html returned instead of a Python list.
         :type html: bool
         :return: The raw HTML as string or a list of Players
         :rtype: Union[str, list[Player]]
@@ -1044,24 +1057,24 @@ class Client:
 
     async def like(
         self,
-        item_id: Union[LevelId, CommentId, PostId, ListId],
+        item_id: Union[LevelId, CommentId, AccountCommentId, ListId],
         like_type: int,
         dislike: bool = False,
-        special: Union[LevelId, PostId, int] = 0,
+        special_id: Union[LevelId, AccountCommentId, int] = 0,
     ) -> None:
         """
-        Liking a level/list/comment/post.
+        Liking a level/comment/post/list.
 
-        **NOTE: This is a helper function, please use the individual liking methods instead.**
+        **NOTE: This is a helper method, please use the individual liking methods instead.**
 
-        :param item_id: ID of the item.
-        :type item_id: Union[LevelId, CommentId, PostId, ListId]
-        :param like_type: 1 for level, 2 for comment, 3 for post, 4 for list
+        :param item_id: ID of the level/comment/post/list.
+        :type item_id: Union[LevelId, CommentId, AccountCommentId, ListId]
+        :param like_type: 1 for level, 2 for comment, 3 for post, 4 for list.
         :type like_type: int
         :param dislike: Whether to dislike or not
         :type dislike: bool
         :param special: For type 2, put level ID. For type 3, put post ID. For type 1 and 4, put 0.
-        :type special: Union[LevelId, PostId, int]
+        :type special: Union[LevelId, AccountCommentId, int]
         :return: None
         :rtype: None
         """
@@ -1073,7 +1086,7 @@ class Client:
             "udid": "0",
             "uuid": self.account.player_id,
             "gjp2": self.account.gjp2,
-            "special": special,
+            "special": special_id,
             "secret": SECRET,
             "rs": generate_rs(),
             "gameVersion": 22,
@@ -1144,12 +1157,12 @@ class Client:
         await self.like(comment_id, 2, dislike, level_id)
 
     @require_login("An account is required to perform this action.")
-    async def like_post(self, post_id: PostId, dislike: bool = False) -> None:
+    async def like_post(self, post_id: AccountCommentId, dislike: bool = False) -> None:
         """
         Like or dislike an account post.
 
         :param post_id: The ID of the post to like or dislike.
-        :type post_id: PostId
+        :type post_id: AccountCommentId
         :param dislike: Whether to dislike the comment. Defaults to False.
         :type dislike: bool
         :return: None
@@ -1158,7 +1171,7 @@ class Client:
         await self.like(post_id, 3, dislike, post_id)
 
     @require_login("An account is required to view quests.")
-    async def quests(self) -> tuple[Quest]:
+    async def quests(self) -> list[Quest]:
         """
         Get the current quests of the account.
 
@@ -1191,7 +1204,7 @@ class Client:
         time_left = response[5]
         quests = (quest.split(",") for quest in response[6:9])
 
-        return (
+        return [
             Quest(
                 name=quest[4],
                 requirement_type=QUEST_ITEM_TYPE_MAP[quest[1]],
@@ -1200,10 +1213,10 @@ class Client:
                 time_left=int(time_left),
             )
             for quest in quests
-        )
+        ]
 
     @require_login("An account is required to view chests.")
-    async def chests(self, open_chest: Optional[ChestType] = None) -> tuple[Chest]:
+    async def chests(self, open_chest: Optional[ChestType] = None) -> list[Chest]:
         """
         Get the remaining time for each chest type in the account.
 
@@ -1256,7 +1269,7 @@ class Client:
         large_chest = response[9].split(",")
         large_chest_open = int(response[10])
 
-        return (
+        return [
             Chest(
                 orbs=int(small_chest[0]),
                 diamonds=int(small_chest[1]),
@@ -1271,4 +1284,4 @@ class Client:
                 time_left=large_chest_time,
                 times_opened=large_chest_open,
             ),
-        )
+        ]

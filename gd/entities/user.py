@@ -14,17 +14,19 @@ from gd.entities.level import Comment, LevelDisplay
 from gd.entities.entity import Entity
 from gd.cryptography import base64_urlsafe_decode
 from gd.helpers import require_client
-from gd.type_hints import AccountId, PlayerId, PostId, ColorId
+from gd.type_hints import AccountId, PlayerId, AccountCommentId, ColorId
 
 SECRET = "Wmfd2893gb7"
 PASSWORD_SALT = "mI29fmAnxgTs"
 
 __all__ = [
-    "Post",
+    "AccountComment",
     "Player",
     "Account",
     "DifficultyStats",
     "DemonStats",
+    "Quest",
+    "Chest",
 ]
 
 DifficultyStats = NamedTuple(
@@ -58,7 +60,7 @@ DemonStats = NamedTuple(
 
 
 @dataclass
-class Post(Entity):
+class AccountComment(Entity):
     """
     A class representing a post from a player.
 
@@ -68,8 +70,8 @@ class Post(Entity):
         The content of the post.
     likes : int
         The number of likes of the post.
-    id : PostId
-        The ID of the post.
+    id : AccountCommentId
+        The ID of the account comment.
     posted_ago : relativedelta
         Time passed after the post was created.
     author_account_id : Optional[AccountId]
@@ -80,22 +82,21 @@ class Post(Entity):
     """The content of the post."""
     likes: int = None
     """The number of likes of the post."""
-    id: PostId = None
-    """The ID of the post."""
+    id: AccountCommentId = None
+    """The ID of the account comment."""
     posted_ago: str = None
     """The time when the post was posted, e.g., '5 months'."""
     author_account_id: Optional[AccountId] = None
     """The ID of the author, or None if it doesn't exist."""
 
     @staticmethod
-    def from_raw(raw_str: str, account_id: int = None) -> "Post":
+    def from_raw(raw_str: str, account_id: int = None) -> "AccountComment":
         """
-        A static method that converts the raw data from the server into a Post instance.
+        A static method that converts the raw data from the server into an AccountComment instance.
 
         :param raw_str: The raw data from the server.
         :type raw_str: str
         :param account_id: The account ID of the user, optional if not provided.
-
         :type account_id: Union[int, None]
         :return: A Post instance.
         :rtype: Post
@@ -103,7 +104,7 @@ class Post(Entity):
         parsed = raw_str.split(":")
         comment_value = parse_key_value_pairs(parsed[0], "~")
 
-        return Post(
+        return AccountComment(
             content=base64_urlsafe_decode(comment_value.get("2", "")),
             likes=int(comment_value.get("4", 0)),
             id=int(comment_value.get("6", 0)),
@@ -114,7 +115,7 @@ class Post(Entity):
     @require_client(login=True)
     async def like(self, dislike: bool = False) -> None:
         """
-        Like or dislike the post.
+        Like or dislike the account comment.
 
         :param dislike: If True, dislike the post, else like it.
         :type dislike: bool
@@ -360,14 +361,14 @@ class Player(Entity):
         )
 
     @require_client()
-    async def posts(self, page: int = 0) -> list[Post] | None:
+    async def account_comments(self, page: int = 0) -> list[AccountComment] | None:
         """
-        Load all posts from the user.
+        Load all account comments from the user.
 
         :param page: The page number to load, default is 0.
         :type page: int
-        :return: A list of Post instances or None if the request failed.
-        :rtype: list[Post]
+        :return: A list of AccountComment instances or None if the request failed.
+        :rtype: list[AccountComment]
         """
         return await self.client.get_user_posts(self.player_id, page)
 

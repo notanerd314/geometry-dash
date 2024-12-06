@@ -8,14 +8,14 @@ from typing import Union, Optional
 from datetime import datetime
 from dataclasses import dataclass
 
-from gd.entities.song import Song, OfficialSong
+from gd.entities.song import Song
 from gd.entities.entity import Entity
 from gd.helpers import require_client
 from gd.parse import (
     parse_level_data,
     parse_comma_separated_int_list,
     parse_key_value_pairs,
-    determine_difficulty,
+    determine_level_difficulty,
     determine_list_difficulty,
 )
 from gd.cryptography import base64_urlsafe_decode
@@ -26,6 +26,7 @@ from gd.entities.enums import (
     Length,
     Difficulty,
     SearchFilter,
+    OfficialSong,
 )
 from gd.entities.cosmetics import Icon
 from gd.type_hints import (
@@ -231,7 +232,7 @@ class Level(Entity):
             is_daily=0 <= int(parsed.get("41", -1)) <= 100000,
             is_weekly=int(parsed.get("41", -1)) >= 100000,
             rating=Level._determine_rating(parsed),
-            difficulty=determine_difficulty(parsed),
+            difficulty=determine_level_difficulty(parsed),
             level_password=(
                 None if isinstance(parsed.get("27"), bool) else parsed.get("27")
             ),
@@ -310,6 +311,18 @@ class Level(Entity):
         """
         await self.client.like_level(level_id=self.id, dislike=dislike)
 
+    @require_client()
+    async def comments(self, page: int = 0) -> list["Comment"]:
+        """
+        Get the comments for the level.
+
+        :param page: The page number to get comments from.
+        :type page: int
+        :return: A list of Comment objects.
+        :rtype: list[Comment]
+        """
+        await self.client.get_comments(self.id, page)
+
 
 @dataclass
 class LevelDisplay(Level):
@@ -322,13 +335,13 @@ class LevelDisplay(Level):
         The creator name of the level.
     creator_account_id : int
         The creator's account ID.
-    song_data : Optional[Song]
+    song : Optional[Song]
         The custom song object of the level.
     """
 
     creator_name: str = None
     creator_account_id: AccountId = None
-    song_data: Optional[Song] = None
+    song: Optional[Song] = None
 
     @staticmethod
     def from_parsed(parsed_str: dict) -> "LevelDisplay":
@@ -343,7 +356,7 @@ class LevelDisplay(Level):
         instance = Level.from_parsed(parsed_str["level"])
         creator_name = parsed_str["creator"]["playerName"]
         creator_account_id = parsed_str["creator"]["accountID"]
-        song_data = (
+        song = (
             Song.from_parsed(parsed_str["song"])
             if parsed_str.get("song", None)
             else None
@@ -374,7 +387,7 @@ class LevelDisplay(Level):
             rating=instance.rating,
             difficulty=instance.difficulty,
             creator_name=creator_name,
-            song_data=song_data,
+            song=song,
             level_data=None,
             song_list_ids=instance.song_list_ids,
             sfx_list_ids=instance.sfx_list_ids,
@@ -404,7 +417,7 @@ class Comment(Entity):
         If the comment is spam.
     posted_ago : str
         Time passed since the comment was posted.
-    precentage : int
+    percentage : int
         The perecentage of the comment.
     mod_level : ModRank
         The mod level of the author.
@@ -432,7 +445,7 @@ class Comment(Entity):
     id: CommentId = None
     is_spam: bool = None
     posted_ago: str = None
-    precentage: int = None
+    percentage: int = None
     mod_level: ModRank = None
 
     author_player_id: PlayerId = None
@@ -460,14 +473,14 @@ class Comment(Entity):
 
         return Comment(
             level_id=int(comment_value.get("1", 0)),
-            content=base64_urlsafe_decode(comment_value.get("2", "")),
+            content=base64_urlsafe_decode(comment_value.get("2", "")).decode(),
             author_player_id=int(comment_value.get("3", 0)),
             author_account_id=int(user_value.get("16", 0)),
             likes=int(comment_value.get("4", 0)),
             id=int(comment_value.get("6", 0)),
             is_spam=bool(int(comment_value.get("7", 0))),
             posted_ago=comment_value.get("9", "0 seconds"),
-            precentage=int(comment_value.get("10", 0)),
+            percentage=int(comment_value.get("10", 0)),
             mod_level=ModRank(int(comment_value.get("11", 0))),
             author_name=user_value.get("1", ""),
             author_icon=Icon(
@@ -484,7 +497,7 @@ class Comment(Entity):
         )
 
     @require_client(login=True)
-    async def like(self, dislike: bool = False):
+    async def like(self, dislike: bool = False) -> None:
         """
         Like or dislike the comment.
 
@@ -513,14 +526,14 @@ class _ListLevels(Entity):
     level_ids: list[LevelId] = None
 
     @require_client()
-    async def levels(self) -> tuple[LevelDisplay]:
+    async def levels(self) -> list[LevelDisplay]:
         """
         A method that gets all the levels in the list with their display information.
 
         :param client: The client (or client index) to get.
         :type client: int
-        :return: A tuple of LevelDisplay objects.
-        :rtype: tuple[LevelDisplay]
+        :return: A list of LevelDisplay objects.
+        :rtype: list[LevelDisplay]
         """
         str_ids = ",".join([str(level) for level in self.level_ids])
 
@@ -633,7 +646,7 @@ class LevelList(_ListLevels):
         return await self.client.like_list(self.id, dislike)
 
     @require_client(login=True)
-    async def comment(self, message: str) -> int:
+    async def comment(self, message: str) -> CommentId:
         """
         Sends a comment to the list.
 
@@ -643,9 +656,23 @@ class LevelList(_ListLevels):
         :type message: str
         :raises: gd.CommentError
         :return: The comment ID of the sent comment.
-        :rtype: int
+        :rtype: CommentId
         """
         return await self.client.send_comment(message=message, level_id=-self.id)
+
+    @require_client()
+    async def comments(self, page: int = 0) -> list[Comment]:
+        """
+        Gets comments from the list.
+
+        Cooldown is 15 seconds.
+
+        :param page: The page of comments to load.
+        :type page: int
+        :return: A list of comments.
+        :rtype: list[Comment]
+        """
+        return await self.client.get_comments(level_id=-self.id, page=page)
 
 
 @dataclass

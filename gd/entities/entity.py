@@ -5,14 +5,11 @@ A file containing all the entity classes to inherit from.
 """
 
 from typing import Self
-from dataclasses import dataclass
-from abc import ABC
 
 __all__ = ["Entity"]
 
 
-@dataclass
-class Entity(ABC):
+class Entity:
     """
     An abstract class representing an entity.
 
@@ -50,5 +47,4 @@ class Entity(ABC):
         :rtype: self
         """
         self.client = None
-
         return self

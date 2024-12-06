@@ -10,9 +10,10 @@ import base64
 import zlib
 import random
 from string import ascii_letters, digits
-from typing import Union
 from hashlib import sha1
 from enum import StrEnum
+
+from gd.type_hints import Udid
 
 # Constants
 XOR_KEY = "26364"
@@ -24,10 +25,12 @@ __all__ = [
     "XorKey",
     "Salt",
     "cyclic_xor",
-    "xor_singular",
+    "singular_xor",
     "base64_urlsafe_decode",
     "base64_decompress",
     "generate_chk",
+    "gjp2",
+    "generate_udid",
 ]
 
 # * Encryption and Decryption Functions
@@ -76,6 +79,21 @@ def gjp2(password: str = "", salt: str = Salt.PASSWORD) -> str:
     return result
 
 
+def generate_udid(start: int = 100_000, end: int = 100_000_000) -> Udid:
+    """
+    Generate a Universally Unique Identifier for device.
+
+    :param start: The starting number for the UDID.
+    :type start: int
+    :param end: The ending number for the UDID.
+    :type end: int
+    :return: A random UDID as a string.
+    :rtype: str
+    """
+    value = [str(random.randint(start, end)) for _ in range(4)]
+    return "S15" + "".join(value)
+
+
 def add_padding(data: str) -> str:
     """
     Add padding to base64-encoded data to make its length a multiple of 4.
@@ -106,7 +124,7 @@ def cyclic_xor(input_bytes: bytes, key: str) -> str:
     )
 
 
-def xor_singular(input_bytes: bytes, key: str) -> str:
+def singular_xor(input_bytes: bytes, key: str) -> str:
     """
     Singular XOR encrypt/decrypt
 
@@ -190,16 +208,6 @@ def base64_decompress(encrypted: str) -> str:
     return zlib.decompress(decoded_data, 15 | 32).decode()
 
 
-def udid() -> str:
-    """
-    Generates a Universally Unique Indentifier for device
-
-    :return: UDID
-    :rtype: str
-    """
-    return "".join(random.choices(digits, k=36))
-
-
 def generate_rs(n: int = 10) -> str:
     """
     Generates a random seed.
@@ -234,12 +242,12 @@ def generate_digits() -> str:
     return result
 
 
-def generate_chk(values: list[Union[int, str]], key: str = "", salt: str = "") -> str:
+def generate_chk(values: list[any], key: XorKey = "", salt: Salt = "") -> str:
     """
     Generates CHK data.
 
     :param values: The values to include in the CHK data.
-    :type values: List[Union[int, str]]
+    :type values: list[any]
     :param key: The XOR key to use.
     :type key: str
     :param salt: The salt to use for encryption.

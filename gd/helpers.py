@@ -9,7 +9,10 @@ You typically don't want to use this module because it has limited documentation
 from functools import wraps
 from time import time
 from typing import Union
+from io import BytesIO
+from pathlib import Path
 
+import aiofiles
 import httpx
 
 from .exceptions import OnCooldown, LoginError
@@ -24,32 +27,7 @@ __all__ = [
 ]
 
 
-# Decorators for Client, Cooldown, and Login Logic
-def deprecated(message: str, version: str):
-    """
-    A decorator to mark a function as deprecated.
-
-    :param message: Deprecated Message
-    :type message: str
-    :param version: Deprecated version
-    :type version: str
-    """
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Print the deprecation message
-            print(
-                f"DeprecationWarning: {message} (Method will be removed in {version})"
-            )
-            # Call the original function
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
+# Decorators for Client, Cooldown, and Login
 def require_client(
     error_message: str = "At least one client must be attached in order to use this function.",
     login: bool = False,
@@ -135,10 +113,12 @@ def require_login(message: str = "You need to login before you can use this func
     return decorator
 
 
-# HTTP Helper Functions with httpx
+# * HTTP Helper Functions with httpx
 async def send_post_request(**kwargs) -> httpx.Response:
     """
     Sends a POST request using httpx.
+
+    Headers are left blank by default.
 
     :param **kwargs: The keyword arguments to pass to the httpx.AsyncClient.post method.
     :return: The full response object.
@@ -146,21 +126,46 @@ async def send_post_request(**kwargs) -> httpx.Response:
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(**kwargs, headers={"User-Agent": ""})
-        return response  # Return the full response object (not just the text)
+        return response
 
 
 async def send_get_request(**kwargs) -> httpx.Response:
     """
     Sends a GET request using httpx.
 
-    :param decode: Whether to decode and return the response as a string. Default is True.
-    :type decode: bool
+    Headers are left blank by default.
+
     :param **kwargs: The keyword arguments to pass to the httpx.AsyncClient.get method.
-    :return: The full response object or decoded string (depending on decode).
-    :rtype: Union[str, bytes, httpx.Response]
+    :return: The full response object.
+    :rtype: httpx.Response
     """
     async with httpx.AsyncClient() as client:
-        response = await client.get(
-            **kwargs, headers={"User-Agent": ""}
-        )  # Make the GET request
-        return response  # Return the full response object if decode is False
+        response = await client.get(**kwargs, headers={"User-Agent": ""})
+        return response
+
+
+async def write(content: BytesIO, path: Union[str, Path]) -> None:
+    """
+    Helper function to write the content to the given path.
+
+    :param content: The content to be written to the file.
+    :type content: BytesIO
+    :param path: The path to which the content should be written.
+    :type path: Union[str, Path]
+    :raises FileExistsError: If the file already exists at the specified path.
+    :return: None
+    :rtype: None
+    """
+    # Ensure path is a Path object
+    path = Path(path)
+
+    # Check if file exists
+    if path.exists():
+        raise FileExistsError(f"File already exists at {path}")
+
+    # Ensure the directory exists
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write the content
+    async with aiofiles.open(path, "wb") as file:
+        await file.write(content.getvalue())

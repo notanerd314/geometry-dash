@@ -6,15 +6,12 @@ A module containing all the classes and methods related to songs in Geometry Das
 from urllib.parse import unquote
 from typing import Optional, Union
 from datetime import timedelta
-from enum import Enum
 from pathlib import Path
 from dataclasses import dataclass, field
 from io import BytesIO
 
-from aiofiles import open as aioopen
-
 from gd.parse import parse_song_data
-from gd.helpers import send_get_request
+from gd.helpers import send_get_request, write
 from gd.type_hints import (
     SongId,
     SoundEffectId,
@@ -24,7 +21,7 @@ from gd.type_hints import (
     ArtistId,
 )
 
-__all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song", "OfficialSong"]
+__all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song"]
 
 # Music Library
 
@@ -180,7 +177,6 @@ class MusicLibrary:
             :rtype: BytesIO
             """
             response = await send_get_request(url=self.link)
-
             return BytesIO(response.content)
 
         async def download_to(self, path: Union[str, Path] = None) -> None:
@@ -189,23 +185,12 @@ class MusicLibrary:
 
             :param path: Full path to save the file, including filename.
             :type path: Union[str, Path]
+            :return: NOne
             :rtype: None
             """
+            content = await self.content()
+            await write(content, path)
 
-            if path is None:
-                path = Path.cwd() / f"{self.id}.ogg"
-
-            path = Path(path)
-
-            if not path.suffix:
-                raise ValueError("Path must end with an extension!")
-
-            # Ensure the directory exists
-            path.parent.mkdir(parents=True, exist_ok=True)
-
-            response = await self.content()
-            async with aioopen(path, "wb") as file:
-                await file.write(response.getvalue())
 
     @staticmethod
     def from_raw(raw_str: str) -> "MusicLibrary":
@@ -627,28 +612,15 @@ class SoundEffect:
 
     async def download_to(self, path: Union[str, Path] = None) -> None:
         """
-        Downloads the song to a specified path.
+        Downloads the sound effect to a specified path.
 
         :param path: Full path to save the file, including filename.
         :type path: str
+        :return: None
         :rtype: None
         """
-
-        if path is None:
-            path = Path.cwd() / f"{self.id}.ogg"
-
-        if not isinstance(path, Path):
-            path = Path(path)
-
-        if not path.suffix:
-            raise ValueError("Path must end with an extension!")
-
-        # Ensure the directory exists
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        response = await self.content()
-        async with aioopen(path, "wb") as file:
-            await file.write(response.getvalue())
+        content = await self.content()
+        await write(content, path)
 
 
 # Level song
@@ -755,51 +727,8 @@ class Song:
 
         :param path: Full path to save the file, including filename.
         :type path: str
+        :return: None
         :rtype: None
         """
-
-        if path is None:
-            path = Path.cwd() / f"{self.id}.mp3"
-
-        if not isinstance(path, Path):
-            path = Path(path)
-
-        if not path.suffix:
-            raise ValueError("Path must end with an extension!")
-
-        # Ensure the directory exists
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        response = await self.content()
-        async with aioopen(path, "wb") as file:
-            await file.write(response.getvalue())
-
-
-class OfficialSong(Enum):
-    """
-    An **Enum** class representing official songs in the game.
-    """
-
-    STAY_INSIDE_ME = -1
-    STEREO_MADNESS = 0
-    BACK_ON_TRACK = 1
-    POLARGEIST = 2
-    DRY_OUT = 3
-    BASE_AFTER_BASE = 4
-    CANT_LET_GO = 5
-    JUMPER = 6
-    TIME_MACHINE = 7
-    CYCLES = 8
-    XSTEP = 9
-    CLUTTERFUNK = 10
-    THEORY_OF_EVERYTHING = 11
-    ELECTROMAN_ADVENTURES = 12
-    CLUBSTEP = 13
-    ELECTRODYNAMIX = 14
-    HEXAGON_FORCE = 15
-    BLAST_PROCESSING = 16
-    THEORY_OF_EVERYTHING_2 = 17
-    GEOMETRICAL_DOMINATOR = 18
-    DEADLOCKED = 19
-    FINGERDASH = 20
-    DASH = 21
+        content = await self.content()
+        await write(content, path)
