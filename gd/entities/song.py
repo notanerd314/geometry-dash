@@ -191,7 +191,6 @@ class MusicLibrary:
             content = await self.content()
             await write(content, path)
 
-
     @staticmethod
     def from_raw(raw_str: str) -> "MusicLibrary":
         """

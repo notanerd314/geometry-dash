@@ -56,3 +56,6 @@ IconId = int
 
 Udid = str
 """Universally Unique Identifier"""
+
+SongFileHubId = str
+"""Type hint for a Song File Hub Id."""

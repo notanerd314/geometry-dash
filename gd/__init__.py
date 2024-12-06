@@ -70,6 +70,7 @@ __url__ = "https://github.com/notanerd314/gdapi"
 
 from collections import namedtuple
 
+import gd.thirdparty
 from gd.client import SECRET, LOGIN_SECRET, Client
 from gd.exceptions import (
     LoadError,
@@ -164,6 +165,8 @@ __all__ = [
     "XorKey",
     "cyclic_xor",
     "singular_xor",
+    # Thirdparty
+    "thirdparty",
 ]
 
 VersionInfo: namedtuple = namedtuple("VersionInfo", "major minor micro")

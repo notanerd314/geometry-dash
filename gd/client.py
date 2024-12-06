@@ -739,7 +739,9 @@ class Client:
             for comment_data in response.split("|")
         ]
 
-    async def get_user_account_comments(self, account_id: AccountId, page: int = 0) -> Optional[list[AccountComment]]:
+    async def get_user_account_comments(
+        self, account_id: AccountId, page: int = 0
+    ) -> Optional[list[AccountComment]]:
         """
         Get an user's account comments by Account ID.
 
@@ -767,7 +769,9 @@ class Client:
         parsed_res = response.split("|")
 
         for post in parsed_res:
-            posts_list.append(AccountComment.from_raw(post, account_id).attach_client(self))
+            posts_list.append(
+                AccountComment.from_raw(post, account_id).attach_client(self)
+            )
 
         return posts_list
 
