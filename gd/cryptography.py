@@ -172,7 +172,7 @@ def robtop_cipher(value: str, key: int = 37526) -> str:
     return encrypted_string
 
 
-def base64_urlsafe_decode(encrypted: str) -> str:
+def base64_urlsafe_decode(encrypted: str) -> bytes:
     """
     Decode base64-encoded data with padding and URL-safe encoding.
 

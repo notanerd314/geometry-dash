@@ -208,7 +208,7 @@ class Level(Entity):
         return Level(
             # raw_str=parsed_str,
             id=parsed.get("1"),
-            name=parsed.get("2"),
+            name=str(parsed.get("2")),
             description=parsed.get("3"),
             level_data=parsed.get("4", ""),
             version=parsed.get("5"),
