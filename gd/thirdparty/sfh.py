@@ -9,7 +9,17 @@ from enum import StrEnum
 from typing import Literal, Union
 
 from gd.helpers import send_get_request
+from gd.entities.enums import OfficialSong
 from gd.type_hints import SongFileHubId, SongId, LevelId
+
+
+def _is_int(value: str) -> bool:
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
+
 
 # * Literals, Enums
 StateLiteral = Literal["rated", "unrated", "mashup", "challenge", "loop", "remix"]
@@ -29,6 +39,8 @@ class State(StrEnum):
 
 
 # * Dataclasses
+
+
 @dataclass
 class Song:
     """
@@ -39,11 +51,11 @@ class Song:
     level_name: str
     url: str
     name: str
-    replacement_song_id: SongId
+    replacement_song_id: Union[SongId, OfficialSong]
     state: State
     file_type: str
     download_url: str
-    level_ids: list[LevelId]
+    level_ids: list[LevelId, OfficialSong]
     downloads: int
 
 
@@ -53,6 +65,7 @@ class SongList(tuple):
 
     This class is inherited from **list** in Python. It has added additional searching and filtering methods.
     """
+
     def __new__(cls, songs: list[Song]) -> "SongList":
         if not all(isinstance(song, Song) for song in songs):
             raise ValueError("All items must be instances of sfh.Song.")
@@ -61,8 +74,8 @@ class SongList(tuple):
 
     def search(
         self,
-        query: Union[str, SongId],
-        category: Literal["LEVEL_NAME", "SONG_NAME", "SONG_ID"],
+        query: str,
+        category: Literal["LEVEL_NAME", "SONG_NAME", "SONG_ID"] = "LEVEL_NAME",
     ) -> "SongList":
         """
         Search for songs by the query.
@@ -99,11 +112,11 @@ class SongList(tuple):
         """
         return SongList(sorted(self, key=lambda song: song.level_name, reverse=reverse))
 
-    def sort_by_downloads(self, reverse: bool = False) -> "SongList":
+    def sort_by_downloads(self, reverse: bool = True) -> "SongList":
         """
-        Sort the songs by downloads in ascending order.
+        Sort the songs by downloads in descending order.
 
-        :param reverse: Whether to sort in descending order. Defaults to False.
+        :param reverse: Whether to sort in descending order. Defaults to True.
         :type reverse: bool
         :return: A new SongList instance.
         :rtype: SongList
@@ -143,7 +156,7 @@ class SongFileHub:
         level_id: LevelId = None,
         state: Union[State, StateLiteral] = None,
         sort: Literal[None, "LEVEL_NAME", "DOWNLOADS"] = None,
-        sort_reverse: bool = False
+        sort_reverse: bool = False,
     ) -> SongList:
         """
         Get all songs from the Song File Hub.
@@ -170,36 +183,51 @@ class SongFileHub:
             "states": state,
         }
 
+        # Fetch the response from the API
         response = await send_get_request(
             url="https://api.songfilehub.com/v2/songs",
             params={key: value for key, value in params.items() if value is not None},
         )
-        response = response.json()
+        response_data = response.json()
 
-        list_song = []
-        for song in response:
-            list_song.append(
-                Song(
-                    id=song["_id"],
-                    level_name=song["name"],
-                    url=song["songURL"],
-                    name=song["songName"],
-                    replacement_song_id=song["songID"],
-                    state=State(song["state"]),
-                    file_type=song["filetype"],
-                    download_url=song["downloadUrl"],
-                    level_ids=[int(level_id) for level_id in song["levelID"]],
-                    downloads=song["downloads"],
-                )
+        # Helper function for safe conversion
+        def _safe_convert(song_id: str, fallback_key: str = "ELECTROMANADVENTURES") -> Union[int, SongId, None]:
+            if not song_id:
+                return None
+
+            if _is_int(song_id):
+                return int(song_id)
+
+            try:
+                return OfficialSong[song_id.upper()] if song_id != "ELECTROMAN" else OfficialSong[fallback_key]
+            except KeyError:
+                return None
+
+        # Create Song objects
+        list_song = [
+            Song(
+                id=song["_id"],
+                level_name=song["name"],
+                url=song["songURL"],
+                name=song["songName"],
+                replacement_song_id=_safe_convert(song.get("songID")),
+                state=State(song["state"]),
+                file_type=song["filetype"],
+                download_url=song["downloadUrl"],
+                level_ids=[_safe_convert(level_id) for level_id in song.get("levelID", [])],
+                downloads=song.get("downloads", 0),
             )
+            for song in response_data
+        ]
 
+        # Sort the songs if required
         songlist = SongList(list_song)
         if sort == "LEVEL_NAME":
             return songlist.sort_by_level_name(reverse=sort_reverse)
         if sort == "DOWNLOADS":
             return songlist.sort_by_downloads(reverse=sort_reverse)
 
-        return SongList(sorted(songlist, reverse=sort_reverse))
+        return SongList(reversed(songlist) if sort_reverse else songlist)
 
     async def search_songs(
         self,
