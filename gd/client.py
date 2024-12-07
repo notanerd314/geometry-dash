@@ -1,7 +1,7 @@
 __doc__ = """Accessing the Geometry Dash API programmatically."""
 
 from datetime import timedelta
-from typing import Union, Optional, get_args
+from typing import Union, Optional, get_args, Literal
 import random
 import base64
 import asyncio
@@ -572,25 +572,28 @@ class Client:
 
     @require_login("You need to log in before you can view the leaderboard.")
     async def level_leaderboard(
-        self, level_id: LevelId, friends: bool = False, week: bool = False
+        self,
+        level_id: LevelId,
+        leaderboard_type: Literal["TOP", "FRIENDS", "WEEKLY"] = "TOP",
     ) -> list[Player]:
         """
         Gets the leaderboard for a given level.
 
         :param level_id: The ID of the level.
         :type level_id: LevelId
-        :param friends: Whether to include get friends' scores in the leaderboard. Defaults to False.
+        :param leaderboard_type: Get TOP, FRIENDS or WEEKLY.
+        :type leaderboard_type: Literal["TOP", "FRIENDS", "WEEKLY"]
         :return: A list of Player instances representing the leaderboard.
         :rtype: list[:class:`gd.entities.Player`]
         """
-        if friends and week:
-            raise ValueError("Cannot fetch both friends and weekly leaderboard.")
-
-        leaderboard = 1
-        if friends:
+        if leaderboard_type == "FRIENDS":
             leaderboard = 0
-        elif week:
+        elif leaderboard_type == "TOP":
+            leaderboard = 1
+        elif leaderboard_type == "WEEKLY":
             leaderboard = 2
+        else:
+            raise ValueError("leaderboard_type must be 'FRIENDS', 'TOP' or 'WEEKLY'.")
 
         data = {
             "secret": SECRET,
@@ -613,7 +616,71 @@ class Client:
         response = response.text.split("#")[0].split("|")
 
         return [
-            Player.from_raw(player_data).attach_client(self) for player_data in response
+            Player.from_raw(player_data, parse_leaderboard_score=True).attach_client(
+                self
+            )
+            for player_data in response
+        ]
+
+    @require_login("You need to log in before you can view the leaderboard.")
+    async def platformer_level_leaderboard(
+        self,
+        level_id: LevelId,
+        leaderboard_type: Literal["TOP", "FRIENDS", "WEEKLY"] = "TOP",
+        mode: Literal["TIME", "POINTS"] = "TIME",
+    ) -> list[Player]:
+        """
+        Gets the leaderboard for a given level.
+
+        :param level_id: The ID of the level.
+        :type level_id: LevelId
+        :param friends: Whether to include get friends' scores in the leaderboard. Defaults to False.
+        :return: A list of Player instances representing the leaderboard.
+        :rtype: list[:class:`gd.entities.Player`]
+        """
+        if leaderboard_type == "FRIENDS":
+            leaderboard = 0
+        elif leaderboard_type == "TOP":
+            leaderboard = 1
+        elif leaderboard_type == "WEEKLY":
+            leaderboard = 2
+        else:
+            raise ValueError("leaderboard_type must be 'FRIENDS', 'TOP' or 'WEEKLY'.")
+
+        if mode == "TIME":
+            mode = 0
+        elif mode == "POINTS":
+            mode = 1
+        else:
+            raise ValueError("mode must be 'TIME' or 'POINTS'.")
+
+        data = {
+            "secret": SECRET,
+            "type": leaderboard,
+            "levelID": level_id,
+            "accountID": self.account.account_id,
+            "gjp2": self.account.gjp2,
+            "plat": 1,
+            "mode": mode,
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJLevelScoresPlat.php", data=data
+        )
+
+        check_errors(
+            response,
+            LoadError,
+            "Unable to fetch platformer level leaderboard.",
+        )
+
+        response = response.text.split("#")[0].split("|")
+
+        return [
+            Player.from_raw(player_data, parse_leaderboard_score=True).attach_client(
+                self
+            )
+            for player_data in response
         ]
 
     @cooldown(10)
@@ -1222,7 +1289,9 @@ class Client:
     @require_login("An account is required to view chests.")
     async def chests(self, open_chest: Optional[ChestType] = None) -> list[Chest]:
         """
-        Get the remaining time for each chest type in the account.
+        Gets the data of the chests last opened.
+
+        When opened using open_chest, it will give the new data.
 
         :param open_chest: Opens a small chest or large chest or view the details only.
         :type open_chest: Optional[ChestType]
@@ -1277,14 +1346,20 @@ class Client:
             Chest(
                 orbs=int(small_chest[0]),
                 diamonds=int(small_chest[1]),
-                extra=Item.from_extra_id(int(small_chest[2])),
+                extras=[
+                    Item.from_extra_id(int(small_chest[2])),
+                    Item.from_extra_id(int(small_chest[3])),
+                ],
                 time_left=small_chest_time,
                 times_opened=small_chest_open,
             ),
             Chest(
                 orbs=int(large_chest[0]),
                 diamonds=int(large_chest[1]),
-                extra=Item.from_extra_id(int(large_chest[2])),
+                extras=[
+                    Item.from_extra_id(int(large_chest[2])),
+                    Item.from_extra_id(int(large_chest[3])),
+                ],
                 time_left=large_chest_time,
                 times_opened=large_chest_open,
             ),

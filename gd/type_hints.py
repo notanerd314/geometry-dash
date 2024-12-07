@@ -59,3 +59,7 @@ Udid = str
 
 SongFileHubId = str
 """Type hint for a Song File Hub Id."""
+
+LeaderboardPercentage = int
+LeaderboardPoints = int
+LeaderboardTime = int

@@ -14,7 +14,15 @@ from gd.entities.level import Comment, LevelDisplay
 from gd.entities.entity import Entity
 from gd.cryptography import base64_urlsafe_decode
 from gd.helpers import require_client
-from gd.type_hints import AccountId, PlayerId, AccountCommentId, ColorId
+from gd.type_hints import (
+    AccountId,
+    PlayerId,
+    AccountCommentId,
+    ColorId,
+    LeaderboardPercentage,
+    LeaderboardPoints,
+    LeaderboardTime,
+)
 
 SECRET = "Wmfd2893gb7"
 PASSWORD_SALT = "mI29fmAnxgTs"
@@ -247,15 +255,21 @@ class Player(Entity):
     """The stats of platformer non-demon levels beaten."""
 
     set_ago: Optional[str] = None
-    """The last time the score was set on a level."""
+    """The last time the score was set on a level. (Only on leaderboard scores)"""
+    leaderboard_value: Union[
+        LeaderboardTime, LeaderboardPercentage, LeaderboardPoints
+    ] = None
+    """The value in the leaderboard, depending on leaderboard type. (Only on leaderboard scores)"""
 
     @staticmethod
-    def from_raw(raw_str: str) -> "Player":
+    def from_raw(raw_str: str, parse_leaderboard_score: bool = False) -> "Player":
         """
         Parse the string data from the servers and returns an Player instance.
 
         :param raw_str: The raw data from the server.
         :type raw_str: str
+        :param parse_leaderboard_score: Whether to parse the leaderboard score or not.
+        :type parse_leaderboard_score: bool
         :return: An instance of the Player class.
         :rtype: Player
         """
@@ -274,7 +288,7 @@ class Player(Entity):
             name=parsed.get("1", None),
             player_id=parsed.get("2", 0),
             account_id=parsed.get("16", 0),
-            stars=parsed.get("3", 0),
+            stars=parsed.get("3", 0) if not parse_leaderboard_score else 0,
             moons=parsed.get("52", 0),
             demons=parsed.get("4", 0),
             diamonds=parsed.get("46"),
@@ -358,6 +372,7 @@ class Player(Entity):
                 glow_color=glow_color,
             ),
             set_ago=parsed.get("42", "0 seconds"),
+            leaderboard_value=int(parsed.get("3")) if parse_leaderboard_score else None,
         )
 
     @require_client()
@@ -461,7 +476,7 @@ class Chest:
     """The amount of orbs in the chest."""
     diamonds: int
     """The amount of diamonds in the chest."""
-    extra: Union[Item.DEMON_KEY, Shard, None]
+    extras: list[Item.DEMON_KEY, Shard, None]
     """The extra item type (Demon Key, Shard, None)"""
     time_left: int
     """Seconds left until next quest is chosen."""

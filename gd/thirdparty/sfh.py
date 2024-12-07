@@ -171,7 +171,7 @@ class SongFileHub:
         :type state: Union[State, StateLiteral]
         :param sort: The sorting order of the songs. Can be "LEVEL_NAME" or "DOWNLOADS".
         :type sort: Literal[None, "LEVEL_NAME", "DOWNLOADS"]
-        :param sort_reverse: Whether to sort in descending order. Defaults to False.
+        :param sort_reverse: Whether to sort in reverse. Defaults to False.
         :type sort_reverse: bool
         :return: SongList instance.
         :rtype: SongList
@@ -191,7 +191,9 @@ class SongFileHub:
         response_data = response.json()
 
         # Helper function for safe conversion
-        def _safe_convert(song_id: str, fallback_key: str = "ELECTROMANADVENTURES") -> Union[int, SongId, None]:
+        def _safe_convert(
+            song_id: str, fallback_key: str = "ELECTROMANADVENTURES"
+        ) -> Union[int, SongId, None]:
             if not song_id:
                 return None
 
@@ -199,7 +201,11 @@ class SongFileHub:
                 return int(song_id)
 
             try:
-                return OfficialSong[song_id.upper()] if song_id != "ELECTROMAN" else OfficialSong[fallback_key]
+                return (
+                    OfficialSong[song_id.upper()]
+                    if song_id != "ELECTROMAN"
+                    else OfficialSong[fallback_key]
+                )
             except KeyError:
                 return None
 
@@ -214,7 +220,9 @@ class SongFileHub:
                 state=State(song["state"]),
                 file_type=song["filetype"],
                 download_url=song["downloadUrl"],
-                level_ids=[_safe_convert(level_id) for level_id in song.get("levelID", [])],
+                level_ids=[
+                    _safe_convert(level_id) for level_id in song.get("levelID", [])
+                ],
                 downloads=song.get("downloads", 0),
             )
             for song in response_data
@@ -247,7 +255,9 @@ class SongFileHub:
         songs = await self.songs()
         return songs.search(query=query, category=category)
 
-    async def filter_by_state(self, state: Union[State, StateLiteral]) -> SongList:
+    async def filter_songs_by_state(
+        self, state: Union[State, StateLiteral]
+    ) -> SongList:
         """
         Filter songs by state.
 
