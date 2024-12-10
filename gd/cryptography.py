@@ -8,6 +8,7 @@ This module has limited documentation and is not intended to be used directly.
 
 import base64
 import zlib
+import gzip
 import random
 from string import ascii_letters, digits
 from hashlib import sha1
@@ -27,7 +28,8 @@ __all__ = [
     "cyclic_xor",
     "singular_xor",
     "base64_urlsafe_decode",
-    "base64_decompress",
+    "base64_urlsafe_decompress",
+    "base64_urlsafe_gzip_decompress",
     "generate_chk",
     "gjp2",
     "generate_udid",
@@ -94,16 +96,9 @@ def generate_udid(start: int = 100_000, end: int = 100_000_000) -> Udid:
     return "S15" + "".join(value)
 
 
-def add_padding(data: str) -> str:
-    """
-    Add padding to base64-encoded data to make its length a multiple of 4.
-
-    :param data: The base64-encoded data to add padding to.
-    :type data: str
-    :return: The base64-encoded data with padding added.
-    :rtype: str
-    """
-    return data + BASE64_PADDING_CHAR * ((4 - len(data) % 4) % 4)
+def add_padding(encoded: str) -> str:
+    """Ensure proper padding for Base64 strings."""
+    return encoded + BASE64_PADDING_CHAR * (-len(encoded) % 4)
 
 
 def cyclic_xor(input_bytes: bytes, key: str) -> str:
@@ -124,22 +119,21 @@ def cyclic_xor(input_bytes: bytes, key: str) -> str:
     )
 
 
-def singular_xor(input_bytes: bytes, key: str) -> str:
+def singular_xor(input_bytes: bytes, key: int) -> str:
     """
     Singular XOR encrypt/decrypt
 
-    :param input_bytes: The bytes to XOR encrypt/decrypt.
-    :type input_bytes: bytes
-    :param key: The XOR key to use (single byte).
-    :type key: str
+    :param input_bytes: The str to XOR encrypt/decrypt.
+    :type input_bytes: str
+    :param key: The XOR key to use.
+    :type key: int
 
     :return: The XOR-encrypted/decrypted data as a string.
     :rtype: str
     """
-    key_byte = ord(
-        key[0]
-    )  # Get the first byte of the key (key should be a single character)
-    return "".join(chr(byte ^ key_byte) for byte in input_bytes)
+    string = [ord(char) for char in input_bytes]
+    result = ''.join(chr(char ^ key) for char in string)
+    return result
 
 
 def robtop_cipher(value: str, key: int = 37526) -> str:
@@ -195,7 +189,7 @@ def base64_encode(value: str) -> str:
     return base64.urlsafe_b64encode(value.encode()).decode()
 
 
-def base64_decompress(encrypted: str) -> str:
+def base64_urlsafe_decompress(encrypted: str, wbits: int = 15 | 32) -> str:
     """
     Decode a base64 encoded string then decompress it with zlib.
 
@@ -205,7 +199,20 @@ def base64_decompress(encrypted: str) -> str:
     :rtype: str
     """
     decoded_data = base64.urlsafe_b64decode(add_padding(encrypted))
-    return zlib.decompress(decoded_data, 15 | 32).decode()
+    return zlib.decompress(decoded_data, wbits).decode('utf-8')
+
+def base64_urlsafe_gzip_decompress(encrypted: str) -> str:
+    """
+    Decode a base64 encoded string then decompress it with zlib.
+
+    :param encrypted: The base64-encoded string to decompress.
+    :type encrypted: str
+    :return: The decompressed data as a string.
+    :rtype: str
+    """
+    padded_data = add_padding(encrypted)
+    decoded_data = base64.urlsafe_b64decode(padded_data)
+    return gzip.decompress(decoded_data).decode(errors="replace")
 
 
 def generate_rs(n: int = 10) -> str:

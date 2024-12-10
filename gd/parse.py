@@ -16,8 +16,9 @@ __all__ = [
 
 from typing import Union
 
+from lxml import etree
 from .entities.enums import Difficulty, DemonDifficulty
-from .cryptography import base64_decompress, base64_urlsafe_decode
+from .cryptography import base64_urlsafe_decompress, base64_urlsafe_decode
 
 
 def parse_key_value_pairs(text: str, separator: str = ":") -> dict[str, any]:
@@ -66,7 +67,7 @@ def parse_level_data(text: str) -> dict[str, any]:
     parsed = parse_key_value_pairs(text)
 
     # Decrypt specific values
-    parsed["4"] = base64_decompress(parsed.get("4", "")) if parsed.get("4") else None
+    parsed["4"] = base64_urlsafe_decompress(parsed.get("4", "")) if parsed.get("4") else None
     parsed["3"] = (
         base64_urlsafe_decode(parsed.get("3", "")) if parsed.get("3") else None
     )
@@ -171,6 +172,42 @@ def parse_song_data(song: str) -> dict[str, any]:
     """
     # Literally parse_key_value_pairs again lol, i'm so funni!!!!!
     return parse_key_value_pairs(song.replace("~", ""), "|")
+
+def gamesave_to_dict(xml: str) -> dict:
+    """
+    Parse the XML string and return a dictionary.
+
+    :param xml: The XML string containing game save data.
+    :type xml: str
+    :return: A dictionary containing parsed game save data.
+    :rtype: dict
+    """
+    root = etree.fromstring(xml)  # Parse XML string
+    dictionary = root.find("dict")  # Locate the <dict> element
+
+    if dictionary is None:
+        return {}  # Return an empty dictionary if <dict> is not found
+
+    def parse_element(element):
+        data = {}
+        for child in element:
+            if child.tag == "k":
+                key = child.text
+                value_elem = child.getnext()
+                if value_elem is not None:
+                    if value_elem.tag == "r":
+                        data[key] = float(value_elem.text)
+                    elif value_elem.tag == "s":
+                        data[key] = value_elem.text
+                    elif value_elem.tag == "i":
+                        data[key] = int(value_elem.text)
+                    elif value_elem.tag == "t":
+                        data[key] = True
+                    elif value_elem.tag == "d":
+                        data[key] = parse_element(value_elem)  # Recursive call for nested <d>
+        return data
+
+    return parse_element(dictionary)
 
 
 # Difficulty Determinatiom

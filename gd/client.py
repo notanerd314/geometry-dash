@@ -1,16 +1,16 @@
 __doc__ = """Accessing the Geometry Dash API programmatically."""
 
 from datetime import timedelta
-from typing import Union, Optional, get_args, Literal
+from typing import Union, Optional, Literal
 import random
 import base64
-import asyncio
 
 from gd.parse import (
     parse_comma_separated_int_list,
     determine_search_difficulty,
     parse_search_results,
     determine_demon_search_difficulty,
+    gamesave_to_dict,
 )
 from gd.exceptions import (
     check_errors,
@@ -23,12 +23,14 @@ from gd.cryptography import (
     XorKey,
     gjp2,
     generate_chk,
-    base64_decompress,
     generate_rs,
     generate_digits,
     cyclic_xor,
     base64_urlsafe_decode,
     generate_udid,
+    base64_urlsafe_decompress,
+    singular_xor,
+    base64_urlsafe_gzip_decompress,
 )
 from gd.entities.enums import (
     Length,
@@ -143,6 +145,18 @@ class Client:
         response = response.text
 
         return response.text == f"{self.account.account_id}|{self.account.player_id}"
+
+    def gamesave(self, data: str) -> dict:
+        """
+        Parses and returns the gamesave data. (CCGameManager.dat decoded)
+
+        :raises: LoginError
+        :return: The gamesave data as a dictionary.
+        :rtype: dict
+        """
+        decoded = singular_xor(data, 11)  # Ensure `data.decode()` is valid UTF-8
+        decompressed = base64_urlsafe_gzip_decompress(decoded)
+        return gamesave_to_dict(decompressed)
 
     async def login(self, name: str, password: str) -> Account:
         """
@@ -376,14 +390,14 @@ class Client:
         )
 
     @cooldown(3)
-    async def download_level(self, level_id: LevelId) -> Level:
+    async def download_level(self, level_id: Union[LevelId, SpecialLevel]) -> Level:
         """
         Downloads a specific level from the Geometry Dash servers using the provided ID.
 
         Cooldown is 3 seconds.
 
         :param id: The ID of the level.
-        :type id: LevelId
+        :type id: Union[LevelId, SpecialLevel]
         :raises: gd.InvalidID
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
@@ -401,56 +415,44 @@ class Client:
         return Level.from_raw(response).attach_client(self)
 
     @cooldown(3)
-    async def download_special_level(
-        self, special: SpecialLevel, time_left: bool = False
-    ) -> Union[Level, tuple[Level, timedelta]]:
+    async def special_level_data(self, special: SpecialLevel) -> tuple[timedelta, int]:
         """
-        Downloads the daily or weekly level from the Geometry Dash servers.
+        Gets the time left and level index for the next level in daily or weekly.
+
+        **Index information:**
+
+        Daily index = index
+
+        Weekly index = index + 100000
 
         Cooldown is 3 seconds.
 
-        :param special: The special level to download (e.g., daily or weekly).
+        :param special: The special level to get (e.g., daily or weekly).
         :type special: SpecialLevel
-        :param time_left: If return a tuple containing the `Level` and the time left until the level is switched.
-        :type time_left: bool
         :raises: gd.LoadError
         :return: A `Level` instance containing the downloaded level data.
         :rtype: :class:`gd.entities.Level`
         """
-        special_map = tuple(filter(None, get_args(SpecialLevel)))
+        if special == "DAILY":
+            special = 0
+        elif special == "WEEKLY":
+            special = 1
+        else:
+            raise ValueError("Invalid special level. (Event is not allowed)")
 
-        if special not in special_map:
-            raise ValueError(
-                "Invalid special level. Expected 'DAILY' or 'WEEKLY' or 'EVENT'."
-            )
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/getGJDailyLevel.php",
+            data={"secret": SECRET, "type": special},
+        )
 
-        special = special_map.index(special)
+        response = response.text
+        check_errors(response, LoadError, "Unable to get special level data.")
+        response = response.split("|")
 
-        # Use asyncio.gather to download the level and time left concurrently if needed
-        tasks = [self.download_level(special)]
-
-        if time_left:
-            tasks.append(
-                send_post_request(
-                    url="http://www.boomlings.com/database/getGJDailyLevel.php",
-                    data={"secret": SECRET, "type": special},
-                )
-            )
-
-            level, daily_data = await asyncio.gather(*tasks)
-            daily_data = daily_data.text
-            check_errors(
-                daily_data,
-                LoadError,
-                "Cannot get current time left for the daily/weekly level.",
-            )
-
-            daily_data = daily_data.split("|")
-            return level.text, timedelta(seconds=int(daily_data[1]))
-
-        level = await asyncio.gather(*tasks)
-
-        return level.text
+        return (
+            timedelta(seconds=int(response[1])),
+            int(response[0]),
+        )
 
     async def search_level(
         self,
@@ -562,7 +564,7 @@ class Client:
         )
         search_data = search_data.text
 
-        check_errors(search_data, LoadError, "Unable to fetch search results.")
+        check_errors(search_data, LoadError, "Unable to get search results.")
         parsed_results = parse_search_results(search_data)
 
         return [
@@ -610,7 +612,7 @@ class Client:
         check_errors(
             response,
             LoadError,
-            "Unable to fetch level leaderboard.",
+            "Unable to get level leaderboard.",
         )
 
         response = response.text.split("#")[0].split("|")
@@ -671,7 +673,7 @@ class Client:
         check_errors(
             response,
             LoadError,
-            "Unable to fetch platformer level leaderboard.",
+            "Unable to get platformer level leaderboard.",
         )
 
         response = response.text.split("#")[0].split("|")
@@ -698,7 +700,7 @@ class Client:
         )
         response = response.content.decode()
 
-        music_library = base64_decompress(response)
+        music_library = base64_urlsafe_decompress(response)
         return MusicLibrary.from_raw(music_library)
 
     @cooldown(10)
@@ -716,7 +718,7 @@ class Client:
         )
         response = response.content.decode()
 
-        sfx_library = base64_decompress(response)
+        sfx_library = base64_urlsafe_decompress(response)
         return SoundEffectLibrary.from_raw(sfx_library)
 
     @cooldown(1)
