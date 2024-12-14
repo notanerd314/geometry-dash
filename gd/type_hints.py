@@ -60,6 +60,10 @@ Udid = str
 SongFileHubId = str
 """Type hint for a Song File Hub Id."""
 
+IconTrailId = int
+IconShipTrailId = int
+IconDeathEffectId = int
+
 LeaderboardPercentage = int
 LeaderboardPoints = int
 LeaderboardTime = int

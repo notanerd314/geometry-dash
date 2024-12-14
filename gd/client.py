@@ -10,9 +10,8 @@ from gd.parse import (
     determine_search_difficulty,
     parse_search_results,
     determine_demon_search_difficulty,
-    gamesave_to_dict,
 )
-from gd.exceptions import (
+from gd.errors import (
     check_errors,
     LoadError,
     InvalidID,
@@ -29,8 +28,6 @@ from gd.cryptography import (
     base64_urlsafe_decode,
     generate_udid,
     base64_urlsafe_decompress,
-    singular_xor,
-    base64_urlsafe_gzip_decompress,
 )
 from gd.entities.enums import (
     Length,
@@ -144,19 +141,7 @@ class Client:
         )
         response = response.text
 
-        return response.text == f"{self.account.account_id}|{self.account.player_id}"
-
-    def gamesave(self, data: str) -> dict:
-        """
-        Parses and returns the gamesave data. (CCGameManager.dat decoded)
-
-        :raises: LoginError
-        :return: The gamesave data as a dictionary.
-        :rtype: dict
-        """
-        decoded = singular_xor(data, 11)  # Ensure `data.decode()` is valid UTF-8
-        decompressed = base64_urlsafe_gzip_decompress(decoded)
-        return gamesave_to_dict(decompressed)
+        return response == f"{self.account.account_id}|{self.account.player_id}"
 
     async def login(self, name: str, password: str) -> Account:
         """

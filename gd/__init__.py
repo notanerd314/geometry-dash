@@ -72,7 +72,7 @@ from collections import namedtuple
 
 import gd.thirdparty
 from gd.client import SECRET, LOGIN_SECRET, Client
-from gd.exceptions import (
+from gd.errors import (
     LoadError,
     InvalidID,
     LoginError,

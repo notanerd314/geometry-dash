@@ -49,6 +49,7 @@ class XorKey(StrEnum):
     LIKE = "58281"
     QUEST = "19847"
     CHEST = "59182"
+    GAMESAVE = "11"
 
 
 class Salt(StrEnum):
@@ -132,7 +133,7 @@ def singular_xor(input_bytes: bytes, key: int) -> str:
     :rtype: str
     """
     string = [ord(char) for char in input_bytes]
-    result = ''.join(chr(char ^ key) for char in string)
+    result = "".join(chr(char ^ key) for char in string)
     return result
 
 
@@ -199,7 +200,8 @@ def base64_urlsafe_decompress(encrypted: str, wbits: int = 15 | 32) -> str:
     :rtype: str
     """
     decoded_data = base64.urlsafe_b64decode(add_padding(encrypted))
-    return zlib.decompress(decoded_data, wbits).decode('utf-8')
+    return zlib.decompress(decoded_data, wbits).decode("utf-8")
+
 
 def base64_urlsafe_gzip_decompress(encrypted: str) -> str:
     """

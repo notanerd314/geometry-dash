@@ -15,7 +15,7 @@ from pathlib import Path
 import aiofiles
 import httpx
 
-from .exceptions import OnCooldown, LoginError
+from .errors import OnCooldown, LoginError
 
 MAX_LENGTH = 15
 __all__ = [

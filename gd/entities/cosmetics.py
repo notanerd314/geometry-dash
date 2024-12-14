@@ -277,26 +277,6 @@ class IconSet:
     swing: Icon
     jetpack: Icon
 
-    @property
-    def all_icons(self) -> dict[Gamemode, Icon]:
-        """
-        Returns a dictionary of all icons in the set.
-
-        :return: Dictionary of all icons.
-        :rtype: dict[Gamemode, Icon]
-        """
-        return {
-            Gamemode.CUBE: self.cube,
-            Gamemode.SHIP: self.ship,
-            Gamemode.BALL: self.ball,
-            Gamemode.UFO: self.ufo,
-            Gamemode.WAVE: self.wave,
-            Gamemode.ROBOT: self.robot,
-            Gamemode.SPIDER: self.spider,
-            Gamemode.SWING: self.swing,
-            Gamemode.JETPACK: self.jetpack,
-        }
-
     @staticmethod
     def load(
         cube: IconId = 1,
@@ -408,24 +388,27 @@ class IconSet:
             ),
         )
 
-    async def render_all(self, extension: str = "png") -> dict[Gamemode, BytesIO]:
+    async def render_all(self, extension: str = "png") -> list[BytesIO]:
         """
         Renders all icons and returns a dictionary of BytesIO objects.
 
         :param extension: The file extension to get.
         :type extension: str
         :return: BytesIO representation of the icon.
-        :rtype: dict[Gamemode, io.BytesIO]
+        :rtype: list[io.BytesIO]
         """
         results = await asyncio.gather(
-            *(icon.render(extension) for icon in self.all_icons.values()),
-            return_exceptions=True,
+            self.cube.render(extension=extension),
+            self.ship.render(extension=extension),
+            self.ball.render(extension=extension),
+            self.ufo.render(extension=extension),
+            self.wave.render(extension=extension),
+            self.robot.render(extension=extension),
+            self.spider.render(extension=extension),
+            self.swing.render(extension=extension),
+            self.jetpack.render(extension=extension),
         )
-        return {
-            gamemode: result
-            for gamemode, result in zip(self.all_icons.keys(), results)
-            if not isinstance(result, Exception)
-        }
+        return results
 
     async def download_all_to(self, path: Union[str, Path] = "*/") -> None:
         """

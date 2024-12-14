@@ -67,7 +67,9 @@ def parse_level_data(text: str) -> dict[str, any]:
     parsed = parse_key_value_pairs(text)
 
     # Decrypt specific values
-    parsed["4"] = base64_urlsafe_decompress(parsed.get("4", "")) if parsed.get("4") else None
+    parsed["4"] = (
+        base64_urlsafe_decompress(parsed.get("4", "")) if parsed.get("4") else None
+    )
     parsed["3"] = (
         base64_urlsafe_decode(parsed.get("3", "")) if parsed.get("3") else None
     )
@@ -173,6 +175,7 @@ def parse_song_data(song: str) -> dict[str, any]:
     # Literally parse_key_value_pairs again lol, i'm so funni!!!!!
     return parse_key_value_pairs(song.replace("~", ""), "|")
 
+
 def gamesave_to_dict(xml: str) -> dict:
     """
     Parse the XML string and return a dictionary.
@@ -204,7 +207,9 @@ def gamesave_to_dict(xml: str) -> dict:
                     elif value_elem.tag == "t":
                         data[key] = True
                     elif value_elem.tag == "d":
-                        data[key] = parse_element(value_elem)  # Recursive call for nested <d>
+                        data[key] = parse_element(
+                            value_elem
+                        )  # Recursive call for nested <d>
         return data
 
     return parse_element(dictionary)
