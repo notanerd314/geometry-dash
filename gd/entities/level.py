@@ -472,7 +472,7 @@ class Comment(Entity):
         comment_value = parse_key_value_pairs(parsed[0], "~")
 
         return Comment(
-            level_id=int(comment_value.get("1", 0)),
+            level_id=int(comment_value.get("1", None)),
             content=base64_urlsafe_decode(comment_value.get("2", "")).decode(),
             author_player_id=int(comment_value.get("3", 0)),
             author_account_id=int(user_value.get("16", 0)),
@@ -620,7 +620,7 @@ class LevelList(_ListLevels):
             id=int(parsed.get("1", 0)),
             name=parsed.get("2", ""),
             level_ids=parse_comma_separated_int_list(parsed.get("51", "")),
-            description=base64_urlsafe_decode(parsed.get("3", "")),
+            description=base64_urlsafe_decode(parsed.get("3", "")).decode(),
             difficulty=determine_list_difficulty(parsed.get("7", None)),
             downloads=int(parsed.get("10", 0)),
             likes=int(parsed.get("14", 0)),
@@ -683,28 +683,28 @@ class MapPack(_ListLevels):
     Attributes
     ----------
     id : int
-        ID of the map pack
+        ID of the map pack.
     name : str
-        Name of the map pack
+        Name of the map pack.
     level_ids : list[LevelId]
-        The list of the levels' id.
+        The list of the levels' ID.
     stars : int
-        The star count of the map pack
+        The star count of the map pack.
     coins : int
-        The coin count of the map pack
+        The coin count of the map pack.
     difficulty : Difficulty
-        The difficulty of the map pack
-    text_rgb_color : list[int]
-        The rgb color of the map pack's text
-    progress_bar_rgb_color : list[int]
-        The rgb color of the map pack's progress bar
+        The difficulty of the map pack.
+    text_rgb_color : tuple[int]
+        The rgb color of the map pack's text.
+    progress_bar_rgb_color : tuple[int]
+        The rgb color of the map pack's progress bar.
     """
 
     stars: int = None
     coins: int = None
     difficulty: Difficulty = None
-    text_rgb_color: list[int] = None
-    progress_bar_rgb_color: list[int] = None
+    text_rgb_color: tuple[int] = None
+    progress_bar_rgb_color: tuple[int] = None
 
     @staticmethod
     def from_raw(raw_str: str) -> "MapPack":

@@ -7,7 +7,7 @@ from typing import Optional, Union, Literal, NamedTuple
 from dataclasses import dataclass
 from hashlib import sha1
 
-from gd.parse import parse_key_value_pairs
+from gd.parse import parse_key_value_pairs, parse_comma_separated_int_list
 from gd.entities.enums import Gamemode, ModRank, Item, Shard
 from gd.entities.cosmetics import IconSet
 from gd.entities.level import Comment, LevelDisplay
@@ -46,11 +46,11 @@ DifficultyStats = NamedTuple(
         ("hard", int),
         ("harder", int),
         ("insane", int),
-        ("daily", int),
-        ("gauntlet", int),
+        ("daily", Optional[int]),
+        ("gauntlet", Optional[int]),
     ],
 )
-"""A class representing how many different levels of difficulty the player has beaten."""
+"""A namedtuple for how many different levels of difficulty the player has beaten."""
 
 DemonStats = NamedTuple(
     "DemonStats",
@@ -60,11 +60,11 @@ DemonStats = NamedTuple(
         ("hard", int),
         ("insane", int),
         ("extreme", int),
-        ("weekly", int),
-        ("gauntlet", int),
+        ("weekly", Optional[int]),
+        ("gauntlet", Optional[int]),
     ],
 )
-"""A class representing how many different demon levels the player has beaten."""
+"""A namedtuple for how many different demon levels the player has beaten."""
 
 
 @dataclass
@@ -255,11 +255,11 @@ class Player(Entity):
     """The stats of platformer non-demon levels beaten."""
 
     set_ago: Optional[str] = None
-    """The last time the score was set on a level. (Only on leaderboard scores)"""
+    """The last time the score was set on a level. (Only shown on leaderboard scores)"""
     leaderboard_value: Union[
         LeaderboardTime, LeaderboardPercentage, LeaderboardPoints
     ] = None
-    """The value in the leaderboard, depending on leaderboard type. (Only on leaderboard scores)"""
+    """The value in the leaderboard, depending on leaderboard type. (Only shown on leaderboard scores)"""
 
     @staticmethod
     def from_raw(raw_str: str, parse_leaderboard_score: bool = False) -> "Player":
@@ -274,9 +274,18 @@ class Player(Entity):
         :rtype: Player
         """
         parsed = parse_key_value_pairs(raw_str)
+
         demon_stats = parsed.get("55", None)
+        if demon_stats:
+            demon_stats = parse_comma_separated_int_list(demon_stats)
+
         normal_stats = parsed.get("56", None)
+        if normal_stats:
+            normal_stats = parse_comma_separated_int_list(normal_stats)
+
         platformer_stats = parsed.get("57", None)
+        if platformer_stats:
+            platformer_stats = parse_comma_separated_int_list(platformer_stats)
 
         primary_color = int(parsed.get("10", 0))
         secondary_color = int(parsed.get("11", 0))
@@ -315,7 +324,7 @@ class Player(Entity):
                     insane=demon_stats[3],
                     extreme=demon_stats[4],
                     weekly=demon_stats[10],
-                    guantlet=demon_stats[11],
+                    gauntlet=demon_stats[11],
                 )
                 if demon_stats
                 else None
@@ -327,33 +336,19 @@ class Player(Entity):
                     hard=demon_stats[7],
                     insane=demon_stats[8],
                     extreme=demon_stats[9],
+                    weekly=None,
+                    gauntlet=None,
                 )
                 if demon_stats
                 else None
             ),
             classic_stats=(
-                DifficultyStats(
-                    auto=normal_stats[0],
-                    easy=normal_stats[1],
-                    normal=normal_stats[2],
-                    hard=normal_stats[3],
-                    harder=normal_stats[4],
-                    insane=normal_stats[5],
-                    daily=normal_stats[6],
-                    guantlet=normal_stats[7],
-                )
+                DifficultyStats(*normal_stats)
                 if normal_stats
                 else None
             ),
             platformer_stats=(
-                DifficultyStats(
-                    auto=platformer_stats[0],
-                    easy=platformer_stats[1],
-                    normal=platformer_stats[2],
-                    hard=platformer_stats[3],
-                    harder=platformer_stats[4],
-                    insane=platformer_stats[5],
-                )
+                DifficultyStats(*platformer_stats, gauntlet=None)
                 if platformer_stats
                 else None
             ),
@@ -376,7 +371,7 @@ class Player(Entity):
         )
 
     @require_client()
-    async def account_comments(self, page: int = 0) -> list[AccountComment] | None:
+    async def account_comments(self, page: int = 0) -> list[AccountComment]:
         """
         Load all account comments from the user.
 
@@ -464,7 +459,7 @@ class Chest:
         The amount of orbs in the chest.
     diamonds : int
         The amount of diamonds in the chest.
-    extra : Union[Item.DEMON_KEY, Shard, None]
+    extra : list[Item.DEMON_KEY, Shard]
         The extra item type (Demon Key, Shard, None)
     time_left : int
         Seconds left until next quest is chosen.
@@ -476,13 +471,14 @@ class Chest:
     """The amount of orbs in the chest."""
     diamonds: int
     """The amount of diamonds in the chest."""
-    extras: list[Item.DEMON_KEY, Shard, None]
+    extras: list[Item.DEMON_KEY, Shard]
     """The extra item type (Demon Key, Shard, None)"""
     time_left: int
     """Seconds left until next quest is chosen."""
     times_opened: int
     """How many times the chest is open."""
 
+# * Accounts
 
 @dataclass
 class Account:

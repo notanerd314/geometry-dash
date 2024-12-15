@@ -4,3 +4,4 @@ __pycache__/
 .vscode/
 tests.py
 setup.py
+ignore/

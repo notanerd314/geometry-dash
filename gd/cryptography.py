@@ -174,7 +174,7 @@ def base64_urlsafe_decode(encrypted: str) -> bytes:
     :param encrypted: The base64-encoded data to decode.
     :type encrypted: str
     :return: The decoded base64-encoded data.
-    :rtype: str
+    :rtype: bytes
     """
     return base64.urlsafe_b64decode(add_padding(encrypted))
 

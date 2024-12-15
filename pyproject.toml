@@ -13,7 +13,8 @@ license = { text = "MIT" }
 dependencies = [
     "httpx",
     "aiofiles",
-    "lxml"
+    "lxml",
+    "attrs",
 ]
 readme = "README.md"
 classifiers = [

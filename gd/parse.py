@@ -68,16 +68,19 @@ def parse_level_data(text: str) -> dict[str, any]:
 
     # Decrypt specific values
     parsed["4"] = (
-        base64_urlsafe_decompress(parsed.get("4", "")) if parsed.get("4") else None
+        base64_urlsafe_decompress(parsed.get("4")) if parsed.get("4") else None
     )
     parsed["3"] = (
-        base64_urlsafe_decode(parsed.get("3", "")) if parsed.get("3") else None
+        base64_urlsafe_decode(parsed.get("3")).decode() if parsed.get("3") else None
     )
     parsed["27"] = (
-        base64_urlsafe_decode(parsed.get("27"))
+        base64_urlsafe_decode(parsed.get("27")).decode()
         if parsed.get("27") not in [None, "0"]
         else None
     )
+
+    if parsed["27"] == "\x03":
+        parsed["27"] = None
 
     return parsed
 
@@ -233,20 +236,7 @@ def determine_level_difficulty(
     :raises ValueError: If the demon difficulty is invalid.
     """
     if return_demon_diff and parsed.get("17", False):
-        # If it's a demon
-        match parsed.get("43"):
-            case 3:
-                return DemonDifficulty.EASY_DEMON
-            case 4:
-                return DemonDifficulty.MEDIUM_DEMON
-            case 0:
-                return DemonDifficulty.HARD_DEMON
-            case 5:
-                return DemonDifficulty.INSANE_DEMON
-            case 6:
-                return DemonDifficulty.EXTREME_DEMON
-            case _:
-                raise ValueError(f"Invalid DemonDifficulty: {parsed.get('43')}")
+        return DemonDifficulty(parsed.get("43"))
     elif parsed.get("25"):
         # Return AUTO if auto
         return Difficulty.AUTO

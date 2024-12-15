@@ -31,7 +31,7 @@ SongId = Union[int, str]
 """Type hint for Song ID."""
 
 ArtistId = Union[int, str]
-"""Type hint for Artist ID."""
+"""Type hint for Song Artist ID."""
 
 MusicLibrarySongId = Union[int, str]
 """Type hint for Music Library Song ID."""
@@ -55,14 +55,19 @@ IconId = int
 """Type hint for Icon Id."""
 
 Udid = str
-"""Universally Unique Identifier"""
+"""Universally Unique Identifier."""
 
 SongFileHubId = str
-"""Type hint for a Song File Hub Id."""
+"""Type hint for a Song File Hub ID."""
 
 IconTrailId = int
+"""Icon trail ID."""
+
 IconShipTrailId = int
+"""Icon ship trail ID."""
+
 IconDeathEffectId = int
+"""Icon death effect ID."""
 
 LeaderboardPercentage = int
 LeaderboardPoints = int

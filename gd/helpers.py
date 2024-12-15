@@ -7,7 +7,6 @@ You typically don't want to use this module because it has limited documentation
 """
 
 from functools import wraps
-from time import time
 from typing import Union
 from io import BytesIO
 from pathlib import Path
@@ -15,13 +14,11 @@ from pathlib import Path
 import aiofiles
 import httpx
 
-from .errors import OnCooldown, LoginError
+from .errors import LoginError
 
-MAX_LENGTH = 15
 __all__ = [
     "require_client",
     "require_login",
-    "cooldown",
     "send_post_request",
     "send_get_request",
 ]
@@ -50,39 +47,6 @@ def require_client(
             if login and not self.client.logged_in:
                 raise LoginError("The client is not logged in.")
 
-            return await func(self, *args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
-def cooldown(seconds: Union[int, float]):
-    """
-    A decorator for applying cooldown to functions for each instance separately.
-
-    :param seconds: The number of seconds to wait between function calls.
-    :type seconds: Union[int, float]
-    :return: The decorated function with cooldown added per instance.
-    """
-
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            # Ensure each instance has its own last_called attribute
-            if not hasattr(self, "last_called"):
-                self.last_called = {}
-
-            last_called = self.last_called.get(func, 0)
-            elapsed = time() - last_called
-
-            if elapsed < seconds:
-                raise OnCooldown(
-                    f"This function is on cooldown for {seconds - elapsed:.3f}s."
-                )
-
-            # Update the last_called time for this function in the instance
-            self.last_called[func] = time()
             return await func(self, *args, **kwargs)
 
         return wrapper

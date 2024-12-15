@@ -4,11 +4,12 @@
 The module containing all the classes and methods related to customization and icons.
 """
 
-from dataclasses import dataclass
 from typing import Union, Optional
 from io import BytesIO
 from pathlib import Path
 import asyncio
+
+import attr
 
 from gd.entities.enums import Gamemode
 from gd.helpers import send_get_request
@@ -133,17 +134,7 @@ COLORS_LIST: dict[ColorId, ColorHex] = {
 """
 
 ICON_RENDERER = "https://gdicon.oat.zone/icon"
-GAMEMODE_MAP = {
-    "CUBE": "player",
-    "SHIP": "ship",
-    "BALL": "player_ball",
-    "UFO": "bird",
-    "WAVE": "dart",
-    "ROBOT": "robot",
-    "SPIDER": "spider",
-    "SWING": "swing",
-    "JETPACK": "jetpack",
-}
+"""API endpoint for render_to_bytesing Geometry Dash icons."""
 
 
 def color_id_to_hex(color_id: ColorId) -> Union[int, None]:
@@ -157,7 +148,7 @@ def color_id_to_hex(color_id: ColorId) -> Union[int, None]:
     return COLORS_LIST[color_id]
 
 
-@dataclass
+@attr.define(slots=True)
 class Icon:
     """
     A **dataclass** representing the icon of a specific gamemode and ID.
@@ -220,10 +211,10 @@ class Icon:
         :rtype: None
         """
         path = Path(path)
-        content = await self.render(extension=path.suffix)
+        content = await self.render_to_bytes(extension=path.suffix)
         await write(content, path)
 
-    async def render(self, extension: str = "png") -> BytesIO:
+    async def render_to_bytes(self, extension: str = "png") -> BytesIO:
         """
         Renders the icon and returns a BytesIO representation.
 
@@ -249,7 +240,7 @@ class Icon:
         return BytesIO(response.content)
 
 
-@dataclass
+@attr.define(slots=True)
 class IconSet:
     """
     A **dataclass** representing a set of icons.
@@ -388,7 +379,7 @@ class IconSet:
             ),
         )
 
-    async def render_all(self, extension: str = "png") -> list[BytesIO]:
+    async def render_all_to_bytes(self, extension: str = "png") -> list[BytesIO]:
         """
         Renders all icons and returns a dictionary of BytesIO objects.
 
@@ -398,15 +389,15 @@ class IconSet:
         :rtype: list[io.BytesIO]
         """
         results = await asyncio.gather(
-            self.cube.render(extension=extension),
-            self.ship.render(extension=extension),
-            self.ball.render(extension=extension),
-            self.ufo.render(extension=extension),
-            self.wave.render(extension=extension),
-            self.robot.render(extension=extension),
-            self.spider.render(extension=extension),
-            self.swing.render(extension=extension),
-            self.jetpack.render(extension=extension),
+            self.cube.render_to_bytes(extension=extension),
+            self.ship.render_to_bytes(extension=extension),
+            self.ball.render_to_bytes(extension=extension),
+            self.ufo.render_to_bytes(extension=extension),
+            self.wave.render_to_bytes(extension=extension),
+            self.robot.render_to_bytes(extension=extension),
+            self.spider.render_to_bytes(extension=extension),
+            self.swing.render_to_bytes(extension=extension),
+            self.jetpack.render_to_bytes(extension=extension),
         )
         return results
 
@@ -420,6 +411,6 @@ class IconSet:
         :rtype: None
         """
         path = Path(path)
-        icons = await self.render_all(path.suffix)
+        icons = await self.render_all_to_bytes(path.suffix)
         tasks = [write(icon, path) for icon in icons.values()]
         await asyncio.gather(*tasks)

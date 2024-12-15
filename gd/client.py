@@ -43,7 +43,7 @@ from gd.entities.enums import (
 from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from gd.entities.song import MusicLibrary, SoundEffectLibrary, Song
 from gd.entities.user import Account, Player, AccountComment, Quest, Chest
-from gd.helpers import send_get_request, send_post_request, cooldown, require_login
+from gd.helpers import send_get_request, send_post_request, require_login
 from gd.type_hints import (
     PlayerId,
     AccountId,
@@ -223,13 +223,10 @@ class Client:
         """
         self.account = None
 
-    @cooldown(15)
     @require_login("You need to login before you can send an account comment!")
     async def send_account_comment(self, message: str) -> AccountCommentId:
         """
         Sends an account comment to the account logged in.
-
-        Cooldown is 15 seconds.
 
         :param message: The message to send.
         :type message: str
@@ -254,7 +251,6 @@ class Client:
 
         return int(response)
 
-    @cooldown(10)
     @require_login("You need to login before you can comment!")
     async def send_comment(
         self, message: str, level_id: LevelOrListId, percentage: int = 0
@@ -263,8 +259,6 @@ class Client:
         Sends a comment to a level or list.
 
         For lists, use a **negative ID.**
-
-        Cooldown is 10 seconds.
 
         :param message: The message to send.
         :type message: str
@@ -374,12 +368,9 @@ class Client:
             "Invalid comment or level ID.",
         )
 
-    @cooldown(3)
     async def download_level(self, level_id: Union[LevelId, SpecialLevel]) -> Level:
         """
         Downloads a specific level from the Geometry Dash servers using the provided ID.
-
-        Cooldown is 3 seconds.
 
         :param id: The ID of the level.
         :type id: Union[LevelId, SpecialLevel]
@@ -399,7 +390,6 @@ class Client:
 
         return Level.from_raw(response).attach_client(self)
 
-    @cooldown(3)
     async def special_level_data(self, special: SpecialLevel) -> tuple[timedelta, int]:
         """
         Gets the time left and level index for the next level in daily or weekly.
@@ -409,8 +399,6 @@ class Client:
         Daily index = index
 
         Weekly index = index + 100000
-
-        Cooldown is 3 seconds.
 
         :param special: The special level to get (e.g., daily or weekly).
         :type special: SpecialLevel
@@ -670,12 +658,9 @@ class Client:
             for player_data in response
         ]
 
-    @cooldown(10)
     async def music_library(self) -> MusicLibrary:
         """
         Gets the current music library in RobTop's servers.
-
-        Cooldown is 10 seconds.
 
         :return: A `MusicLibrary` instance containing all the music library data.
         :rtype: :class:`gd.entities.song.MusicLibrary`
@@ -688,12 +673,9 @@ class Client:
         music_library = base64_urlsafe_decompress(response)
         return MusicLibrary.from_raw(music_library)
 
-    @cooldown(10)
     async def sfx_library(self) -> SoundEffectLibrary:
         """
         Gets the current Sound Effect library in RobTop's servers.
-
-        Cooldown is 10 seconds.
 
         :return: A `SoundEffectLibrary` instance containing all the SFX library data.
         :rtype: :class:`gd.entities.song.SoundEffectLibrary`
@@ -706,12 +688,9 @@ class Client:
         sfx_library = base64_urlsafe_decompress(response)
         return SoundEffectLibrary.from_raw(sfx_library)
 
-    @cooldown(1)
     async def get_song(self, song_id: SongId) -> Song:
         """
         Gets song by ID, either from Newgrounds or the music library.
-
-        Cooldown is 2 seconds.
 
         :param id: The ID of the song.
         :type id: SongId

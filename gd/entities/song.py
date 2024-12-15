@@ -680,7 +680,7 @@ class Song:
     @staticmethod
     def from_parsed(parsed_str: dict[str, any]) -> "Song":
         """
-        A static method that converts the parsed string into a Song .
+        A static method that converts the parsed string into a Song object.
 
         :param parsed_str: The parsed string from the servers.
         :type parsed_str: str

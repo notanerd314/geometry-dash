@@ -41,8 +41,6 @@ class Entity:
         """
         Remove a client to the attached clients list.
 
-        :param client: The client instance or the client index you want to remove.
-        :type client: Union[Client, int]
         :return: The instance of the object itself.
         :rtype: self
         """

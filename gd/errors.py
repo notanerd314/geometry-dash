@@ -21,10 +21,6 @@ class LoginError(Exception):
     """Raised when the user fails to login."""
 
 
-class OnCooldown(Exception):
-    """Raised when the method is on cooldown."""
-
-
 def check_errors(data: str, exception: Exception, text: str) -> None:
     """
     Checks the response status.
