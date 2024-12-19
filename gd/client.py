@@ -39,6 +39,7 @@ from gd.entities.enums import (
     ChestType,
     Leaderboard,
     Item,
+    OfficialSong,
 )
 from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from gd.entities.song import MusicLibrary, SoundEffectLibrary, Song
@@ -56,8 +57,8 @@ from gd.type_hints import (
     Udid,
 )
 
-SECRET = "Wmfd2893gb7"
-LOGIN_SECRET = "Wmfv3899gc9"
+secret = "Wmfd2893gb7"
+login_secret = "Wmfv3899gc9"
 QUEST_ITEM_TYPE_MAP = {
     "1": Item.ORBS,
     "2": Item.STARS,
@@ -84,16 +85,16 @@ class Client:
 
     Attributes
     ==========
-    account : Optional[Account]
-        The account associated with this client.
     udid : Udid
         The UDID associated with this client. (Generated randomly if left out)
+    account : Optional[Account]
+        The account associated with this client.
     """
 
+    udid: Udid
+    """The UDID of the client"""
     account: Optional[Account] = None
     """The account associated with this client."""
-    udid: Udid = None
-    """The UDID of the client"""
 
     def __init__(
         self,
@@ -109,14 +110,14 @@ class Client:
     def __repr__(self) -> str:
         return f"<gd.Client account={self.account} at {hex(id(self))}>"
 
-    @property
     def logged_in(self) -> bool:
-        """If the client has logged in or not."""
-        return bool(self.account)
+        """
+        If the client has logged in or not.
 
-    @logged_in.setter
-    def logged_in(self) -> None:
-        raise ValueError("This property is frozen.")
+        :return: True if the client is logged in, False otherwise.
+        :rtype: bool
+        """
+        return bool(self.account)
 
     @require_login()
     async def check_login(self) -> bool:
@@ -129,7 +130,7 @@ class Client:
         """
 
         data = {
-            "secret": LOGIN_SECRET,
+            "secret": login_secret,
             "userName": self.account.name,
             "gjp2": self.account.gjp2,
             "udid": self.udid,
@@ -159,7 +160,7 @@ class Client:
             raise LoginError("The client has already been logged in!")
 
         data = {
-            "secret": LOGIN_SECRET,
+            "secret": login_secret,
             "userName": name,
             "gjp2": gjp2(password),
             "udid": self.udid,
@@ -195,7 +196,7 @@ class Client:
         self, name: str, password: str, account_id: AccountId, player_id: PlayerId
     ) -> Account:
         """
-        Login account with given name and password without any additional checks.
+        Login account with given name and password without any additional checks in the server
 
         :param name: The account name.
         :type name: str
@@ -238,7 +239,7 @@ class Client:
             raise LoginError("The client is not logged in to post!")
 
         data = {
-            "secret": SECRET,
+            "secret": secret,
             "accountID": self.account.account_id,
             "comment": base64.urlsafe_b64encode(message.encode()).decode(),
             "gjp2": self.account.gjp2,
@@ -272,7 +273,7 @@ class Client:
         """
 
         data = {
-            "secret": SECRET,
+            "secret": secret,
             "accountID": self.account.account_id,
             "levelID": level_id,
             "userName": self.account.name,
@@ -322,7 +323,7 @@ class Client:
                 "accountID": self.account.account_id,
                 "commentID": comment_id,
                 "gjp2": self.account.gjp2,
-                "secret": SECRET,
+                "secret": secret,
             },
         )
         response = response.text
@@ -357,7 +358,7 @@ class Client:
                 "commentID": comment_id,
                 "levelID": level_id,
                 "gjp2": self.account.gjp2,
-                "secret": SECRET,
+                "secret": secret,
             },
         )
         response = response.text
@@ -381,7 +382,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/downloadGJLevel22.php",
-            data={"levelID": level_id, "secret": SECRET},
+            data={"levelID": level_id, "secret": secret},
         )
         response = response.text
 
@@ -415,7 +416,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJDailyLevel.php",
-            data={"secret": SECRET, "type": special},
+            data={"secret": secret, "type": special},
         )
 
         response = response.text
@@ -482,12 +483,12 @@ class Client:
         :return: A list of `LevelDisplay` instances.
         :rtype: list[:class:`gd.entities.LevelDisplay`]
         """
-        if src_filter == SearchFilter.FRIENDS and self.logged_in:
+        if src_filter == SearchFilter.FRIENDS and self.logged_in():
             raise ValueError("Cannot filter by friends without being logged in.")
 
         # Initialize data
         data = {
-            "secret": SECRET,
+            "secret": secret,
             "type": (
                 src_filter.value if isinstance(src_filter, SearchFilter) else src_filter
             ),
@@ -571,7 +572,7 @@ class Client:
             raise ValueError("leaderboard_type must be 'FRIENDS', 'TOP' or 'WEEKLY'.")
 
         data = {
-            "secret": SECRET,
+            "secret": secret,
             "type": leaderboard,
             "levelID": level_id,
             "accountID": self.account.account_id,
@@ -630,7 +631,7 @@ class Client:
             raise ValueError("mode must be 'TIME' or 'POINTS'.")
 
         data = {
-            "secret": SECRET,
+            "secret": secret,
             "type": leaderboard,
             "levelID": level_id,
             "accountID": self.account.account_id,
@@ -700,7 +701,7 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
-            data={"secret": SECRET, "songID": song_id},
+            data={"secret": secret, "songID": song_id},
         )
         response = response.text
 
@@ -726,14 +727,14 @@ class Client:
         if use_id:
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
             data = {
-                "secret": SECRET,
+                "secret": secret,
                 "targetAccountID": query,
-                "gjp2": self.account.gjp2 if self.logged_in else None,
-                "accountID": self.account.account_id if self.logged_in else None,
+                "gjp2": self.account.gjp2 if self.logged_in() else None,
+                "accountID": self.account.account_id if self.logged_in() else None,
             }
         else:
             url = "http://www.boomlings.com/database/getGJUsers20.php"
-            data = {"secret": SECRET, "str": query}
+            data = {"secret": secret, "str": query}
 
         response = await send_post_request(url=url, data=data)
         response = response.text
@@ -762,7 +763,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJComments21.php",
-            data={"secret": SECRET, "levelID": level_id, "page": page},
+            data={"secret": secret, "levelID": level_id, "page": page},
         )
         response = response.text
 
@@ -788,7 +789,7 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
-            data={"secret": SECRET, "accountID": account_id, "page": page},
+            data={"secret": secret, "accountID": account_id, "page": page},
         )
         response = response.text
 
@@ -827,7 +828,7 @@ class Client:
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={
-                "secret": SECRET,
+                "secret": secret,
                 "userID": player_id,
                 "page": page,
                 "mode": int(display_most_liked),
@@ -861,7 +862,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={"secret": SECRET, "type": 5, "page": page, "str": player_id},
+            data={"secret": secret, "type": 5, "page": page, "str": player_id},
         )
         response = response.text
 
@@ -893,7 +894,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJMapPacks21.php",
-            data={"secret": SECRET, "page": page},
+            data={"secret": secret, "page": page},
         )
         response = response.text
 
@@ -914,7 +915,7 @@ class Client:
         :return: A list of `Gauntlet` instances.
         :rtype: list[:class:`gd.entities.level.Gauntlet`]
         """
-        data = {"secret": SECRET}
+        data = {"secret": secret}
         if ncs:
             data["binaryVersion"] = 46
 
@@ -962,7 +963,7 @@ class Client:
         if src_filter == SearchFilter.FRIENDS and not self.account:
             raise ValueError("Only friends search is available when logged in.")
 
-        data = {"secret": SECRET, "str": query, "type": src_filter, "page": page}
+        data = {"secret": secret, "str": query, "type": src_filter, "page": page}
 
         if difficulty:
             if Difficulty.DEMON in difficulty and len(difficulty) > 1:
@@ -1022,18 +1023,18 @@ class Client:
 
         if (
             leaderboard in (Leaderboard.FRIENDS, Leaderboard.RELATIVE)
-            and not self.logged_in
+            and not self.logged_in()
         ):
             raise ValueError(
                 "Only friends or relative leaderboards is available when logged in."
             )
 
         data = {
-            "secret": SECRET,
+            "secret": secret,
             "type": leaderboard,
             "count": count,
-            "accountID": self.account.account_id if self.logged_in else None,
-            "gjp2": self.account.gjp2 if self.logged_in else None,
+            "accountID": self.account.account_id if self.logged_in() else None,
+            "gjp2": self.account.gjp2 if self.logged_in() else None,
         }
 
         response = await send_post_request(
@@ -1124,7 +1125,7 @@ class Client:
             "uuid": self.account.player_id,
             "gjp2": self.account.gjp2,
             "special": special_id,
-            "secret": SECRET,
+            "secret": secret,
             "rs": generate_rs(),
             "gameVersion": 22,
             "binaryVersion": 42,
@@ -1216,7 +1217,7 @@ class Client:
         :rtype: list[Quest]
         """
         data = {
-            "secret": SECRET,
+            "secret": secret,
             "accountID": self.account.account_id,
             "gjp2": self.account.gjp2,
             "chk": generate_digits(),
@@ -1276,7 +1277,7 @@ class Client:
             )
 
         data = {
-            "secret": SECRET,
+            "secret": secret,
             "accountID": self.account.account_id,
             "gjp2": self.account.gjp2,
             "chk": generate_digits(),
@@ -1330,3 +1331,66 @@ class Client:
                 times_opened=large_chest_open,
             ),
         ]
+
+    @require_login()
+    async def upload_level(
+        self,
+        level_string: str,
+        name: str,
+        description: str,
+        length: Length,
+        official_song: Optional[OfficialSong],
+        custom_song: Optional[SongId],
+        has_ldm: bool = True,
+        has_two_player: bool = False,
+        view_status: Literal["GLOBAL", "FRIENDS", "UNLISTED"] = "GLOBAL",
+        requested_stars: int = 0,
+        coins: int = 0,
+        version: str = 1,
+        objects: int = None,
+        time_spent_editor: timedelta = timedelta(seconds=0),
+        time_spent_previous_copy: timedelta = timedelta(seconds=0),
+        level_id: LevelId = None,
+        original_level_id: LevelId = None,
+    ) -> None:
+        """
+        Uploads or updates a level to the game.
+
+        :param level_string: The level data of a level (generated from [SPWN](https://github.com/Spu7Nix/SPWN-language) or [G.js](https://github.com/RealSput/G.js))
+        :type level_string: str
+        :param name: The name of the level.
+        :type name: str
+        :param description: The description of the level.
+        :type description: str
+        :param length: The length of the level.
+        :type length: Length
+        :param official_song: The official song of the level.
+        :type official_song: Optional[OfficialSong]
+        :param custom_song: The custom song of the level.
+        :type custom_song: Optional[SongId]
+        :param has_ldm: Whether the level has LDM. Defaults to True.
+        :type has_ldm: bool
+        :param has_two_player: Whether the level has two players. Defaults to False.
+        :type has_two_player: bool
+        :param view_status: The view status of the level. Defaults to "GLOBAL".
+        :type view_status: Literal["GLOBAL", "FRIENDS", "UNLISTED"]
+        :param requested_stars: The requested stars for the level. Defaults to 10.
+        :type requested_stars: int
+        :param coins: The coins required to unlock the level. Defaults to 0.
+        :type coins: int
+        :param version: The version of the level. Defaults to 1.
+        :type version: str
+        :param objects: The total amount of objects (calculated if left out)
+        :type objects: int
+        :param time_spent_editor: The time spent in the editor. Defaults to 0 seconds.
+        :type time_spent_editor: timedelta
+        :param time_spent_previous_copy: The time spent in the previous copy. Defaults to 0 seconds.
+        :type time_spent_previous_copy: timedelta
+        :param level_id: The ID of the level if updatiing pre-existing level. Defaults to None.
+        :type level_id: LevelId
+        :param original_level_id: The original ID of the level if the level is copied. Defaults to None.
+        :type original_level_id: LevelId
+        :return: None
+        :rtype: None
+        """
+        pass

@@ -15,7 +15,7 @@ ChestType = Literal["SMALL", "LARGE"]
 # Enum
 class OfficialSong(Enum):
     """
-    An **Enum** class representing official songs in the game.
+    Represents official songs in the game.
     """
 
     STEREOMADNESS = 0
@@ -240,7 +240,7 @@ class Item(Enum):
 
 class Shard(Enum):
     """
-    Represents shards.
+    Represents shard types.
     """
 
     FIRE = 1

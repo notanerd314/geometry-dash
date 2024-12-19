@@ -7,8 +7,9 @@ from urllib.parse import unquote
 from typing import Optional, Union
 from datetime import timedelta
 from pathlib import Path
-from dataclasses import dataclass, field
 from io import BytesIO
+
+import attr
 
 from gd.parse import parse_song_data
 from gd.helpers import send_get_request, write
@@ -26,7 +27,7 @@ __all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song"]
 # Music Library
 
 
-@dataclass
+@attr.define(slots=True)
 class MusicLibrary:
     """
     A class representing the whole entire music library.
@@ -45,14 +46,14 @@ class MusicLibrary:
 
     version: int
     """The version number of the library."""
-    artists: dict[int, "MusicLibrary.Artist"] = field(default_factory=dict)
+    artists: dict[int, "MusicLibrary.Artist"] = attr.field(default=dict)
     """The version number of the library."""
-    songs: dict[int, "MusicLibrary.Song"] = field(default_factory=dict)
+    songs: dict[int, "MusicLibrary.Song"] = attr.field(default=dict)
     """The songs of the library."""
-    tags: dict[int, str] = field(default_factory=dict)
+    tags: dict[int, str] = attr.field(default=dict)
     """The tags of the library."""
 
-    @dataclass
+    @attr.define(slots=True)
     class Artist:
         """
         A class representing an artist in the music library.
@@ -96,7 +97,7 @@ class MusicLibrary:
                 youtube_channel_id=parsed[3] if parsed[3].strip() else None,
             )
 
-    @dataclass
+    @attr.define(slots=True)
     class Song:
         """
         A class representing a song in the music library.
@@ -312,7 +313,7 @@ class MusicLibrary:
 # SFX Library
 
 
-@dataclass
+@attr.define(slots=True)
 class SoundEffectLibrary:
     """
     A class representing the sound effect library.
@@ -334,7 +335,7 @@ class SoundEffectLibrary:
     creators: list["SoundEffectLibrary.Creator"]
     sfx: list["SoundEffect"]
 
-    @dataclass
+    @attr.define(slots=True)
     class Folder:
         """
         A class representing a folder in the SFX library.
@@ -363,7 +364,7 @@ class SoundEffectLibrary:
             parsed = raw_str.strip().split(",")
             return SoundEffectLibrary.Folder(id=int(parsed[0]), name=parsed[1])
 
-    @dataclass
+    @attr.define(slots=True)
     class Creator:
         """
         A class representing a creator in the SFX library.
@@ -551,7 +552,7 @@ class SoundEffectLibrary:
         return [sfx for sfx in self.sfx if sfx.parent_folder_id == folder_id]
 
 
-@dataclass
+@attr.define(slots=True)
 class SoundEffect:
     """
     A class representing a sound effect in the SFX library.
@@ -625,7 +626,7 @@ class SoundEffect:
 # Level song
 
 
-@dataclass
+@attr.define(slots=True)
 class Song:
     """
     A class representing a level song in the Geometry Dash level.

@@ -19,7 +19,6 @@ dependencies = [
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -28,19 +27,18 @@ classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Internet :: WWW/HTTP :: HTTP Clients",
-    "Development Status :: Alpha"  # Moved from the separate classifiers section
+    "Development Status :: Alpha"
 ]
-
 [project.urls]
 homepage = "https://github.com/notanerd314/gdapi"
 source = "https://github.com/notanerd314/gdapi"
 tracker = "https://github.com/notanerd314/gdapi/issues"
 
 [project.scripts]
-requires-python = ">=3.7,<4.0"
+requires-python = ">=3.8,<4.0"
 
 [tool.setuptools]
-packages = ["gd"]  # List your packages here if you want to specify manually
+packages = ["gd"]
 
 [tool.setuptools.package-data]
 "gd" = ["*"]

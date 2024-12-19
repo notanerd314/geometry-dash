@@ -16,9 +16,9 @@ from gd.helpers import send_get_request
 from gd.type_hints import ColorId, IconId, ColorHex
 from gd.helpers import write
 
-__all__ = ["color_id_to_hex", "Icon", "IconSet"]
+__all__ = ["color_id_to_hex", "Icon", "IconSet", "colors"]
 
-COLORS_LIST: dict[ColorId, ColorHex] = {
+colors: dict[ColorId, ColorHex] = {
     0: 0x7DFF00,
     1: 0x00FF00,
     2: 0x00FF7D,
@@ -128,13 +128,10 @@ COLORS_LIST: dict[ColorId, ColorHex] = {
     106: 0x76BDFF,
 }
 
-"""A dictionary mapping all the color ids to their corresponding hex colors.
-
-**Minimum ID:** 0, **Maximum ID:** 106
-"""
+"""A dictionary mapping all the color ids to their corresponding hex colors."""
 
 ICON_RENDERER = "https://gdicon.oat.zone/icon"
-"""API endpoint for render_to_bytesing Geometry Dash icons."""
+"""API endpoint for rendering Geometry Dash icons by Oat. (Without it rendering would be impossible)"""
 
 
 def color_id_to_hex(color_id: ColorId) -> Union[int, None]:
@@ -145,7 +142,7 @@ def color_id_to_hex(color_id: ColorId) -> Union[int, None]:
     :type color_id: ColorId
     :return: The hexadecimal color code if found, otherwise None.
     """
-    return COLORS_LIST[color_id]
+    return colors[color_id]
 
 
 @attr.define(slots=True)

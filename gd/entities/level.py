@@ -6,7 +6,8 @@ A module containing all the classes and methods related to levels in Geometry Da
 
 from typing import Union, Optional
 from datetime import datetime
-from dataclasses import dataclass
+
+import attr
 
 from gd.entities.song import Song
 from gd.entities.entity import Entity
@@ -42,7 +43,7 @@ from gd.type_hints import (
 __all__ = ["Level", "LevelDisplay", "LevelList", "Comment", "Gauntlet", "MapPack"]
 
 # A dictionary containing all the names of gauntlets.
-GAUNTLETS = {
+gauntlets: dict = {
     "1": "Fire",
     "2": "Ice",
     "3": "Poison",
@@ -97,7 +98,7 @@ GAUNTLETS = {
 }
 
 
-@dataclass
+@attr.define(slots=True)
 class Level(Entity):
     """
     A class representing a downloaded level in Geometry Dash.
@@ -324,7 +325,7 @@ class Level(Entity):
         await self.client.get_comments(self.id, page)
 
 
-@dataclass
+@attr.define(slots=True)
 class LevelDisplay(Level):
     """
     A class representing a level displayed in the search results in Geometry Dash.
@@ -398,7 +399,7 @@ class LevelDisplay(Level):
         )
 
 
-@dataclass
+@attr.define(slots=True)
 class Comment(Entity):
     """
     A class representing a comment in a level.
@@ -509,7 +510,7 @@ class Comment(Entity):
         await self.client.like_comment(self.id, self.level_id, dislike)
 
 
-@dataclass
+@attr.define(slots=True)
 class _ListLevels(Entity):
     """
     A class representing a list of levels. (Not to be confused with LevelList)
@@ -521,9 +522,9 @@ class _ListLevels(Entity):
     level_ids : list[LevelId]
     """
 
-    id: int = None
-    name: str = None
-    level_ids: list[LevelId] = None
+    id: int
+    name: str
+    level_ids: list[LevelId]
 
     @require_client()
     async def levels(self) -> list[LevelDisplay]:
@@ -557,7 +558,7 @@ class _ListLevels(Entity):
         return await self.client.download_level(level_id=level_id)
 
 
-@dataclass
+@attr.define(slots=True)
 class LevelList(_ListLevels):
     """
     A class representing a list.
@@ -675,7 +676,7 @@ class LevelList(_ListLevels):
         return await self.client.get_comments(level_id=-self.id, page=page)
 
 
-@dataclass
+@attr.define(slots=True)
 class MapPack(_ListLevels):
     """
     A class representing a map pack.
@@ -730,7 +731,7 @@ class MapPack(_ListLevels):
         )
 
 
-@dataclass
+@attr.define(slots=True)
 class Gauntlet(_ListLevels):
     """
     A class representing a gauntlet.
@@ -759,7 +760,7 @@ class Gauntlet(_ListLevels):
         :return: A Gauntlet object created from the raw data.
         """
         parsed: dict = parse_key_value_pairs(raw_str)
-        name: str = GAUNTLETS[str(parsed.get("1"))]
+        name: str = gauntlets[str(parsed.get("1"))]
 
         return Gauntlet(
             id=parsed.get("1", 0),

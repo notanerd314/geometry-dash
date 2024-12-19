@@ -4,8 +4,9 @@ A module containing all the classes and methods related to users and accounts in
 """
 
 from typing import Optional, Union, Literal, NamedTuple
-from dataclasses import dataclass
 from hashlib import sha1
+
+import attr
 
 from gd.parse import parse_key_value_pairs, parse_comma_separated_int_list
 from gd.entities.enums import Gamemode, ModRank, Item, Shard
@@ -67,7 +68,7 @@ DemonStats = NamedTuple(
 """A namedtuple for how many different demon levels the player has beaten."""
 
 
-@dataclass
+@attr.define(slots=True)
 class AccountComment(Entity):
     """
     A class representing a post from a player.
@@ -133,7 +134,7 @@ class AccountComment(Entity):
         await self.client.like_post(self.id, dislike)
 
 
-@dataclass
+@attr.define(slots=True)
 class Player(Entity):
     """
     A class representing an user's profile.
@@ -342,11 +343,7 @@ class Player(Entity):
                 if demon_stats
                 else None
             ),
-            classic_stats=(
-                DifficultyStats(*normal_stats)
-                if normal_stats
-                else None
-            ),
+            classic_stats=(DifficultyStats(*normal_stats) if normal_stats else None),
             platformer_stats=(
                 DifficultyStats(*platformer_stats, gauntlet=None)
                 if platformer_stats
@@ -414,7 +411,7 @@ class Player(Entity):
         return await self.client.get_user_levels(self.player_id, page)
 
 
-@dataclass
+@attr.define(slots=True)
 class Quest:
     """
     Represents a quest in Geometry Dash.
@@ -448,7 +445,7 @@ class Quest:
 # * Chests
 
 
-@dataclass
+@attr.define(slots=True)
 class Chest:
     """
     Represents a chest in Geometry Dash.
@@ -478,9 +475,11 @@ class Chest:
     times_opened: int
     """How many times the chest is open."""
 
+
 # * Accounts
 
-@dataclass
+
+@attr.define(slots=True)
 class Account:
     """
     Represents an account (not Player) on Geometry Dash.

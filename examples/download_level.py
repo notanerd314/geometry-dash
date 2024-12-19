@@ -1,6 +1,7 @@
 import asyncio
 import gd
 
+
 async def main():
     # Initialize the client
     client = gd.Client()
@@ -10,6 +11,7 @@ async def main():
 
     # Prints the level instance
     print(level)
+
 
 # Runs the async function
 asyncio.run(main())

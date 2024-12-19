@@ -137,36 +137,6 @@ def singular_xor(input_bytes: bytes, key: int) -> str:
     return result
 
 
-def robtop_cipher(value: str, key: int = 37526) -> str:
-    """
-    I'm too lazy to document this piece of crap.
-
-    :param value: The string to be encrypted.
-    :param key: The encryption key (an integer).
-
-    :return: The encrypted string in URL-safe base64 format.
-    """
-    # Convert the key to a string for cyclic XOR use
-    key_str = str(key)
-    key_len = len(key_str)
-
-    # Perform XOR on each character in the value using the key
-    xored_str = "".join(
-        chr(ord(char) ^ ord(key_str[i % key_len])) for i, char in enumerate(value)
-    )
-
-    # Convert the XORed string to bytes
-    xored_bytes = xored_str.encode("utf-8")
-
-    # Encode the XORed bytes to base64
-    base64_encoded = base64.b64encode(xored_bytes).decode("utf-8")
-
-    # Replace '/' with '_' and '+' with '-'
-    encrypted_string = base64_encoded.replace("/", "_").replace("+", "-")
-
-    return encrypted_string
-
-
 def base64_urlsafe_decode(encrypted: str) -> bytes:
     """
     Decode base64-encoded data with padding and URL-safe encoding.
@@ -215,6 +185,20 @@ def base64_urlsafe_gzip_decompress(encrypted: str) -> str:
     padded_data = add_padding(encrypted)
     decoded_data = base64.urlsafe_b64decode(padded_data)
     return gzip.decompress(decoded_data).decode(errors="replace")
+
+
+def decrypt_gamesave(gamesave: str) -> str:
+    """
+    Decrypts CCGameManager.dat.
+
+    :param gamesave: Non-binary gamesave
+    :type gamesave: str
+    :return: Decrypted gamesave.
+    :rtype: str
+    """
+    decoded = singular_xor(gamesave, int(XorKey.GAMESAVE))
+    decompressed = base64_urlsafe_gzip_decompress(decoded)
+    return decompressed
 
 
 def generate_rs(n: int = 10) -> str:

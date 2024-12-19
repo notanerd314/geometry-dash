@@ -13,7 +13,7 @@ __url__ = "https://github.com/notanerd314/gdapi"
 
 from collections import namedtuple
 
-from gd.client import SECRET, LOGIN_SECRET, Client
+from gd.client import secret, login_secret, Client
 from gd.errors import (
     LoadError,
     InvalidID,
@@ -27,6 +27,8 @@ from gd.cryptography import (
     generate_chk,
     cyclic_xor,
     singular_xor,
+    generate_udid,
+    decrypt_gamesave,
 )
 from gd.entities.enums import (
     Length,
@@ -50,7 +52,7 @@ from gd.entities.song import (
     SoundEffect,
 )
 from gd.entities.user import Account, Player, AccountComment, Quest, Chest
-from gd.entities.cosmetics import Icon, IconSet, COLORS_LIST
+from gd.entities.cosmetics import Icon, IconSet, colors
 
 __all__ = [
     # Main client
@@ -95,9 +97,9 @@ __all__ = [
     "Icon",
     "IconSet",
     # Constants
-    "SECRET",
-    "LOGIN_SECRET",
-    "COLORS_LIST",
+    "secret",
+    "login_secret",
+    "colors",
     # Cryptography
     "gjp2",
     "generate_chk",
@@ -105,6 +107,8 @@ __all__ = [
     "XorKey",
     "cyclic_xor",
     "singular_xor",
+    "generate_udid",
+    "decrypt_gamesave",
 ]
 
 VersionInfo: namedtuple = namedtuple("VersionInfo", "major minor micro")

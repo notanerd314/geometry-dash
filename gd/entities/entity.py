@@ -4,7 +4,11 @@
 A file containing all the entity classes to inherit from.
 """
 
-from typing import Self
+from __future__ import annotations  # For type hints
+from typing import Self, TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from gd.client import Client
 
 __all__ = ["Entity"]
 
@@ -15,14 +19,14 @@ class Entity:
 
     Attributes
     ----------
-    client : Client
+    client : Optional[Client]
         The client attached to the object. Used for accounts login and interaction.
     """
 
-    client: "Client" = None  # type: ignore
+    client: Optional[Client] = None  # type: ignore
     """The client attached to the object. Used for accounts login and interaction."""
 
-    def attach_client(self, client: "Client") -> Self:  # type: ignore
+    def attach_client(self, client: Client) -> Self:  # type: ignore
         """
         Adds a client to the attached clients list.
 
