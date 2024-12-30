@@ -501,7 +501,7 @@ class Account:
     player_id: PlayerId
     """Player ID associated with the account."""
     name: Optional[str]
-    """Name of the account holder."""
+    """Name of the account."""
     password: str
     """Plaintext password of the account."""
 

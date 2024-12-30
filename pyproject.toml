@@ -3,39 +3,41 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gdapi"
+name = "geometry-dash"
 version = "0.1.0"
 description = "A Geometry Dash API Wrapper"
 authors = [
-    { name="notanerd1", email="ngoca0309@outlook.com" }
+    { name="notanerd", email="ngocan.pham0309@gmail.com" }
 ]
 license = { text = "MIT" }
 dependencies = [
     "httpx",
     "aiofiles",
-    "lxml",
     "attrs",
 ]
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Internet :: WWW/HTTP :: HTTP Clients",
-    "Development Status :: Alpha"
+    "Topic :: Internet :: WWW/HTTP",
+    "Development Status :: 4 - Beta"
 ]
-[project.urls]
-homepage = "https://github.com/notanerd314/gdapi"
-source = "https://github.com/notanerd314/gdapi"
-tracker = "https://github.com/notanerd314/gdapi/issues"
+requires-python = ">=3.7,<4.0"
 
-[project.scripts]
-requires-python = ">=3.8,<4.0"
+[project.urls]
+homepage = "https://github.com/notanerd314/geometry-dash"
+source = "https://github.com/notanerd314/geometry-dash"
+tracker = "https://github.com/notanerd314/geometry-dash/issues"
 
 [tool.setuptools]
 packages = ["gd"]

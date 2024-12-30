@@ -21,7 +21,12 @@ class LoginError(Exception):
     """Raised when the user fails to login."""
 
 
-def check_errors(data: str, exception: Exception, text: str) -> None:
+def check_errors(
+    data: str,
+    exception: Exception,
+    text: str,
+    crash_values: tuple[any] = ("-1",),
+) -> None:
     """
     Checks the response status.
 
@@ -31,6 +36,11 @@ def check_errors(data: str, exception: Exception, text: str) -> None:
     :type exception: Exception
     :param text: The error message to display when the response status is -1
     :type text: str
+    :param crash_values: The values that should trigger the exception (Default is ("-1",))
+    :type crash_values: tuple[any]
+    :raises: Exception
+    :return: None
+    :rtype: None
     """
-    if data == "-1":
+    if data in crash_values:
         raise exception(text)

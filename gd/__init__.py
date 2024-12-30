@@ -13,7 +13,7 @@ __url__ = "https://github.com/notanerd314/gdapi"
 
 from collections import namedtuple
 
-from gd.client import secret, login_secret, Client
+from gd.client import SECRET, LOGIN_SECRET, MODERATOR_SECRET, Client
 from gd.errors import (
     LoadError,
     InvalidID,
@@ -97,8 +97,9 @@ __all__ = [
     "Icon",
     "IconSet",
     # Constants
-    "secret",
-    "login_secret",
+    "SECRET",
+    "LOGIN_SECRET",
+    "MODERATOR_SECRET",
     "colors",
     # Cryptography
     "gjp2",

@@ -175,7 +175,7 @@ def base64_urlsafe_decompress(encrypted: str, wbits: int = 15 | 32) -> str:
 
 def base64_urlsafe_gzip_decompress(encrypted: str) -> str:
     """
-    Decode a base64 encoded string then decompress it with zlib.
+    Decode a base64 encoded string then decompress it with gzip.
 
     :param encrypted: The base64-encoded string to decompress.
     :type encrypted: str
@@ -185,6 +185,20 @@ def base64_urlsafe_gzip_decompress(encrypted: str) -> str:
     padded_data = add_padding(encrypted)
     decoded_data = base64.urlsafe_b64decode(padded_data)
     return gzip.decompress(decoded_data).decode(errors="replace")
+
+
+def base64_urlsafe_gzip_compress(plain: str) -> str:
+    """
+    Compress the data then convert it into a base64 urlsafe string.
+
+    :param plain: The string to compress.
+    :type plain: str
+    :return: The compressed data as a string.
+    :rtype: str
+    """
+    compressed = gzip.compress(plain.encode("utf-8"))
+    encoded = base64.urlsafe_b64encode(compressed).decode()
+    return encoded
 
 
 def decrypt_gamesave(gamesave: str) -> str:

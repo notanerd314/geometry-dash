@@ -1,17 +1,17 @@
-# `gdapi`
+# `geometry-dash`
 
 An asynchronous API wrapper for **Geometry Dash**. *(Pointercrate support coming soon)*
 
 ![WIP](Https://img.shields.io/badge/Work%20In%20Progress-dark_green)
-![License](https://img.shields.io/github/license/notanerd314/gdapi?color=yellow)
-![Commits](https://img.shields.io/github/commit-activity/w/notanerd314/gdapi?label=commits&logo=github)
+![License](https://img.shields.io/github/license/notanerd314/geometry-dash?color=yellow)
+![Commits](https://img.shields.io/github/commit-activity/w/notanerd314/geometry-dash?label=commits&logo=github)
 ![Discord](https://img.shields.io/discord/1292437262155382816?label=discord&logo=discord&color=blue&logoColor=white)
 
 ---
 
 ## Features
 
-`gdapi` currently supports:
+`geometry-dash` currently supports:
 - Account login
 - Level download and search
 - Map packs, gauntlets, and level lists
@@ -19,23 +19,21 @@ An asynchronous API wrapper for **Geometry Dash**. *(Pointercrate support coming
 - Leaderboards
 - Comments and account posts
 
-<!-- ---
 
 ## Installation
 
-Install `gdapi` via PyPI:
+Install `geometry-dash` via PyPI:
 
 ```bash
-$ python -m pip install gdapi
+$ python -m pip install geometry-dash
 ```
 
 **Requirements:** Python 3.7 or greater
 
 **Dependencies:**
 - aiohttp
-- aiofiles -->
-
----
+- aiofiles
+- attrs
 
 # Usage
 - Downloading a Level:
@@ -95,9 +93,15 @@ print(comment_id)  # 2994273
 ```
 ---
 
+# Changelog
+### 0.1.0 (Release version)
+- Release module
+- Work in progress documentation
+
 # Notes
 - This project is a **work in progress**. Expect some features to change or improve over time.
 - Contributions and feedback are welcome!
+- Documentation will be available after the module is published.
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
