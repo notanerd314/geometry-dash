@@ -140,7 +140,7 @@ class Client:
         """
 
         data = {
-            "SECRET": LOGIN_SECRET,
+            "secret": LOGIN_SECRET,
             "userName": self.account.name,
             "gjp2": self.account.gjp2,
             "udid": self.udid,
@@ -170,7 +170,7 @@ class Client:
             raise LoginError("The client has already been logged in!")
 
         data = {
-            "SECRET": LOGIN_SECRET,
+            "secret": LOGIN_SECRET,
             "userName": name,
             "gjp2": gjp2(password),
             "udid": self.udid,
@@ -249,7 +249,7 @@ class Client:
             raise LoginError("The client is not logged in to post!")
 
         data = {
-            "SECRET": SECRET,
+            "secret": SECRET,
             "accountID": self.account.account_id,
             "comment": base64.urlsafe_b64encode(message.encode()).decode(),
             "gjp2": self.account.gjp2,
@@ -283,7 +283,7 @@ class Client:
         """
 
         data = {
-            "SECRET": SECRET,
+            "secret": SECRET,
             "accountID": self.account.account_id,
             "levelID": level_id,
             "userName": self.account.name,
@@ -333,7 +333,7 @@ class Client:
                 "accountID": self.account.account_id,
                 "commentID": comment_id,
                 "gjp2": self.account.gjp2,
-                "SECRET": SECRET,
+                "secret": SECRET,
             },
         )
         response = response.text
@@ -368,7 +368,7 @@ class Client:
                 "commentID": comment_id,
                 "levelID": level_id,
                 "gjp2": self.account.gjp2,
-                "SECRET": SECRET,
+                "secret": SECRET,
             },
         )
         response = response.text
@@ -392,7 +392,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/downloadGJLevel22.php",
-            data={"levelID": level_id, "SECRET": SECRET},
+            data={"levelID": level_id, "secret": SECRET},
         )
         response = response.text
 
@@ -426,7 +426,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJDailyLevel.php",
-            data={"SECRET": SECRET, "type": special},
+            data={"secret": SECRET, "type": special},
         )
 
         response = response.text
@@ -498,7 +498,7 @@ class Client:
 
         # Initialize data
         data = {
-            "SECRET": SECRET,
+            "secret": SECRET,
             "type": (
                 src_filter.value if isinstance(src_filter, SearchFilter) else src_filter
             ),
@@ -582,7 +582,7 @@ class Client:
             raise ValueError("leaderboard_type must be 'FRIENDS', 'TOP' or 'WEEKLY'.")
 
         data = {
-            "SECRET": SECRET,
+            "secret": SECRET,
             "type": leaderboard,
             "levelID": level_id,
             "accountID": self.account.account_id,
@@ -641,7 +641,7 @@ class Client:
             raise ValueError("mode must be 'TIME' or 'POINTS'.")
 
         data = {
-            "SECRET": SECRET,
+            "secret": SECRET,
             "type": leaderboard,
             "levelID": level_id,
             "accountID": self.account.account_id,
@@ -711,7 +711,7 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
-            data={"SECRET": SECRET, "songID": song_id},
+            data={"secret": SECRET, "songID": song_id},
         )
         response = response.text
 
@@ -737,14 +737,14 @@ class Client:
         if use_id:
             url = "http://www.boomlings.com/database/getGJUserInfo20.php"
             data = {
-                "SECRET": SECRET,
+                "secret": SECRET,
                 "targetAccountID": query,
                 "gjp2": self.account.gjp2 if self.logged_in() else None,
                 "accountID": self.account.account_id if self.logged_in() else None,
             }
         else:
             url = "http://www.boomlings.com/database/getGJUsers20.php"
-            data = {"SECRET": SECRET, "str": query}
+            data = {"secret": SECRET, "str": query}
 
         response = await send_post_request(url=url, data=data)
         response = response.text
@@ -773,7 +773,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJComments21.php",
-            data={"SECRET": SECRET, "levelID": level_id, "page": page},
+            data={"secret": SECRET, "levelID": level_id, "page": page},
         )
         response = response.text
 
@@ -799,7 +799,7 @@ class Client:
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
-            data={"SECRET": SECRET, "accountID": account_id, "page": page},
+            data={"secret": SECRET, "accountID": account_id, "page": page},
         )
         response = response.text
 
@@ -838,7 +838,7 @@ class Client:
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
             data={
-                "SECRET": SECRET,
+                "secret": SECRET,
                 "userID": player_id,
                 "page": page,
                 "mode": int(display_most_liked),
@@ -872,7 +872,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevels21.php",
-            data={"SECRET": SECRET, "type": 5, "page": page, "str": player_id},
+            data={"secret": SECRET, "type": 5, "page": page, "str": player_id},
         )
         response = response.text
 
@@ -904,7 +904,7 @@ class Client:
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJMapPacks21.php",
-            data={"SECRET": SECRET, "page": page},
+            data={"secret": SECRET, "page": page},
         )
         response = response.text
 
@@ -925,7 +925,7 @@ class Client:
         :return: A list of `Gauntlet` instances.
         :rtype: list[:class:`gd.entities.level.Gauntlet`]
         """
-        data = {"SECRET": SECRET}
+        data = {"secret": SECRET}
         if ncs:
             data["binaryVersion"] = 46
 
@@ -973,7 +973,7 @@ class Client:
         if src_filter == SearchFilter.FRIENDS and not self.account:
             raise ValueError("Only friends search is available when logged in.")
 
-        data = {"SECRET": SECRET, "str": query, "type": src_filter, "page": page}
+        data = {"secret": SECRET, "str": query, "type": src_filter, "page": page}
 
         if difficulty:
             if Difficulty.DEMON in difficulty and len(difficulty) > 1:
@@ -1040,7 +1040,7 @@ class Client:
             )
 
         data = {
-            "SECRET": SECRET,
+            "secret": SECRET,
             "type": leaderboard,
             "count": count,
             "accountID": self.account.account_id if self.logged_in() else None,
@@ -1098,7 +1098,7 @@ class Client:
                 stars=int(player[3]),
                 demons=int(player[4]),
                 user_coins=int(player[5]),
-                SECRET_coins=int(player[6]),
+                secret_coins=int(player[6]),
             ).attach_client(self)
             for player in players
         ]
@@ -1135,7 +1135,7 @@ class Client:
             "uuid": self.account.player_id,
             "gjp2": self.account.gjp2,
             "special": special_id,
-            "SECRET": SECRET,
+            "secret": SECRET,
             "rs": generate_rs(),
             "gameVersion": 22,
             "binaryVersion": 42,
@@ -1227,7 +1227,7 @@ class Client:
         :rtype: list[Quest]
         """
         data = {
-            "SECRET": SECRET,
+            "secret": SECRET,
             "accountID": self.account.account_id,
             "gjp2": self.account.gjp2,
             "chk": generate_digits(),
@@ -1287,7 +1287,7 @@ class Client:
             )
 
         data = {
-            "SECRET": SECRET,
+            "secret": SECRET,
             "accountID": self.account.account_id,
             "gjp2": self.account.gjp2,
             "chk": generate_digits(),
@@ -1343,7 +1343,7 @@ class Client:
         ]
 
     @require_login()
-    async def suggest_stars(self, level_id: LevelId, stars: int, rating: LevelRating) -> None:
+    async def suggest_levels(self, level_id: LevelId, stars: int, rating: LevelRating) -> None:
         """
         Suggests a level to RobTop. (moderators only)
 
@@ -1364,7 +1364,7 @@ class Client:
             "feature": rating.value + 1,
             "levelID": level_id,
             "stars": stars,
-            "SECRET": MODERATOR_SECRET,
+            "secret": MODERATOR_SECRET,
         }
 
         response = await send_post_request(
@@ -1436,7 +1436,7 @@ class Client:
     #     :rtype: None
     #     """
     #     data = {
-    #         "SECRET": SECRET,
+    #         "secret": SECRET,
     #         "accountID": self.account.account_id,
     #         "gjp2": self.account.gjp2,
     #         "userName": self.account.name,

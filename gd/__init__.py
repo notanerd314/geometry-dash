@@ -8,8 +8,8 @@ __license__: str = "MIT"
 __copyright__: str = "Copyright 2024 notanerd"
 __version__: str = "0.1.0"
 
-__description__ = "API wrapper for Geometry Dash written in Python 3."
-__url__ = "https://github.com/notanerd314/gdapi"
+__description__ = "An API wrapper for Geometry Dash."
+__url__ = "https://github.com/notanerd314/geometry"
 
 from collections import namedtuple
 
