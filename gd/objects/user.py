@@ -1,32 +1,32 @@
 """
-## .models.users
+## .objects.users
 A module containing all the classes and methods related to users and accounts in Geometry Dash.
 """
 
-from typing import Optional, Union, Literal, NamedTuple
-from hashlib import sha1
+from typing import Optional, Literal, NamedTuple
 
 import attr
 
-from gd.parse import parse_key_value_pairs, parse_comma_separated_int_list
-from gd.entities.enums import Gamemode, ModRank, Item, Shard
-from gd.entities.cosmetics import IconSet
-from gd.entities.level import Comment, LevelDisplay
-from gd.entities.entity import Entity
-from gd.cryptography import base64_urlsafe_decode
+from gd.parse import (
+    parse_key_value_pairs,
+    parse_comma_separated_int_list,
+    string_to_seconds,
+)
+from gd.objects.enums import Gamemode, ModRank, Item, Shard, ChestType
+from gd.objects.cosmetics import IconSet
+from gd.objects.level import Comment, LevelDisplay
+from gd.objects.object import Object
+from gd.cryptography import base64_urlsafe_decode, gjp2
 from gd.helpers import require_client
 from gd.type_hints import (
     AccountId,
     PlayerId,
     AccountCommentId,
     ColorId,
-    LeaderboardPercentage,
-    LeaderboardPoints,
-    LeaderboardTime,
+    LeaderboardValue,
 )
 
 SECRET = "Wmfd2893gb7"
-PASSWORD_SALT = "mI29fmAnxgTs"
 
 __all__ = [
     "AccountComment",
@@ -69,7 +69,7 @@ DemonStats = NamedTuple(
 
 
 @attr.define(slots=True)
-class AccountComment(Entity):
+class AccountComment(Object):
     """
     A class representing a post from a player.
 
@@ -82,7 +82,7 @@ class AccountComment(Entity):
     id : AccountCommentId
         The ID of the account comment.
     posted_ago : relativedelta
-        Time passed after the post was created.
+        Seconds passed after the comment was posted.
     author_account_id : Optional[AccountId]
         The ID of the author, or None if doesn't exist.
     """
@@ -94,7 +94,7 @@ class AccountComment(Entity):
     id: AccountCommentId = None
     """The ID of the account comment."""
     posted_ago: str = None
-    """The time when the post was posted, e.g., '5 months'."""
+    """Seconds passed after the comment was posted."""
     author_account_id: Optional[AccountId] = None
     """The ID of the author, or None if it doesn't exist."""
 
@@ -117,7 +117,7 @@ class AccountComment(Entity):
             content=base64_urlsafe_decode(comment_value.get("2", "")),
             likes=int(comment_value.get("4", 0)),
             id=int(comment_value.get("6", 0)),
-            posted_ago=comment_value.get("9", "0 seconds"),
+            posted_ago=string_to_seconds(comment_value.get("9", "0 seconds")),
             author_account_id=account_id,
         )
 
@@ -135,7 +135,7 @@ class AccountComment(Entity):
 
 
 @attr.define(slots=True)
-class Player(Entity):
+class Player(Object):
     """
     A class representing an user's profile.
 
@@ -255,11 +255,9 @@ class Player(Entity):
     platformer_stats: Optional[DifficultyStats] = None
     """The stats of platformer non-demon levels beaten."""
 
-    set_ago: Optional[str] = None
-    """The last time the score was set on a level. (Only shown on leaderboard scores)"""
-    leaderboard_value: Union[
-        LeaderboardTime, LeaderboardPercentage, LeaderboardPoints
-    ] = None
+    leaderboard_set_ago: Optional[str] = None
+    """The amount of seconds passed after the record was placed."""
+    leaderboard_value: LeaderboardValue = None
     """The value in the leaderboard, depending on leaderboard type. (Only shown on leaderboard scores)"""
 
     @staticmethod
@@ -363,7 +361,7 @@ class Player(Entity):
                 secondary_color=secondary_color,
                 glow_color=glow_color,
             ),
-            set_ago=parsed.get("42", "0 seconds"),
+            leaderboard_set_ago=string_to_seconds(parsed.get("42", "0 seconds")),
             leaderboard_value=int(parsed.get("3")) if parse_leaderboard_score else None,
         )
 
@@ -377,7 +375,7 @@ class Player(Entity):
         :return: A list of AccountComment instances or None if the request failed.
         :rtype: list[AccountComment]
         """
-        return await self.client.get_user_posts(self.player_id, page)
+        return await self.client.get_user_account_comments(self.player_id, page)
 
     @require_client()
     async def comments(
@@ -411,7 +409,7 @@ class Player(Entity):
         return await self.client.get_user_levels(self.player_id, page)
 
 
-@attr.define(slots=True)
+@attr.define(slots=True, frozen=True)
 class Quest:
     """
     Represents a quest in Geometry Dash.
@@ -445,7 +443,7 @@ class Quest:
 # * Chests
 
 
-@attr.define(slots=True)
+@attr.define(slots=True, frozen=True)
 class Chest:
     """
     Represents a chest in Geometry Dash.
@@ -456,8 +454,8 @@ class Chest:
         The amount of orbs in the chest.
     diamonds : int
         The amount of diamonds in the chest.
-    extra : list[Item.DEMON_KEY, Shard]
-        The extra item type (Demon Key, Shard, None)
+    items : list[Item.DEMON_KEY, Shard]
+        Extra items in the chest.
     time_left : int
         Seconds left until next quest is chosen.
     times_opened: int
@@ -468,18 +466,20 @@ class Chest:
     """The amount of orbs in the chest."""
     diamonds: int
     """The amount of diamonds in the chest."""
-    extras: list[Item.DEMON_KEY, Shard]
-    """The extra item type (Demon Key, Shard, None)"""
+    items: list[Item.DEMON_KEY, Shard]
+    """Extra items in the chest."""
     time_left: int
     """Seconds left until next quest is chosen."""
     times_opened: int
     """How many times the chest is open."""
+    chest_type: ChestType
+    """Chest type."""
 
 
 # * Accounts
 
 
-@attr.define(slots=True)
+@attr.define(slots=True, frozen=True)
 class Account:
     """
     Represents an account (not Player) on Geometry Dash.
@@ -510,6 +510,4 @@ class Account:
         """
         Generate GJP2 hash from password. (Recommended)
         """
-        encrypted_password = self.password + PASSWORD_SALT
-        gjp = sha1(encrypted_password.encode()).hexdigest()
-        return gjp
+        return gjp2(self.password)

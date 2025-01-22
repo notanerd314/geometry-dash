@@ -1,7 +1,7 @@
 __doc__ = """Accessing the Geometry Dash API programmatically."""
 
 from datetime import timedelta
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Iterable
 import random
 import base64
 
@@ -11,13 +11,7 @@ from gd.parse import (
     parse_search_results,
     determine_demon_search_difficulty,
 )
-from gd.errors import (
-    check_errors,
-    LoadError,
-    InvalidID,
-    LoginError,
-    NoPremission
-)
+from gd.errors import check_response_errors, LoadError, InvalidID, LoginError, NoPremission
 from gd.cryptography import (
     Salt,
     XorKey,
@@ -32,7 +26,7 @@ from gd.cryptography import (
     # base64_encode,
     # base64_urlsafe_gzip_compress
 )
-from gd.entities.enums import (
+from gd.objects.enums import (
     Length,
     LevelRating,
     SearchFilter,
@@ -43,9 +37,9 @@ from gd.entities.enums import (
     Leaderboard,
     Item,
 )
-from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
-from gd.entities.song import MusicLibrary, SoundEffectLibrary, Song
-from gd.entities.user import Account, Player, AccountComment, Quest, Chest
+from gd.objects.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
+from gd.objects.song import MusicLibrary, SoundEffectLibrary, Song
+from gd.objects.user import Account, Player, AccountComment, Quest, Chest
 from gd.helpers import send_get_request, send_post_request, require_login
 from gd.type_hints import (
     PlayerId,
@@ -164,7 +158,7 @@ class Client:
         :type password: str
 
         :return: The Account instance
-        :rtype: :class:`gd.entities.Account`
+        :rtype: :class:`gd.objects.Account`
         """
         if self.account:
             raise LoginError("The client has already been logged in!")
@@ -218,7 +212,7 @@ class Client:
         :type player_id: PlayerId
 
         :return: The Account instance
-        :rtype: :class:`gd.entities.Account`
+        :rtype: :class:`gd.objects.Account`
         """
         self.account = Account(
             account_id=account_id, player_id=player_id, name=name, password=password
@@ -308,7 +302,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(
+        check_response_errors(
             response,
             InvalidID,
             "Unable to post comment, maybe the level ID is wrong?",
@@ -338,7 +332,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(
+        check_response_errors(
             response,
             InvalidID,
             "Unable to delete post, perhaps wrong ID?",
@@ -373,7 +367,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(
+        check_response_errors(
             response,
             InvalidID,
             "Invalid comment or level ID.",
@@ -387,7 +381,7 @@ class Client:
         :type id: Union[LevelId, SpecialLevel]
         :raises: gd.InvalidID
         :return: A `Level` instance containing the downloaded level data.
-        :rtype: :class:`gd.entities.Level`
+        :rtype: :class:`gd.objects.Level`
         """
 
         response = await send_post_request(
@@ -397,11 +391,11 @@ class Client:
         response = response.text
 
         # Check if response is valid
-        check_errors(response, InvalidID, f"Invalid level ID {level_id}.")
+        check_response_errors(response, InvalidID, f"Invalid level ID {level_id}.")
 
         return Level.from_raw(response).attach_client(self)
 
-    async def special_level_data(self, special: SpecialLevel) -> tuple[timedelta, int]:
+    async def special_level_data(self, weekly: bool = False) -> tuple[timedelta, int]:
         """
         Gets the time left and level index for the next level in daily or weekly.
 
@@ -411,18 +405,13 @@ class Client:
 
         Weekly index = index + 100000
 
-        :param special: The special level to get (e.g., daily or weekly).
-        :type special: SpecialLevel
+        :param weekly: If weekly, else daily.
+        :type weekly: bool
         :raises: gd.LoadError
-        :return: A `Level` instance containing the downloaded level data.
-        :rtype: :class:`gd.entities.Level`
+        :return: A tuple of the current time left before the next level and the current index.
+        :rtype: tuple[timedelta, int]
         """
-        if special == "DAILY":
-            special = 0
-        elif special == "WEEKLY":
-            special = 1
-        else:
-            raise ValueError("Invalid special level. (Event is not allowed)")
+        special = int(weekly)
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJDailyLevel.php",
@@ -430,7 +419,7 @@ class Client:
         )
 
         response = response.text
-        check_errors(response, LoadError, "Unable to get special level data.")
+        check_response_errors(response, LoadError, "Unable to get special level data.")
         response = response.split("|")
 
         return (
@@ -444,12 +433,12 @@ class Client:
         page: int = 0,
         level_rating: LevelRating = None,
         length: Length = None,
-        difficulty: list[Difficulty] = None,
+        difficulty: tuple[Difficulty] = None,
         demon_difficulty: DemonDifficulty = None,
         two_player_mode: bool = False,
         has_coins: bool = False,
         original: bool = False,
-        song_id: int = None,
+        song_id: SongId = None,
         gd_world: bool = False,
         src_filter: SearchFilter = 0,
     ) -> list[LevelDisplay]:
@@ -471,7 +460,7 @@ class Client:
         :param length: The length filter.
         :type length: Optional[Length]
         :param difficulty: The difficulty filter.
-        :type difficulty: Optional[list[Difficulty]]
+        :type difficulty: Optional[tuple[Difficulty]]
         :param demon_difficulty: The demon difficulty filter.
         :type demon_difficulty: Optional[DemonDifficulty]
         :param two_player_mode: Filters level that has two player mode enabled.
@@ -481,20 +470,26 @@ class Client:
         :param original: Filters level that has not been copied.
         :type original: Optional[bool]
         :param song_id: Filters level that has the specified song ID.
-        :type song_id: Optional[int]
+        :type song_id: Optional[SongId]
         :param gd_world: Filters level that is from Geometry Dash World.
         :type gd_world: Optional[bool]
         :param src_filter: Filters the result by Magic, Recent, ...
-        :type src_filter: Optional[Union[filter, str]]
+        :type src_filter: Optional[SearchFilter]
 
         :raises: gd.LoadError
         :raises: ValueError
 
         :return: A list of `LevelDisplay` instances.
-        :rtype: list[:class:`gd.entities.LevelDisplay`]
+        :rtype: list[:class:`gd.objects.LevelDisplay`]
         """
-        if src_filter == SearchFilter.FRIENDS and self.logged_in():
+        if src_filter == SearchFilter.FRIENDS and not self.logged_in():
             raise ValueError("Cannot filter by friends without being logged in.")
+
+        if not isinstance(difficulty, Iterable):
+            difficulty = tuple(difficulty)
+
+        if Difficulty.DEMON in difficulty and len(difficulty) > 2:
+            raise ValueError("Difficulty.DEMON must not be with other difficulties.")
 
         # Initialize data
         data = {
@@ -521,7 +516,7 @@ class Client:
                 ),
                 "demonFilter": (
                     determine_search_difficulty(demon_difficulty)
-                    if demon_difficulty and difficulty == [Difficulty.DEMON]
+                    if demon_difficulty and difficulty == Difficulty.DEMON
                     else None
                 ),
             },
@@ -548,7 +543,7 @@ class Client:
         )
         search_data = search_data.text
 
-        check_errors(search_data, LoadError, "Unable to get search results.")
+        check_response_errors(search_data, LoadError, "Unable to get search results.")
         parsed_results = parse_search_results(search_data)
 
         return [
@@ -570,7 +565,7 @@ class Client:
         :param leaderboard_type: Get TOP, FRIENDS or WEEKLY.
         :type leaderboard_type: Literal["TOP", "FRIENDS", "WEEKLY"]
         :return: A list of Player instances representing the leaderboard.
-        :rtype: list[:class:`gd.entities.Player`]
+        :rtype: list[:class:`gd.objects.Player`]
         """
         if leaderboard_type == "FRIENDS":
             leaderboard = 0
@@ -593,7 +588,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJLevelScores211.php", data=data
         )
 
-        check_errors(
+        check_response_errors(
             response,
             LoadError,
             "Unable to get level leaderboard.",
@@ -622,7 +617,7 @@ class Client:
         :type level_id: LevelId
         :param friends: Whether to include get friends' scores in the leaderboard. Defaults to False.
         :return: A list of Player instances representing the leaderboard.
-        :rtype: list[:class:`gd.entities.Player`]
+        :rtype: list[:class:`gd.objects.Player`]
         """
         if leaderboard_type == "FRIENDS":
             leaderboard = 0
@@ -654,7 +649,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJLevelScoresPlat.php", data=data
         )
 
-        check_errors(
+        check_response_errors(
             response,
             LoadError,
             "Unable to get platformer level leaderboard.",
@@ -674,7 +669,7 @@ class Client:
         Gets the current music library in RobTop's servers.
 
         :return: A `MusicLibrary` instance containing all the music library data.
-        :rtype: :class:`gd.entities.song.MusicLibrary`
+        :rtype: :class:`gd.objects.song.MusicLibrary`
         """
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/music/musiclibrary_02.dat",
@@ -689,7 +684,7 @@ class Client:
         Gets the current Sound Effect library in RobTop's servers.
 
         :return: A `SoundEffectLibrary` instance containing all the SFX library data.
-        :rtype: :class:`gd.entities.song.SoundEffectLibrary`
+        :rtype: :class:`gd.objects.song.SoundEffectLibrary`
         """
         response = await send_get_request(
             url="https://geometrydashfiles.b-cdn.net/sfx/sfxlibrary.dat",
@@ -707,7 +702,7 @@ class Client:
         :type id: SongId
         :return: A `Song` instance containing the song data.
         :raises: gd.InvalidID
-        :rtype: :class:`gd.entities.song.Song`
+        :rtype: :class:`gd.objects.song.Song`
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJSongInfo.php",
@@ -715,7 +710,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidID, "")
+        check_response_errors(response, InvalidID, "")
 
         return Song.from_raw(response)
 
@@ -731,7 +726,7 @@ class Client:
         :type use_id: bool
         :raises: gd.InvalidID
         :return: A `Player` instance containing the user's profile data.
-        :rtype: :class:`gd.entities.user.Player`
+        :rtype: :class:`gd.objects.user.Player`
         """
 
         if use_id:
@@ -749,7 +744,7 @@ class Client:
         response = await send_post_request(url=url, data=data)
         response = response.text
 
-        check_errors(response, InvalidID, f"Invalid account name/ID {query}.")
+        check_response_errors(response, InvalidID, f"Invalid account name/ID {query}.")
         return Player.from_raw(response.split("#")[0]).attach_client(self)
 
     async def get_comments(
@@ -766,7 +761,7 @@ class Client:
         :type page: int
         :raises: gd.InvalidID
         :return: A list of `Comment` instances.
-        :rtype: :class:`gd.entities.level.Comment`
+        :rtype: :class:`gd.objects.level.Comment`
         """
         if page < 0:
             raise ValueError("Page number must be non-negative.")
@@ -777,11 +772,17 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidID, f"Invalid level ID {level_id}.")
-        return [
+        check_response_errors(response, InvalidID, f"Invalid level ID {level_id}.")
+
+        comments = [
             Comment.from_raw(comment_data).attach_client(self)
             for comment_data in response.split("|")
         ]
+
+        for comment in comments:
+            comment.level_id = level_id
+
+        return comments
 
     async def get_user_account_comments(
         self, account_id: AccountId, page: int = 0
@@ -795,7 +796,7 @@ class Client:
         :type page: int
         :raises: gd.InvalidID
         :return: A list of `AccountComment` instances or None if there are no account comments.
-        :rtype: list[:class:`gd.entities.user.AccountComment`]
+        :rtype: list[:class:`gd.objects.user.AccountComment`]
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJAccountComments20.php",
@@ -803,7 +804,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidID, "Invalid account ID.")
+        check_response_errors(response, InvalidID, "Invalid account ID.")
 
         if not response.split("#")[0]:
             return None
@@ -833,7 +834,7 @@ class Client:
         :type display_most_liked: bool
         :raises: gd.InvalidID
         :return: A list of `Comment` instances or None if no comments were found.
-        :rtype: list[:class:`gd.entities.level.Comment`]
+        :rtype: list[:class:`gd.objects.level.Comment`]
         """
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJCommentHistory.php",
@@ -846,7 +847,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidID, "Invalid player ID.")
+        check_response_errors(response, InvalidID, "Invalid player ID.")
 
         if not response.split("#")[0]:
             return None
@@ -867,7 +868,7 @@ class Client:
         :param page: The page number to load, default is 0.
         :type page: int
         :return: A list of LevelDisplay instances.
-        :rtype: list[:class:`gd.entities.level.LevelDisplay`]
+        :rtype: list[:class:`gd.objects.level.LevelDisplay`]
         """
 
         response = await send_post_request(
@@ -876,7 +877,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, InvalidID, f"Invalid account ID {player_id}.")
+        check_response_errors(response, InvalidID, f"Invalid account ID {player_id}.")
 
         if not response.split("#")[0]:
             return None
@@ -894,7 +895,7 @@ class Client:
         :type page: int
         :raises: gd.LoadError
         :return: A list of `MapPack` instances.
-        :rtype: list[:class:`gd.entities.level.MapPack`]
+        :rtype: list[:class:`gd.objects.level.MapPack`]
         """
         if page < 0:
             raise ValueError("Page must be a non-negative number.")
@@ -908,7 +909,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, LoadError, "An error occurred when getting map packs.")
+        check_response_errors(response, LoadError, "An error occurred when getting map packs.")
         map_packs = response.split("#")[0].split("|")
         return [
             MapPack.from_raw(map_pack_data).attach_client(self)
@@ -923,7 +924,7 @@ class Client:
         :type ncs: bool
         :raises: gd.LoadError
         :return: A list of `Gauntlet` instances.
-        :rtype: list[:class:`gd.entities.level.Gauntlet`]
+        :rtype: list[:class:`gd.objects.level.Gauntlet`]
         """
         data = {"secret": SECRET}
         if ncs:
@@ -934,7 +935,7 @@ class Client:
         )
         response = response.text
 
-        check_errors(response, LoadError, "An error occurred when getting gauntlets.")
+        check_response_errors(response, LoadError, "An error occurred when getting gauntlets.")
         guantlets = response.split("#")[0].split("|")
         list_guantlets = [
             Gauntlet.from_raw(guantlet).attach_client(self) for guantlet in guantlets
@@ -942,7 +943,7 @@ class Client:
 
         return list_guantlets
 
-    async def search_list(
+    async def search_lists(
         self,
         query: str = None,
         src_filter: SearchFilter = 0,
@@ -968,42 +969,51 @@ class Client:
         :type only_rated: bool
         :raises: gd.LoadError
         :return: A list of `LevelList` instances.
-        :rtype: list[:class:`gd.entities.level.LevelList`]
+        :rtype: list[:class:`gd.objects.level.LevelList`]
         """
-        if src_filter == SearchFilter.FRIENDS and not self.account:
+        if src_filter == SearchFilter.FRIENDS and not self.logged_in():
             raise ValueError("Only friends search is available when logged in.")
 
-        data = {"secret": SECRET, "str": query, "type": src_filter, "page": page}
+        if not isinstance(difficulty, Iterable):
+            difficulty = tuple(difficulty)
 
-        if difficulty:
-            if Difficulty.DEMON in difficulty and len(difficulty) > 1:
-                raise ValueError(
-                    "Difficulty.DEMON cannot be combined with other difficulties!"
-                )
-            data["diff"] = ",".join(
-                str(determine_search_difficulty(diff)) for diff in difficulty
-            )
+        if Difficulty.DEMON in difficulty and len(difficulty) > 2:
+            raise ValueError("Difficulty.DEMON must not be with other difficulties.")
 
-        if demon_difficulty:
-            if difficulty != [Difficulty.DEMON]:
-                raise ValueError(
-                    "Demon difficulty can only be used with Difficulty.DEMON!"
-                )
-            data["demonFilter"] = determine_demon_search_difficulty(demon_difficulty)
-
-        if only_rated:
-            data["star"] = 1
-
-        if data["type"] == SearchFilter.FRIENDS:
-            data["accountID"] = self.account.account_id
-            data["gjp2"] = self.account.gjp2
+        data = {
+            "secret": SECRET,
+            "type": (
+                src_filter.value if isinstance(src_filter, SearchFilter) else src_filter
+            ),
+            "page": page,
+            "star": only_rated or None,
+            **{  # Difficulty and demon difficulty checks
+                "diff": (
+                    ",".join(
+                        str(determine_search_difficulty(diff)) for diff in difficulty
+                    )
+                    if difficulty
+                    else None
+                ),
+                "demonFilter": (
+                    determine_demon_search_difficulty(demon_difficulty)
+                    if demon_difficulty and difficulty == Difficulty.DEMON
+                    else None
+                ),
+            },
+            **{  # Optional parameters
+                "str": query or None,
+                "accountID": self.account.account_id if self.logged_in() else None,
+                "gjp2": self.account.gjp2 if self.logged_in() else None,
+            },
+        }
 
         response = await send_post_request(
             url="http://www.boomlings.com/database/getGJLevelLists.php", data=data
         )
         response = response.text
 
-        check_errors(
+        check_response_errors(
             response,
             LoadError,
             "An error occurred while searching lists, maybe it doesn't exist?",
@@ -1052,7 +1062,7 @@ class Client:
             data=data,
         )
 
-        check_errors(
+        check_response_errors(
             response, LoadError, "An error occurred when getting the leaderboard."
         )
 
@@ -1242,7 +1252,7 @@ class Client:
             url="http://www.boomlings.com/database/getGJChallenges.php", data=data
         )
         response = response.text
-        check_errors(response, LoadError, "")
+        check_response_errors(response, LoadError, "")
 
         # Cryptography shit, removes salt and cyclic XOR them.
         response = cyclic_xor(
@@ -1268,7 +1278,7 @@ class Client:
         """
         Gets the data of the chests last opened.
 
-        When opened using open_chest, it will give the new data.
+        When opened using open_chest, it will give the new data. Use None if you want to view the opened chests.
 
         :param open_chest: Opens a small chest or large chest or view the details only.
         :type open_chest: Optional[ChestType]
@@ -1305,9 +1315,9 @@ class Client:
             url="http://www.boomlings.com/database/getGJRewards.php", data=data
         )
         response = response.text
-        check_errors(response, LoadError, "")
+        check_response_errors(response, LoadError, "")
 
-        # Cryptography shit, removes salt and cyclic XOR them.
+        # Cryptography stuff, removes salt and cyclic XOR them.
         response = cyclic_xor(
             base64_urlsafe_decode(response.split("|")[0][5:]), XorKey.CHEST
         ).split(":")
@@ -1323,27 +1333,31 @@ class Client:
             Chest(
                 orbs=int(small_chest[0]),
                 diamonds=int(small_chest[1]),
-                extras=[
-                    Item.from_extra_id(int(small_chest[2])),
-                    Item.from_extra_id(int(small_chest[3])),
+                items=[
+                    Item.from_chest_item_id(int(small_chest[2])),
+                    Item.from_chest_item_id(int(small_chest[3])),
                 ],
                 time_left=small_chest_time,
                 times_opened=small_chest_open,
+                chest_type="SMALL",
             ),
             Chest(
                 orbs=int(large_chest[0]),
                 diamonds=int(large_chest[1]),
-                extras=[
-                    Item.from_extra_id(int(large_chest[2])),
-                    Item.from_extra_id(int(large_chest[3])),
+                items=[
+                    Item.from_chest_item_id(int(large_chest[2])),
+                    Item.from_chest_item_id(int(large_chest[3])),
                 ],
                 time_left=large_chest_time,
                 times_opened=large_chest_open,
+                chest_type="LARGE",
             ),
         ]
 
     @require_login()
-    async def suggest_levels(self, level_id: LevelId, stars: int, rating: LevelRating) -> None:
+    async def suggest_levels(
+        self, level_id: LevelId, stars: int, rating: LevelRating
+    ) -> None:
         """
         Suggests a level to RobTop. (moderators only)
 
@@ -1371,7 +1385,7 @@ class Client:
             url="http://www.boomlings.com/database/suggestGJStars20.php", data=data
         )
         response = response.text
-        check_errors(
+        check_response_errors(
             response,
             NoPremission,
             "Unable to suggest level, maybe you are not a moderator?",

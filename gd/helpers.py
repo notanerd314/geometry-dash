@@ -7,7 +7,6 @@ You typically don't want to use this module because it has limited documentation
 """
 
 from functools import wraps
-from typing import Union
 from io import BytesIO
 from pathlib import Path
 
@@ -108,28 +107,21 @@ async def send_get_request(**kwargs) -> httpx.Response:
         return response
 
 
-async def write(content: BytesIO, path: Union[str, Path]) -> None:
+async def write(buffer: BytesIO, path: str) -> None:
     """
-    Helper function to write the content to the given path.
+    Helper function to write the buffer to the given path.
 
-    :param content: The content to be written to the file.
-    :type content: BytesIO
-    :param path: The path to which the content should be written.
-    :type path: Union[str, Path]
+    :param buffer: The buffer to be written to the file.
+    :type buffer: BytesIO
+    :param path: The path to which the buffer should be written.
+    :type path: str
     :raises FileExistsError: If the file already exists at the specified path.
     :return: None
     :rtype: None
     """
     # Ensure path is a Path object
-    path = Path(path)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-    # Check if file exists
-    if path.exists():
-        raise FileExistsError(f"File already exists at {path}")
-
-    # Ensure the directory exists
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Write the content
+    # Write the buffer
     async with aiofiles.open(path, "wb") as file:
-        await file.write(content.getvalue())
+        await file.write(buffer.getvalue())

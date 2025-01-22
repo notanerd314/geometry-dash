@@ -1,7 +1,7 @@
 """
-# .entities.entity
+# .objects.object
 
-A file containing all the entity classes to inherit from.
+A file containing all the object classes to inherit from.
 """
 
 from __future__ import annotations  # For type hints
@@ -10,12 +10,12 @@ from typing import Self, TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = ["Entity"]
+__all__ = ["Object"]
 
 
-class Entity:
+class Object:
     """
-    An abstract class representing an entity.
+    An abstract class representing an object.
 
     Attributes
     ----------

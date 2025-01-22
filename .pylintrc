@@ -9,6 +9,3 @@ ignore=tests.py,examples
 
 [DESIGN]
 max-args=20
-
-[mypy]
-extension-pkg-allow-list=lxml

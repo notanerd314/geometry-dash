@@ -4,7 +4,7 @@ __doc__ = """
 A module containing user type hints for the module.
 """
 
-from typing import Union
+from typing import Union, Any
 
 PlayerId = Union[int, str]
 """Type hint for Player ID."""
@@ -69,6 +69,5 @@ IconShipTrailId = int
 IconDeathEffectId = int
 """Icon death effect ID."""
 
-LeaderboardPercentage = int
-LeaderboardPoints = int
-LeaderboardTime = int
+LeaderboardValue = Any
+"""Leaderboard time, percentage or points."""

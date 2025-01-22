@@ -30,7 +30,7 @@ from gd.cryptography import (
     generate_udid,
     decrypt_gamesave,
 )
-from gd.entities.enums import (
+from gd.objects.enums import (
     Length,
     LevelRating,
     SearchFilter,
@@ -44,15 +44,15 @@ from gd.entities.enums import (
     Item,
     OfficialSong,
 )
-from gd.entities.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
-from gd.entities.song import (
+from gd.objects.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
+from gd.objects.song import (
     MusicLibrary,
     SoundEffectLibrary,
     Song,
     SoundEffect,
 )
-from gd.entities.user import Account, Player, AccountComment, Quest, Chest
-from gd.entities.cosmetics import Icon, IconSet, colors
+from gd.objects.user import Account, Player, AccountComment, Quest, Chest
+from gd.objects.cosmetics import Icon, IconSet, colors
 
 __all__ = [
     # Main client

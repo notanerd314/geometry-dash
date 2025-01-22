@@ -1,12 +1,10 @@
 """
-## .entities.song
+## .objects.song
 A module containing all the classes and methods related to songs in Geometry Dash.
 """
 
 from urllib.parse import unquote
 from typing import Optional, Union
-from datetime import timedelta
-from pathlib import Path
 from io import BytesIO
 
 import attr
@@ -36,21 +34,21 @@ class MusicLibrary:
     ----------
     version : int
         The version number of the library.
-    artists : dict[int, MusicLibraryArtist]
+    artists : list[MusicLibrary.Artist]
         The artists of the library.
-    songs : dict[int, MusicLibrarySong]
+    songs : list[MusicLibrary.Song]
         The songs of the library.
-    tags : dict[int, str]
+    tags : list[str]
         The tags of the library.
     """
 
     version: int
     """The version number of the library."""
-    artists: dict[int, "MusicLibrary.Artist"] = attr.field(default=dict)
+    artists: list["MusicLibrary.Artist"] = attr.field(default=list)
     """The version number of the library."""
-    songs: dict[int, "MusicLibrary.Song"] = attr.field(default=dict)
+    songs: list["MusicLibrary.Song"] = attr.field(default=list)
     """The songs of the library."""
-    tags: dict[int, str] = attr.field(default=dict)
+    tags: dict[int, str] = attr.field(default=list)
     """The tags of the library."""
 
     @attr.define(slots=True)
@@ -114,7 +112,7 @@ class MusicLibrary:
             The tags associated with the song.
         size : float
             The size of the song in bytes.
-        duration_seconds : timedelta
+        duration_seconds : int
             The duration of the song in seconds.
         is_ncs : bool
             If the song was made by NCS.
@@ -125,7 +123,7 @@ class MusicLibrary:
         artist: Optional["MusicLibrary.Artist"]
         tags: set[str]
         size: float
-        duration_seconds: timedelta
+        duration_seconds: int
         is_ncs: bool
         link: str
         external_link: str
@@ -133,8 +131,8 @@ class MusicLibrary:
         @staticmethod
         def from_raw(
             raw_str: str,
-            artists_list: dict[int, "MusicLibrary.Artist"],
-            tags_list: dict[int, str] = None,
+            artists_list: list["MusicLibrary.Artist"],
+            tags_list: list[str] = None,
         ) -> "MusicLibrary.Song":
             """
             A static method that converts raw string to a `MusicLibrary.Song` instance.
@@ -148,11 +146,11 @@ class MusicLibrary:
 
             parsed = raw_str.strip().split(",")
 
-            artist = (
-                artists_list.get(int(parsed[2]))
-                if parsed[2].strip().isdigit()
-                else None
-            )
+            song_artist = None
+            for artist in artists_list:
+                if str(artist.id) == parsed[2]:
+                    song_artist = artist
+
             raw_song_tag_list = parsed[5].split(".")
             song_tag_list = {
                 tags_list.get(int(tag)) for tag in raw_song_tag_list if tag.strip()
@@ -161,16 +159,16 @@ class MusicLibrary:
             return MusicLibrary.Song(
                 id=int(parsed[0]),
                 name=parsed[1],
-                artist=artist,
+                artist=song_artist,
                 tags=song_tag_list,
                 size=float(parsed[3]),
-                duration_seconds=timedelta(seconds=int(parsed[4])),
+                duration_seconds=int(parsed[4]),
                 is_ncs=parsed[6] == "1",
                 link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
                 external_link=f"https://{unquote(parsed[8])}",
             )
 
-        async def content(self) -> BytesIO:
+        async def buffer(self) -> BytesIO:
             """
             Gets the song content and returns it as a BytesIO object.
 
@@ -180,16 +178,16 @@ class MusicLibrary:
             response = await send_get_request(url=self.link)
             return BytesIO(response.content)
 
-        async def download_to(self, path: Union[str, Path] = None) -> None:
+        async def download_to(self, path: str = None) -> None:
             """
             Downloads the song to a specified path.
 
             :param path: Full path to save the file, including filename.
-            :type path: Union[str, Path]
+            :type path: str
             :return: NOne
             :rtype: None
             """
-            content = await self.content()
+            content = await self.buffer()
             await write(content, path)
 
     @staticmethod
@@ -205,23 +203,23 @@ class MusicLibrary:
         parsed = tuple(raw_str.strip().split("|"))
         version = int(parsed[0])
 
-        artists = {
-            int(artist.split(",")[0]): MusicLibrary.Artist.from_raw(artist)
+        artists = [
+            MusicLibrary.Artist.from_raw(artist)
             for artist in parsed[1].split(";")
             if artist.strip()
-        }
+        ]
 
         tags = {
-            int(tag.split(",")[0]): tag.split(",")[1].strip()
+            tag.split(",")[0].strip(): tag.split(",")[1].strip()
             for tag in parsed[3].split(";")
             if tag.strip()
         }
 
-        songs = {
-            int(song.split(",")[0]): MusicLibrary.Song.from_raw(song, artists, tags)
+        songs = [
+            MusicLibrary.Song.from_raw(song, artists, tags)
             for song in parsed[2].split(";")
             if song.strip()
-        }
+        ]
 
         return MusicLibrary(version=version, artists=artists, songs=songs, tags=tags)
 
@@ -236,12 +234,12 @@ class MusicLibrary:
         """
         songs = []
 
-        existing_tags = {tag.lower() for tag in self.tags.values()}
+        existing_tags = {tag.lower() for tag in self.tags}
         for tag in tags:
             if tag not in existing_tags:
                 raise ValueError(f"The tag {tag} doesn't exist in the music library!")
 
-        for song in self.songs.values():
+        for song in self.songs:
             song_tag = {tag.lower() for tag in song.tags}
             if tags.issubset(song_tag) and song_tag:
                 songs.append(song)
@@ -256,7 +254,7 @@ class MusicLibrary:
         :return: A `MusicLibrarySong` instance if found, otherwise None.
         :rtype: Optional[Song]
         """
-        for song in self.songs.values():
+        for song in self.songs:
             if song.name.lower() == name.lower():
                 return song
         return None
@@ -270,7 +268,7 @@ class MusicLibrary:
         :return: A `MusicLibrarySong` instance if found, otherwise None.
         :rtype: Optional[Song]
         """
-        for song in self.songs.values():
+        for song in self.songs:
             if song_id == song.id:
                 return song
         return None
@@ -287,7 +285,7 @@ class MusicLibrary:
         query = query.rstrip()
         songs = []
 
-        for song in self.songs.values():
+        for song in self.songs:
             if query.lower() in song.name.lower():
                 songs.append(song)
         return songs
@@ -303,7 +301,7 @@ class MusicLibrary:
         """
         songs = []
 
-        for song in self.songs.values():
+        for song in self.songs:
             if song.artist and song.artist.name.lower() == artist.lower():
                 songs.append(song)
 
@@ -569,7 +567,7 @@ class SoundEffect:
         The size of the sound effect.
     url : str
         The link to the sound effect.
-    duration : timedelta
+    duration : int
         The duration of the sound effect in seconds.
     """
 
@@ -578,7 +576,7 @@ class SoundEffect:
     parent_folder_id: SoundEffectFolderId
     size: float
     url: str
-    duration: timedelta
+    duration_seconds: int
 
     @staticmethod
     def from_raw(raw_str: str) -> "SoundEffect":
@@ -596,10 +594,10 @@ class SoundEffect:
             parent_folder_id=int(parsed[3]),
             size=float(parsed[4]),
             url=f"https://geometrydashfiles.b-cdn.net/sfx/s{parsed[0]}.ogg",
-            duration=timedelta(seconds=int(parsed[5]) // 100),
+            duration_seconds=int(parsed[5]) / 100,
         )
 
-    async def content(self) -> BytesIO:
+    async def buffer(self) -> BytesIO:
         """
         Gets the song content and returns it as a BytesIO object.
 
@@ -610,7 +608,7 @@ class SoundEffect:
 
         return BytesIO(response.content)
 
-    async def download_to(self, path: Union[str, Path] = None) -> None:
+    async def download_to(self, path: str = None) -> None:
         """
         Downloads the sound effect to a specified path.
 
@@ -619,7 +617,7 @@ class SoundEffect:
         :return: None
         :rtype: None
         """
-        content = await self.content()
+        content = await self.buffer()
         await write(content, path)
 
 
@@ -710,7 +708,7 @@ class Song:
             is_in_library=int(parsed.get("1")) >= 10000000,
         )
 
-    async def content(self) -> BytesIO:
+    async def buffer(self) -> BytesIO:
         """
         Gets the song content and returns it as a BytesIO object.
 
@@ -721,7 +719,7 @@ class Song:
 
         return BytesIO(response.content)
 
-    async def download_to(self, path: Union[str, Path] = None) -> None:
+    async def download_to(self, path: str = None) -> None:
         """
         Downloads the song to a specified path.
 
@@ -730,5 +728,5 @@ class Song:
         :return: None
         :rtype: None
         """
-        content = await self.content()
+        content = await self.buffer()
         await write(content, path)

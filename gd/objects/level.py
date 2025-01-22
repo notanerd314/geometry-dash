@@ -1,5 +1,5 @@
 """
-## .entities.level
+## .objects.level
 
 A module containing all the classes and methods related to levels in Geometry Dash.
 """
@@ -9,8 +9,8 @@ from datetime import datetime
 
 import attr
 
-from gd.entities.song import Song
-from gd.entities.entity import Entity
+from gd.objects.song import Song
+from gd.objects.object import Object
 from gd.helpers import require_client
 from gd.parse import (
     parse_level_data,
@@ -18,9 +18,10 @@ from gd.parse import (
     parse_key_value_pairs,
     determine_level_difficulty,
     determine_list_difficulty,
+    string_to_seconds,
 )
 from gd.cryptography import base64_urlsafe_decode
-from gd.entities.enums import (
+from gd.objects.enums import (
     LevelRating,
     ModRank,
     Gamemode,
@@ -29,7 +30,7 @@ from gd.entities.enums import (
     SearchFilter,
     OfficialSong,
 )
-from gd.entities.cosmetics import Icon
+from gd.objects.cosmetics import Icon
 from gd.type_hints import (
     LevelId,
     PlayerId,
@@ -99,7 +100,7 @@ gauntlets: dict = {
 
 
 @attr.define(slots=True)
-class Level(Entity):
+class Level(Object):
     """
     A class representing a downloaded level in Geometry Dash.
 
@@ -400,7 +401,7 @@ class LevelDisplay(Level):
 
 
 @attr.define(slots=True)
-class Comment(Entity):
+class Comment(Object):
     """
     A class representing a comment in a level.
 
@@ -417,7 +418,7 @@ class Comment(Entity):
     is_spam : bool
         If the comment is spam.
     posted_ago : str
-        Time passed since the comment was posted.
+        SSeconds passed after the comment was posted.
     percentage : int
         The perecentage of the comment.
     mod_level : ModRank
@@ -473,14 +474,14 @@ class Comment(Entity):
         comment_value = parse_key_value_pairs(parsed[0], "~")
 
         return Comment(
-            level_id=int(comment_value.get("1", None)),
+            level_id=int(comment_value.get("1", 0)),
             content=base64_urlsafe_decode(comment_value.get("2", "")).decode(),
             author_player_id=int(comment_value.get("3", 0)),
             author_account_id=int(user_value.get("16", 0)),
             likes=int(comment_value.get("4", 0)),
             id=int(comment_value.get("6", 0)),
             is_spam=bool(int(comment_value.get("7", 0))),
-            posted_ago=comment_value.get("9", "0 seconds"),
+            posted_ago=string_to_seconds(comment_value.get("9", "0 seconds")),
             percentage=int(comment_value.get("10", 0)),
             mod_level=ModRank(int(comment_value.get("11", 0))),
             author_name=user_value.get("1", ""),
@@ -491,7 +492,6 @@ class Comment(Entity):
                 secondary_color_id=int(user_value.get("11", 1)),
                 glow_color_id=None,
             ),
-            author_icon_display_gamemode=Gamemode(int(user_value.get("14", 0))),
             author_primary_color=int(user_value.get("10", 1)),
             author_secondary_color=int(user_value.get("11", 1)),
             author_has_glow=bool(int(user_value.get("15", 0))),
@@ -511,7 +511,7 @@ class Comment(Entity):
 
 
 @attr.define(slots=True)
-class _ListLevels(Entity):
+class _ListLevels(Object):
     """
     A class representing a list of levels. (Not to be confused with LevelList)
 

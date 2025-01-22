@@ -18,28 +18,29 @@ class OfficialSong(Enum):
     Represents official songs in the game.
     """
 
-    STEREOMADNESS = 0
-    BACKONTRACK = 1
-    POLARGEIST = 2
-    DRYOUT = 3
-    BASEAFTERBASE = 4
-    CANTLETGO = 5
+    STEREO_MADNESS = 0
+    BACK_ON_TRACK = 1
+    POLAR_GEIST = 2
+    DRY_OUT = 3
+    BASE_AFTER_BASE = 4
+    CANT_LET_GO = 5
     JUMPER = 6
-    TIMEMACHINE = 7
+    TIME_MACHINE = 7
     CYCLES = 8
     XSTEP = 9
     CLUTTERFUNK = 10
-    THEORYOFEVERYTHING = 11
-    ELECTROMANADVENTURES = 12
+    THEORY_OF_EVERYTHING = 11
+    ELECTROMAN_ADVENTURES = 12
     CLUBSTEP = 13
     ELECTRODYNAMIX = 14
     HEXAGON_FORCE = 15
-    BLASTPROCESSING = 16
-    THEORYOFEVERYTHING_2 = 17
-    GEOMETRICALDOMINATOR = 18
+    BLAST_PROCESSING = 16
+    THEORY_OF_EVERYTHING_2 = 17
+    GEOMETRICAL_DOMINATOR = 18
     DEADLOCKED = 19
     FINGERDASH = 20
     DASH = 21
+    # Add more official songs here
 
 
 class Difficulty(Enum):
@@ -80,6 +81,8 @@ class DemonDifficulty(Enum):
     """Insane demon."""
     EXTREME_DEMON = 6
     """Extreme demon."""
+
+    DEFAULT = HARD_DEMON
 
 
 class Length(IntEnum):
@@ -131,6 +134,7 @@ class ModRank(IntEnum):
     """Moderator."""
     ELDER_MOD = 2
     """Elder moderator."""
+    DEFAULT = NONE
 
 
 class Gamemode(Enum):
@@ -221,7 +225,7 @@ class Item(Enum):
     DEMON_KEY = 7
 
     @staticmethod
-    def from_extra_id(item_id: int) -> Union["Item.DEMON_KEY", "Shard", None]:
+    def from_chest_item_id(item_id: int) -> Union["Item.DEMON_KEY", "Shard", None]:
         """
         Returns the corresponding `Item` or `Shard` from the given `item_id` in the chest response.
 

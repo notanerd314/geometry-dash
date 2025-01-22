@@ -64,6 +64,7 @@ class Salt(StrEnum):
     PROFILE = "xI35fsAapCRg"
     LEADERBOARD = "yPg6pUrtWn0J"
     PASSWORD = "mI29fmAnxgTs"
+    GJP2 = PASSWORD
 
 
 def gjp2(password: str = "", salt: str = Salt.PASSWORD) -> str:
