@@ -5,6 +5,7 @@ A module containing all the classes and methods related to songs in Geometry Das
 
 from urllib.parse import unquote
 from typing import Optional, Union, List
+from io import BytesIO
 
 import attr
 
@@ -19,6 +20,7 @@ from gd.type_hints import (
 )
 from gd.gdobject import Downloadable
 from gd.enums import Folders, Tags
+from gd.helpers import send_get_request
 
 __all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song"]
 
@@ -167,6 +169,16 @@ class MusicLibrary:
                 link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
                 external_link=f"https://{unquote(parsed[8])}",
             )
+        
+        async def buffer(self) -> BytesIO:
+            """
+            Gets the song content and returns it as a BytesIO object.
+
+            :return: The bytes of the content.
+            :rtype: BytesIO
+            """
+            response = await send_get_request(url=self.link)
+            return BytesIO(response.content)
 
     @staticmethod
     def from_raw(raw_str: str) -> "MusicLibrary":
@@ -491,6 +503,16 @@ class SoundEffect(Downloadable):
             link=f"https://geometrydashfiles.b-cdn.net/sfx/s{parsed[0]}.ogg",
             duration_seconds=int(parsed[5]) / 100,
         )
+    
+    async def buffer(self) -> BytesIO:
+        """
+        Gets the sound effect content and returns it as a BytesIO object.
+
+        :return: The bytes of the content.
+        :rtype: BytesIO
+        """
+        response = await send_get_request(url=self.link)
+        return BytesIO(response.content)
 
 
 # Level song
@@ -579,3 +601,13 @@ class Song(Downloadable):
             is_ncs=parsed.get("11") == 1,
             is_in_library=int(parsed.get("1")) >= 10000000,
         )
+    
+    async def buffer(self) -> BytesIO:
+        """
+        Gets the song content and returns it as a BytesIO object.
+
+        :return: The bytes of the content.
+        :rtype: BytesIO
+        """
+        response = await send_get_request(url=self.link)
+        return BytesIO(response.content)

@@ -1,6 +1,10 @@
 exclude requirements.txt
 exclude .gitignore
-exclude setup.py
+exclude pyproject.toml
+exclude README.md
+exclude .pylintrc
 
 prune .vscode/
 prune **/__pycache__
+prune examples/
+prune unfinished/

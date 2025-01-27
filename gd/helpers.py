@@ -89,6 +89,7 @@ async def send_post_request(**kwargs) -> httpx.Response:
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(**kwargs, headers={"User-Agent": ""})
+        response.raise_for_status()
         return response
 
 
@@ -104,6 +105,7 @@ async def send_get_request(**kwargs) -> httpx.Response:
     """
     async with httpx.AsyncClient() as client:
         response = await client.get(**kwargs, headers={"User-Agent": ""})
+        response.raise_for_status()
         return response
 
 

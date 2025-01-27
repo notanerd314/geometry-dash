@@ -4,7 +4,7 @@
 The module containing all the classes and methods related to customization and icons.
 """
 
-from typing import Union, Optional
+from typing import Optional
 from io import BytesIO
 
 import attr
@@ -14,7 +14,7 @@ from gd.helpers import send_get_request
 from gd.type_hints import ColorId, IconId, ColorHex
 from gd.gdobject import Downloadable
 
-__all__ = ["color_id_to_hex", "Icon", "IconSet", "colors"]
+__all__ = ["Icon", "IconSet", "colors"]
 
 colors: dict[ColorId, ColorHex] = {
     0: 0x7DFF00,
@@ -132,17 +132,6 @@ ICON_RENDERER = "https://gdicon.oat.zone/icon"
 """API endpoint for rendering Geometry Dash icons by Oat. (Without it rendering would be impossible due to my skill issues)"""
 
 
-def color_id_to_hex(color_id: ColorId) -> Union[int, None]:
-    """
-    Returns the hexadecimal color code for the given color ID. If not found, returns None.
-
-    :param color_id: The ID of the color.
-    :type color_id: ColorId
-    :return: The hexadecimal color code if found, otherwise None.
-    """
-    return colors[color_id]
-
-
 @attr.define(slots=True)
 class Icon(Downloadable):
     """
@@ -173,14 +162,14 @@ class Icon(Downloadable):
         """
         Returns the primary color ID as a hexadecimal color code.
         """
-        return hex(color_id_to_hex(self.primary_color_id)).replace("0x", "")
+        return hex(colors[self.primary_color_id]).replace("0x", "")
 
     @property
     def secondary_color_hex(self) -> ColorHex:
         """
         Returns the secondary color ID as a hexadecimal color code.
         """
-        return hex(color_id_to_hex(self.secondary_color_id)).replace("0x", "")
+        return hex(colors[self.secondary_color_id]).replace("0x", "")
 
     @property
     def glow_color_hex(self) -> ColorHex:
@@ -192,7 +181,7 @@ class Icon(Downloadable):
         if self.glow_color_id is None:
             raise ValueError("This icon has no glow color.")
 
-        return hex(color_id_to_hex(self.glow_color_id)).replace("0x", "")
+        return hex(colors[self.glow_color_id]).replace("0x", "")
 
     async def buffer(self) -> BytesIO:
         """

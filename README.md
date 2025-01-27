@@ -1,8 +1,7 @@
 # `geometry-dash`
 
-An asynchronous API wrapper for **Geometry Dash**. *(Pointercrate support coming soon)*
+An asynchronous API wrapper for **Geometry Dash**.
 
-![WIP](Https://img.shields.io/badge/Work%20In%20Progress-dark_green)
 ![License](https://img.shields.io/github/license/notanerd314/geometry-dash?color=yellow)
 ![Commits](https://img.shields.io/github/commit-activity/w/notanerd314/geometry-dash?label=commits&logo=github)
 ![Discord](https://img.shields.io/discord/1292437262155382816?label=discord&logo=discord&color=blue&logoColor=white)
@@ -20,7 +19,7 @@ An asynchronous API wrapper for **Geometry Dash**. *(Pointercrate support coming
 - Comments and account posts
 
 
-## Installation
+<!-- ## Installation
 
 Install `geometry-dash` via PyPI:
 
@@ -48,7 +47,7 @@ print(level.name)          # "The Nightmare"
 print(level.difficulty)    # <DemonDifficulty.EASY_DEMON: 3>
 print(level.description)   # "Hard map by Jax. 7813"
 print(level.official_song) # <OfficialSong.POLARGEIST: 2>
-```
+``` -->
 
 - Fetching and Downloading a Song:
 
@@ -94,9 +93,6 @@ print(comment_id)  # 2994273
 ---
 
 # Changelog
-### 0.1.0 (Release version)
-- Release module
-- Work in progress documentation
 
 # Notes
 - This project is a **work in progress**. Expect some features to change or improve over time.
