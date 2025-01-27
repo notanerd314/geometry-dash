@@ -6,14 +6,17 @@ A file containing all the object classes to inherit from.
 
 from __future__ import annotations  # For type hints
 from typing import Self, TYPE_CHECKING, Optional
+from io import BytesIO
+
+from gd.helpers import send_get_request, write
 
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = ["Object"]
+__all__ = ["GDItem", "Downloadable"]
 
 
-class Object:
+class GDItem:
     """
     An abstract class representing an object.
 
@@ -50,3 +53,31 @@ class Object:
         """
         self.client = None
         return self
+
+
+class Downloadable:
+    """
+    A class representing an item that can be downloaded.
+    """
+
+    async def buffer(self) -> BytesIO:
+        """
+        Gets the content and returns it as a BytesIO object.
+
+        :return: The bytes of the content.
+        :rtype: BytesIO
+        """
+        response = await send_get_request(url="PLACEHOLDER")
+        return BytesIO(response.content)
+
+    async def download_to(self, path: str = None) -> None:
+        """
+        Downloads the item to a specified path.
+
+        :param path: Full path to save the file, including filename.
+        :type path: str
+        :return: NOne
+        :rtype: None
+        """
+        content = await self.buffer()
+        await write(content, path)

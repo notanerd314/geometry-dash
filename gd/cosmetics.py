@@ -6,15 +6,13 @@ The module containing all the classes and methods related to customization and i
 
 from typing import Union, Optional
 from io import BytesIO
-from pathlib import Path
-import asyncio
 
 import attr
 
-from gd.objects.enums import Gamemode
+from gd.enums import Gamemode
 from gd.helpers import send_get_request
 from gd.type_hints import ColorId, IconId, ColorHex
-from gd.helpers import write
+from gd.gdobject import Downloadable
 
 __all__ = ["color_id_to_hex", "Icon", "IconSet", "colors"]
 
@@ -146,7 +144,7 @@ def color_id_to_hex(color_id: ColorId) -> Union[int, None]:
 
 
 @attr.define(slots=True)
-class Icon:
+class Icon(Downloadable):
     """
     A **dataclass** representing the icon of a specific gamemode and ID.
 
@@ -196,22 +194,7 @@ class Icon:
 
         return hex(color_id_to_hex(self.glow_color_id)).replace("0x", "")
 
-    async def download_to(self, path: Union[str, Path] = "*/") -> None:
-        """
-        Downloads the icon to a specified path.
-
-        :param path: Full path to save the file, including filename.
-        :type path: Union[str, Path]
-        :raises ValueError: If the file extension is invalid.
-        :raises FileExistsError: If the file already exists at the specified path.
-        :return: None
-        :rtype: None
-        """
-        path = Path(path)
-        content = await self.buffer(extension=path.suffix)
-        await write(content, path)
-
-    async def buffer(self, extension: str = "png") -> BytesIO:
+    async def buffer(self) -> BytesIO:
         """
         Renders the icon and returns a BytesIO representation.
 
@@ -231,7 +214,7 @@ class Icon:
             params["glow"] = self.glow_color_hex
 
         response = await send_get_request(
-            url=f"{ICON_RENDERER}.{extension}", params=params, timeout=30
+            url=f"{ICON_RENDERER}.png", params=params, timeout=30
         )
 
         return BytesIO(response.content)
@@ -381,39 +364,3 @@ class IconSet:
             secondary_color=secondary_color,
             glow_color=glow_color,
         )
-
-    async def bufferall(self, extension: str = "png") -> list[BytesIO]:
-        """
-        Renders all icons and returns a dictionary of BytesIO objects.
-
-        :param extension: The file extension to get.
-        :type extension: str
-        :return: BytesIO representation of the icon.
-        :rtype: list[io.BytesIO]
-        """
-        results = await asyncio.gather(
-            self.cube.buffer(extension=extension),
-            self.ship.buffer(extension=extension),
-            self.ball.buffer(extension=extension),
-            self.ufo.buffer(extension=extension),
-            self.wave.buffer(extension=extension),
-            self.robot.buffer(extension=extension),
-            self.spider.buffer(extension=extension),
-            self.swing.buffer(extension=extension),
-            self.jetpack.buffer(extension=extension),
-        )
-        return results
-
-    async def download_all_to(self, path: Union[str, Path] = "*/") -> None:
-        """
-        Downloads all icons to a specified path.
-
-        :param path: Full path to save the files, including directory.
-        :type path: Union[str, Path]
-        :return: None
-        :rtype: None
-        """
-        path = Path(path)
-        icons = await self.bufferall(path.suffix)
-        tasks = [write(icon, path) for icon in icons.values()]
-        await asyncio.gather(*tasks)

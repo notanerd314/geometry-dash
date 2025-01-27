@@ -16,7 +16,7 @@ __all__ = [
 
 from typing import Union
 
-from .objects.enums import Difficulty, DemonDifficulty
+from .enums import Difficulty, DemonDifficulty
 from .cryptography import base64_urlsafe_decompress, base64_urlsafe_decode
 
 
@@ -237,12 +237,11 @@ def determine_level_difficulty(
     """
     if return_demon_diff and parsed.get("17", False):
         return DemonDifficulty(parsed.get("43"))
-    elif parsed.get("25"):
+    if parsed.get("25"):
         # Return AUTO if auto
         return Difficulty.AUTO
-    else:
-        # If not, return the normal difficulties
-        return Difficulty(parsed.get("9", 0) // 10)
+    # If not, return the normal difficulties
+    return Difficulty(parsed.get("9", 0) // 10)
 
 
 def determine_search_difficulty(difficulty_obj: Difficulty) -> int:
@@ -359,17 +358,16 @@ def string_to_seconds(string: str) -> int:
 
     if "second" in unit:
         return value
-    elif "minute" in unit:
+    if "minute" in unit:
         return value * 60
-    elif "hour" in unit:
+    if "hour" in unit:
         return value * 3600
-    elif "day" in unit:
+    if "day" in unit:
         return value * 86400
-    elif "week" in unit:
+    if "week" in unit:
         return value * 604800
-    elif "month" in unit:
+    if "month" in unit:
         return value * 2592000
-    elif "year" in unit:
+    if "year" in unit:
         return value * 31536000
-    else:
-        raise ValueError("Invalid unit.")
+    raise ValueError("Invalid unit.")

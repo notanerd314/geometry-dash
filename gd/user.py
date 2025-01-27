@@ -12,10 +12,10 @@ from gd.parse import (
     parse_comma_separated_int_list,
     string_to_seconds,
 )
-from gd.objects.enums import Gamemode, ModRank, Item, Shard, ChestType
-from gd.objects.cosmetics import IconSet
-from gd.objects.level import Comment, LevelDisplay
-from gd.objects.object import Object
+from gd.enums import Gamemode, ModRank, Item, Shard, ChestType
+from gd.cosmetics import IconSet
+from gd.level import Comment, LevelDisplay
+from gd.gdobject import GDItem
 from gd.cryptography import base64_urlsafe_decode, gjp2
 from gd.helpers import require_client
 from gd.type_hints import (
@@ -69,7 +69,7 @@ DemonStats = NamedTuple(
 
 
 @attr.define(slots=True)
-class AccountComment(Object):
+class AccountComment(GDItem):
     """
     A class representing a post from a player.
 
@@ -135,7 +135,7 @@ class AccountComment(Object):
 
 
 @attr.define(slots=True)
-class Player(Object):
+class Player(GDItem):
     """
     A class representing an user's profile.
 

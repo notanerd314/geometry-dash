@@ -9,8 +9,8 @@ from datetime import datetime
 
 import attr
 
-from gd.objects.song import Song
-from gd.objects.object import Object
+from gd.song import Song
+from gd.gdobject import GDItem
 from gd.helpers import require_client
 from gd.parse import (
     parse_level_data,
@@ -21,7 +21,7 @@ from gd.parse import (
     string_to_seconds,
 )
 from gd.cryptography import base64_urlsafe_decode
-from gd.objects.enums import (
+from gd.enums import (
     LevelRating,
     ModRank,
     Gamemode,
@@ -30,7 +30,7 @@ from gd.objects.enums import (
     SearchFilter,
     OfficialSong,
 )
-from gd.objects.cosmetics import Icon
+from gd.cosmetics import Icon
 from gd.type_hints import (
     LevelId,
     PlayerId,
@@ -100,7 +100,7 @@ gauntlets: dict = {
 
 
 @attr.define(slots=True)
-class Level(Object):
+class Level(GDItem):
     """
     A class representing a downloaded level in Geometry Dash.
 
@@ -401,7 +401,7 @@ class LevelDisplay(Level):
 
 
 @attr.define(slots=True)
-class Comment(Object):
+class Comment(GDItem):
     """
     A class representing a comment in a level.
 
@@ -511,7 +511,7 @@ class Comment(Object):
 
 
 @attr.define(slots=True)
-class _ListLevels(Object):
+class _ListLevels(GDItem):
     """
     A class representing a list of levels. (Not to be confused with LevelList)
 

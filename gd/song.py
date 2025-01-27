@@ -4,13 +4,11 @@ A module containing all the classes and methods related to songs in Geometry Das
 """
 
 from urllib.parse import unquote
-from typing import Optional, Union
-from io import BytesIO
+from typing import Optional, Union, List
 
 import attr
 
 from gd.parse import parse_song_data
-from gd.helpers import send_get_request, write
 from gd.type_hints import (
     SongId,
     SoundEffectId,
@@ -19,6 +17,8 @@ from gd.type_hints import (
     SoundEffectFolderId,
     ArtistId,
 )
+from gd.gdobject import Downloadable
+from gd.enums import Folders, Tags
 
 __all__ = ["MusicLibrary", "SoundEffectLibrary", "SoundEffect", "Song"]
 
@@ -96,7 +96,7 @@ class MusicLibrary:
             )
 
     @attr.define(slots=True)
-    class Song:
+    class Song(Downloadable):
         """
         A class representing a song in the music library.
 
@@ -121,7 +121,7 @@ class MusicLibrary:
         id: MusicLibrarySongId
         name: str
         artist: Optional["MusicLibrary.Artist"]
-        tags: set[str]
+        tags: set[Tags]
         size: float
         duration_seconds: int
         is_ncs: bool
@@ -153,7 +153,7 @@ class MusicLibrary:
 
             raw_song_tag_list = parsed[5].split(".")
             song_tag_list = {
-                tags_list.get(int(tag)) for tag in raw_song_tag_list if tag.strip()
+                tags_list.get(tag) for tag in raw_song_tag_list if tag.strip()
             }
 
             return MusicLibrary.Song(
@@ -167,28 +167,6 @@ class MusicLibrary:
                 link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
                 external_link=f"https://{unquote(parsed[8])}",
             )
-
-        async def buffer(self) -> BytesIO:
-            """
-            Gets the song content and returns it as a BytesIO object.
-
-            :return: The bytes of the song content.
-            :rtype: BytesIO
-            """
-            response = await send_get_request(url=self.link)
-            return BytesIO(response.content)
-
-        async def download_to(self, path: str = None) -> None:
-            """
-            Downloads the song to a specified path.
-
-            :param path: Full path to save the file, including filename.
-            :type path: str
-            :return: NOne
-            :rtype: None
-            """
-            content = await self.buffer()
-            await write(content, path)
 
     @staticmethod
     def from_raw(raw_str: str) -> "MusicLibrary":
@@ -223,7 +201,11 @@ class MusicLibrary:
 
         return MusicLibrary(version=version, artists=artists, songs=songs, tags=tags)
 
-    def filter_song_by_tags(self, tags: set[str]) -> list[Song]:
+    def search_songs(
+        self,
+        filter_tags: Optional[Union[set[Tags], Tags]] = None,
+        filter_artists: Optional[Union[set[str], str]] = None,
+    ) -> list[Song]:
         """
         Get all songs with the tags specified.
 
@@ -234,30 +216,22 @@ class MusicLibrary:
         """
         songs = []
 
-        existing_tags = {tag.lower() for tag in self.tags}
-        for tag in tags:
-            if tag not in existing_tags:
-                raise ValueError(f"The tag {tag} doesn't exist in the music library!")
+        if isinstance(filter_tags, str):
+            filter_tags = {filter_tags}
+
+        if isinstance(filter_artists, str):
+            filter_artists = {filter_artists}
 
         for song in self.songs:
-            song_tag = {tag.lower() for tag in song.tags}
-            if tags.issubset(song_tag) and song_tag:
-                songs.append(song)
+            print(song.tags)
+            if filter_tags and not filter_tags.issubset(song.tags):
+                continue
+            if filter_artists and song.artist.name not in filter_artists:
+                continue
+
+            songs.append(song)
+
         return songs
-
-    def get_song_by_name(self, name: str) -> Optional[Song]:
-        """
-        Get a song by it's name.
-
-        :param name: The name of the song to search for.
-        :type name: str
-        :return: A `MusicLibrarySong` instance if found, otherwise None.
-        :rtype: Optional[Song]
-        """
-        for song in self.songs:
-            if song.name.lower() == name.lower():
-                return song
-        return None
 
     def get_song_by_id(self, song_id: MusicLibrarySongId) -> Optional[Song]:
         """
@@ -272,40 +246,6 @@ class MusicLibrary:
             if song_id == song.id:
                 return song
         return None
-
-    def search_songs(self, query: str) -> list[Song]:
-        """
-        Find all songs that contains the query in it's name. (Different from `.get_song_by_name`!)
-
-        :param query: The query string to search for.
-        :type query: str
-        :return: A list of songs that match the query.
-        :rtype: list[Song]
-        """
-        query = query.rstrip()
-        songs = []
-
-        for song in self.songs:
-            if query.lower() in song.name.lower():
-                songs.append(song)
-        return songs
-
-    def filter_song_by_artist(self, artist: str) -> list[Song]:
-        """
-        Filter songs by artist's name.
-
-        :param artist: The name of the artist to filter by.
-        :type artist: str
-        :return: A list of songs made by the artist.
-        :rtype: list[Song]
-        """
-        songs = []
-
-        for song in self.songs:
-            if song.artist and song.artist.name.lower() == artist.lower():
-                songs.append(song)
-
-        return songs
 
 
 # SFX Library
@@ -463,30 +403,6 @@ class SoundEffectLibrary:
                 return item
         return None
 
-    def _search_by_name(self, collection: list[any], query: str) -> list:
-        """
-        A helper function to search for items by their name.
-
-        :param collection: The collection of items to search.
-        :type collection: list
-        :param query: The query string to search for.
-        :type query: str
-        :return: A list of items that match the query.
-        :rtype: list
-        """
-        return [item for item in collection if query.lower() in item.name.lower()]
-
-    def get_folder_by_name(self, name: str) -> Optional["SoundEffectLibrary.Folder"]:
-        """
-        Get a folder by it's name.
-
-        :param name: The name of the folder.
-        :type name: str
-        :return: A SoundEffectLibrary.Folder class, if not found, returns NoneType.
-        :rtype: SoundEffectLibrary.Folder
-        """
-        return self._find_by_attribute(self.folders, "name", name.lower())
-
     def get_folder_by_id(
         self, folder_id: SoundEffectFolderId
     ) -> Optional["SoundEffectLibrary.Folder"]:
@@ -511,47 +427,26 @@ class SoundEffectLibrary:
         """
         return self._find_by_attribute(self.sfx, "id", sfx_id)
 
-    def search_folders(self, query: str) -> list["SoundEffectLibrary.Folder"]:
+    def open_folder(self, folder_name: Folders) -> List["SoundEffect"]:
         """
-        Filter folders by the query. (Different from `.get_folder_by_name`!)
+        Returns all sound effects in a folder.
 
-        :param query: The query for the search.
-        :type query: str
-        :return: A list of SoundEffectLibrary.Folder.
-        :rtype: list[SoundEffectLibrary.Folder]
+        :param folder_name: The name of the folder.
+        :type folder_name: Folders
+        :return: A list of SoundEffect classes, if not found, raises a ValueError.
         """
-        return self._search_by_name(self.folders, query)
+        for folder in self.folders:
+            if folder.name == folder_name:
+                sfx = []
+                for sfx in self.sfx:
+                    if sfx.parent_folder_id == folder.id:
+                        return sfx
 
-    def search_folders_and_sfx(
-        self, query: str
-    ) -> list["SoundEffectLibrary.Folder", "SoundEffect"]:
-        """
-        Filter folders and sfx by the query.
-
-        :param query: The query for the search.
-        :type query: str
-        :return: A list of SoundEffectLibrary.Folder and SoundEffect.
-        :rtype: list[SoundEffectLibrary.Folder, SoundEffect]
-        """
-        folder_sfx = self.folders + self.sfx
-        return self._search_by_name(folder_sfx, query)
-
-    def get_all_sfx_in_folder(
-        self, folder_id: SoundEffectFolderId
-    ) -> list["SoundEffect"]:
-        """
-        Get all sound effects that is in a folder.
-
-        :param folder_id: The folder ID to filter.
-        :type folder_id: int
-        :return: A list of SoundEffect.
-        :rtype: list[SoundEffect]
-        """
-        return [sfx for sfx in self.sfx if sfx.parent_folder_id == folder_id]
+        raise ValueError(f"Folder '{folder_name}' not found")
 
 
 @attr.define(slots=True)
-class SoundEffect:
+class SoundEffect(Downloadable):
     """
     A class representing a sound effect in the SFX library.
 
@@ -565,7 +460,7 @@ class SoundEffect:
         The folder id of the sound effect belongs to.
     size : float
         The size of the sound effect.
-    url : str
+    link : str
         The link to the sound effect.
     duration : int
         The duration of the sound effect in seconds.
@@ -575,7 +470,7 @@ class SoundEffect:
     name: str
     parent_folder_id: SoundEffectFolderId
     size: float
-    url: str
+    link: str
     duration_seconds: int
 
     @staticmethod
@@ -593,39 +488,16 @@ class SoundEffect:
             name=parsed[1],
             parent_folder_id=int(parsed[3]),
             size=float(parsed[4]),
-            url=f"https://geometrydashfiles.b-cdn.net/sfx/s{parsed[0]}.ogg",
+            link=f"https://geometrydashfiles.b-cdn.net/sfx/s{parsed[0]}.ogg",
             duration_seconds=int(parsed[5]) / 100,
         )
-
-    async def buffer(self) -> BytesIO:
-        """
-        Gets the song content and returns it as a BytesIO object.
-
-        :return: The bytes of the song content.
-        :rtype: BytesIO
-        """
-        response = await send_get_request(url=self.url)
-
-        return BytesIO(response.content)
-
-    async def download_to(self, path: str = None) -> None:
-        """
-        Downloads the sound effect to a specified path.
-
-        :param path: Full path to save the file, including filename.
-        :type path: str
-        :return: None
-        :rtype: None
-        """
-        content = await self.buffer()
-        await write(content, path)
 
 
 # Level song
 
 
 @attr.define(slots=True)
-class Song:
+class Song(Downloadable):
     """
     A class representing a level song in the Geometry Dash level.
 
@@ -707,26 +579,3 @@ class Song:
             is_ncs=parsed.get("11") == 1,
             is_in_library=int(parsed.get("1")) >= 10000000,
         )
-
-    async def buffer(self) -> BytesIO:
-        """
-        Gets the song content and returns it as a BytesIO object.
-
-        :return: The bytes of the song content.
-        :rtype: BytesIO
-        """
-        response = await send_get_request(url=self.link)
-
-        return BytesIO(response.content)
-
-    async def download_to(self, path: str = None) -> None:
-        """
-        Downloads the song to a specified path.
-
-        :param path: Full path to save the file, including filename.
-        :type path: str
-        :return: None
-        :rtype: None
-        """
-        content = await self.buffer()
-        await write(content, path)

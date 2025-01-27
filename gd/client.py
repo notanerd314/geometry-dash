@@ -11,7 +11,13 @@ from gd.parse import (
     parse_search_results,
     determine_demon_search_difficulty,
 )
-from gd.errors import check_response_errors, LoadError, InvalidID, LoginError, NoPremission
+from gd.errors import (
+    check_response_errors,
+    LoadError,
+    InvalidID,
+    LoginError,
+    NoPremission,
+)
 from gd.cryptography import (
     Salt,
     XorKey,
@@ -26,7 +32,7 @@ from gd.cryptography import (
     # base64_encode,
     # base64_urlsafe_gzip_compress
 )
-from gd.objects.enums import (
+from gd.enums import (
     Length,
     LevelRating,
     SearchFilter,
@@ -37,9 +43,9 @@ from gd.objects.enums import (
     Leaderboard,
     Item,
 )
-from gd.objects.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
-from gd.objects.song import MusicLibrary, SoundEffectLibrary, Song
-from gd.objects.user import Account, Player, AccountComment, Quest, Chest
+from gd.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
+from gd.song import MusicLibrary, SoundEffectLibrary, Song
+from gd.user import Account, Player, AccountComment, Quest, Chest
 from gd.helpers import send_get_request, send_post_request, require_login
 from gd.type_hints import (
     PlayerId,
@@ -112,7 +118,7 @@ class Client:
             self.udid = generate_udid()
 
     def __repr__(self) -> str:
-        return f"<gd.Client account={self.account} at {hex(id(self))}>"
+        return f"<gd.Client account={self.account.account_id} at {hex(id(self))}>"
 
     def logged_in(self) -> bool:
         """
@@ -909,7 +915,9 @@ class Client:
         )
         response = response.text
 
-        check_response_errors(response, LoadError, "An error occurred when getting map packs.")
+        check_response_errors(
+            response, LoadError, "An error occurred when getting map packs."
+        )
         map_packs = response.split("#")[0].split("|")
         return [
             MapPack.from_raw(map_pack_data).attach_client(self)
@@ -935,7 +943,9 @@ class Client:
         )
         response = response.text
 
-        check_response_errors(response, LoadError, "An error occurred when getting gauntlets.")
+        check_response_errors(
+            response, LoadError, "An error occurred when getting gauntlets."
+        )
         guantlets = response.split("#")[0].split("|")
         list_guantlets = [
             Gauntlet.from_raw(guantlet).attach_client(self) for guantlet in guantlets
