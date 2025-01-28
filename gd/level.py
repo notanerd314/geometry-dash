@@ -12,7 +12,7 @@ import attr
 from gd.song import Song
 from gd.gdobject import GDItem
 from gd.helpers import require_client
-from gd.parse import (
+from gd.str_helpers import (
     parse_level_data,
     parse_comma_separated_int_list,
     parse_key_value_pairs,
@@ -35,7 +35,7 @@ from gd.type_hints import (
     LevelId,
     PlayerId,
     SoundEffectId,
-    SongId,
+    CustomSongId,
     AccountId,
     CommentId,
     ColorId,
@@ -134,9 +134,9 @@ class Level(GDItem):
         The star count for the level.
     coins : int
         The coins count for the level.
-    custom_song_id : Optional[SongId]
+    custom_song_id : Optional[CustomSongId]
         The id for the custom song used for the level.
-    song_list_ids : list[SongId]
+    song_list_ids : list[CustomSongId]
         The list of the song IDs used in the level.
     sfx_list_ids : list[SoundEffectId]
         The list of the song IDs used in the level.
@@ -167,8 +167,8 @@ class Level(GDItem):
     requested_stars: int = None
     stars: int = None
     coins: int = None
-    custom_song_id: Optional[SongId] = None
-    song_list_ids: list[SongId] = None
+    custom_song_id: Optional[CustomSongId] = None
+    song_list_ids: list[CustomSongId] = None
     sfx_list_ids: list[SoundEffectId] = None
     daily_id: Union[int, None] = None
     copied_level_id: int = None

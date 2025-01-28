@@ -27,6 +27,7 @@ __all__ = [
     "Salt",
     "cyclic_xor",
     "singular_xor",
+    "base64_urlsafe_encode",
     "base64_urlsafe_decode",
     "base64_urlsafe_decompress",
     "base64_urlsafe_gzip_decompress",
@@ -50,6 +51,7 @@ class XorKey(StrEnum):
     QUEST = "19847"
     CHEST = "59182"
     GAMESAVE = "11"
+    UPLOAD_LEVEL = "41274"
 
 
 class Salt(StrEnum):
@@ -150,7 +152,7 @@ def base64_urlsafe_decode(encrypted: str) -> bytes:
     return base64.urlsafe_b64decode(add_padding(encrypted))
 
 
-def base64_encode(value: str) -> str:
+def base64_urlsafe_encode(value: str) -> str:
     """
     Encode a value as a base64-encoded string.
     :param value: The value to encode.
@@ -192,14 +194,27 @@ def base64_urlsafe_gzip_compress(plain: str) -> str:
     """
     Compress the data then convert it into a base64 urlsafe string.
 
+    :param plain: The string to compress then encode.
+    :type plain: str
+    :return: The compressed and base64-encoded data as a string.
+    :rtype: str
+    """
+    compressed = gzip.compress(plain.encode("utf-8"))
+    encoded = base64.urlsafe_b64encode(compressed).decode()
+    return encoded
+
+
+def gzip_compress(plain: str) -> str:
+    """
+    Gzip compress data.
+
     :param plain: The string to compress.
     :type plain: str
     :return: The compressed data as a string.
     :rtype: str
     """
     compressed = gzip.compress(plain.encode("utf-8"))
-    encoded = base64.urlsafe_b64encode(compressed).decode()
-    return encoded
+    return compressed
 
 
 def decrypt_gamesave(gamesave: str) -> str:

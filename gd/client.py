@@ -1,11 +1,10 @@
 __doc__ = """Accessing the Geometry Dash API programmatically."""
 
-from datetime import timedelta
-from typing import Union, Optional, Literal, Iterable
+from typing import Union, Optional, Literal, Iterable, List
 import random
 import base64
 
-from gd.parse import (
+from gd.str_helpers import (
     parse_comma_separated_int_list,
     determine_search_difficulty,
     parse_search_results,
@@ -29,8 +28,9 @@ from gd.cryptography import (
     base64_urlsafe_decode,
     generate_udid,
     base64_urlsafe_decompress,
-    # base64_encode,
-    # base64_urlsafe_gzip_compress
+    base64_urlsafe_encode,
+    # base64_urlsafe_gzip_compress,
+    gzip_compress,
 )
 from gd.enums import (
     Length,
@@ -42,6 +42,7 @@ from gd.enums import (
     ChestType,
     Leaderboard,
     Item,
+    OfficialSong,
 )
 from gd.level import Level, LevelDisplay, Comment, MapPack, LevelList, Gauntlet
 from gd.song import MusicLibrary, SoundEffectLibrary, Song
@@ -54,9 +55,10 @@ from gd.type_hints import (
     ListId,
     AccountCommentId,
     CommentId,
-    SongId,
+    CustomSongId,
     LevelOrListId,
     Udid,
+    SoundEffectId,
 )
 
 SECRET = "Wmfd2893gb7"
@@ -206,7 +208,7 @@ class Client:
         self, name: str, password: str, account_id: AccountId, player_id: PlayerId
     ) -> Account:
         """
-        Login account with given name and password without any additional checks in the server
+        Login account with given name and password without any additional checks in the server.
 
         :param name: The account name.
         :type name: str
@@ -401,7 +403,7 @@ class Client:
 
         return Level.from_raw(response).attach_client(self)
 
-    async def special_level_data(self, weekly: bool = False) -> tuple[timedelta, int]:
+    async def special_level_data(self, weekly: bool = False) -> tuple[int, int]:
         """
         Gets the time left and level index for the next level in daily or weekly.
 
@@ -414,8 +416,8 @@ class Client:
         :param weekly: If weekly, else daily.
         :type weekly: bool
         :raises: gd.LoadError
-        :return: A tuple of the current time left before the next level and the current index.
-        :rtype: tuple[timedelta, int]
+        :return: A tuple of the current time left in seconds before the next level and the current index.
+        :rtype: tuple[int, int]
         """
         special = int(weekly)
 
@@ -428,10 +430,7 @@ class Client:
         check_response_errors(response, LoadError, "Unable to get special level data.")
         response = response.split("|")
 
-        return (
-            timedelta(seconds=int(response[1])),
-            int(response[0]),
-        )
+        return (response[1], int(response[0]))
 
     async def search_level(
         self,
@@ -444,7 +443,7 @@ class Client:
         two_player_mode: bool = False,
         has_coins: bool = False,
         original: bool = False,
-        song_id: SongId = None,
+        song_id: CustomSongId = None,
         gd_world: bool = False,
         src_filter: SearchFilter = 0,
     ) -> list[LevelDisplay]:
@@ -476,7 +475,7 @@ class Client:
         :param original: Filters level that has not been copied.
         :type original: Optional[bool]
         :param song_id: Filters level that has the specified song ID.
-        :type song_id: Optional[SongId]
+        :type song_id: Optional[CustomSongId]
         :param gd_world: Filters level that is from Geometry Dash World.
         :type gd_world: Optional[bool]
         :param src_filter: Filters the result by Magic, Recent, ...
@@ -700,12 +699,12 @@ class Client:
         sfx_library = base64_urlsafe_decompress(response)
         return SoundEffectLibrary.from_raw(sfx_library)
 
-    async def get_song(self, song_id: SongId) -> Song:
+    async def get_song(self, song_id: CustomSongId) -> Song:
         """
         Gets song by ID, either from Newgrounds or the music library.
 
         :param id: The ID of the song.
-        :type id: SongId
+        :type id: CustomSongId
         :return: A `Song` instance containing the song data.
         :raises: gd.InvalidID
         :rtype: :class:`gd.objects.song.Song`
@@ -1158,7 +1157,7 @@ class Client:
             "secret": SECRET,
             "rs": generate_rs(),
             "gameVersion": 22,
-            "binaryVersion": 42,
+            "binaryVersion": 45,
         }
 
         data["chk"] = generate_chk(
@@ -1254,7 +1253,7 @@ class Client:
             "udid": self.udid,
             "uuid": self.account.player_id,
             "gameVersion": 22,
-            "binaryVersion": 42,
+            "binaryVersion": 45,
             "world": 0,
         }
 
@@ -1314,7 +1313,7 @@ class Client:
             "udid": self.udid,
             "uuid": self.account.player_id,
             "gameVersion": 22,
-            "binaryVersion": 42,
+            "binaryVersion": 45,
             "world": 0,
             "r1": random.randint(100, 99999),
             "r2": random.randint(100, 99999),
@@ -1402,74 +1401,146 @@ class Client:
             crash_values=("-2",),
         )
 
-    # @require_login()
-    # async def upload_level(
-    #     self,
-    #     level_string: str,
-    #     name: str,
-    #     description: str,
-    #     length: Length,
-    #     song: Union[OfficialSong, SongId],
-    #     has_ldm: bool = True,
-    #     has_two_player: bool = False,
-    #     view_status: Literal["GLOBAL", "FRIENDS", "UNLISTED"] = "GLOBAL",
-    #     requested_stars: int = 0,
-    #     coins: int = 0,
-    #     version: str = 1,
-    #     objects: int = None,
-    #     time_spent_editor: timedelta = timedelta(seconds=0),
-    #     time_spent_previous_copy: timedelta = timedelta(seconds=0),
-    #     level_id: LevelId = None,
-    #     original_level_id: LevelId = None,
-    # ) -> None:
-    #     """
-    #     Uploads or updates a level to the game.
+    @require_login()
+    async def upload_level(
+        self,
+        level_string: str,
+        name: str,
+        description: str,
+        length: Length,
+        song: Union[OfficialSong, CustomSongId],
+        songs: List[CustomSongId] = None,
+        sound_effects: List[SoundEffectId] = None,
+        has_ldm: bool = True,
+        has_two_player: bool = False,
+        view_status: Literal["GLOBAL", "FRIENDS", "UNLISTED"] = "GLOBAL",
+        requested_stars: int = 0,
+        coins: int = 0,
+        version: str = 1,
+        total_objects: int = 0,
+        time_spent_editor: float = 0,
+        time_spent_previous_copy: float = 0,
+        level_id: Optional[LevelId] = None,
+        original_level_id: Optional[LevelId] = None,
+        password: int = None,
+        verification_time: int = 0,
+    ) -> LevelId:
+        """
+        Uploads or updates a level to the game.
 
-    #     :param level_string: The level data of a level generated from [SPWN](https://github.com/Spu7Nix/SPWN-language)
-    #     :type level_string: str
-    #     :param name: The name of the level.
-    #     :type name: str
-    #     :param description: The description of the level.
-    #     :type description: str
-    #     :param length: The length of the level.
-    #     :type length: Length
-    #     :param song: The official song or custom song ID to display in the level.
-    #     :param has_ldm: Whether the level has LDM. Defaults to True.
-    #     :type has_ldm: bool
-    #     :param has_two_player: Whether the level has two players. Defaults to False.
-    #     :type has_two_player: bool
-    #     :param view_status: The view status of the level. Defaults to "GLOBAL".
-    #     :type view_status: Literal["GLOBAL", "FRIENDS", "UNLISTED"]
-    #     :param requested_stars: The requested stars for the level. Defaults to 10.
-    #     :type requested_stars: int
-    #     :param coins: The coins required to unlock the level. Defaults to 0.
-    #     :type coins: int
-    #     :param version: The version of the level. Defaults to 1.
-    #     :type version: str
-    #     :param objects: The total amount of objects (calculated if left out)
-    #     :type objects: int
-    #     :param time_spent_editor: The time spent in the editor. Defaults to 0 seconds.
-    #     :type time_spent_editor: timedelta
-    #     :param time_spent_previous_copy: The time spent in the previous copy. Defaults to 0 seconds.
-    #     :type time_spent_previous_copy: timedelta
-    #     :param level_id: The ID of the level if updatiing pre-existing level. Defaults to None.
-    #     :type level_id: LevelId
-    #     :param original_level_id: The original ID of the level if the level is copied. Defaults to None.
-    #     :type original_level_id: LevelId
-    #     :return: None
-    #     :rtype: None
-    #     """
-    #     data = {
-    #         "secret": SECRET,
-    #         "accountID": self.account.account_id,
-    #         "gjp2": self.account.gjp2,
-    #         "userName": self.account.name,
-    #         "levelString": base64_urlsafe_gzip_compress(level_string),
-    #         "levelName": name,
-    #         "levelDesc": base64_encode(description),
-    #         "levelLength": length.value,
-    #         "levelVersion": version,
-    #         "ldm": int(has_ldm),
-    #         "audioTrack": song.value if isinstance(song, OfficialSong) else 0,
-    #         "songID": song if isinstance(song, SongId) else 0,
-    #     }
+        Might be unstable.
+
+        :param level_string: The level data of a level generated from [SPWN](https://github.com/Spu7Nix/SPWN-language)
+        :type level_string: str
+        :param name: The name of the level.
+        :type name: str
+        :param description: The description of the level.
+        :type description: str
+        :param length: The length of the level.
+        :type length: Length
+        :param song: The official song or custom song ID to display in the level.
+        :type song: Union[OfficialSong, CustomSongId]
+        :param songs: All songs used in the level.
+        :type songs: list[CustomSongId]
+        :param sound_effects: All sound effects used in the level.
+        :type sound_effects: list[SoundEffectId]
+        :param has_ldm: Whether the level has LDM. Defaults to True.
+        :type has_ldm: bool
+        :param has_two_player: Whether the level has two players. Defaults to False.
+        :type has_two_player: bool
+        :param view_status: The view status of the level. Defaults to "GLOBAL".
+        :type view_status: Literal["GLOBAL", "FRIENDS", "UNLISTED"]
+        :param requested_stars: The requested stars for the level. Defaults to 10.
+        :type requested_stars: int
+        :param coins: The user coins that are in the level.
+        :type coins: int
+        :param version: The version of the level. Defaults to 1.
+        :type version: str
+        :param total_objects: The total amount of objects (calculated if left out)
+        :type total_objects: int
+        :param time_spent_editor: The time spent in the editor. Defaults to 0 seconds.
+        :type time_spent_editor: float
+        :param time_spent_previous_copy: The time spent in the editor of the previous copy. Defaults to 0 seconds.
+        :type time_spent_previous_copy: float
+        :param level_id: The ID of the level if updating an existing level. Defaults to None.
+        :type level_id: LevelId
+        :param original_level_id: The original ID of the level if the level is copied. Defaults to None.
+        :type original_level_id: LevelId
+        :param verification_time: Verification time in physics steps (240 steps per second)
+        :type verification_time: int
+        :return: None
+        :rtype: None
+        """
+        if view_status.lower() == "global":
+            view_status = 0
+        elif view_status.lower() == "friends":
+            view_status = 1
+        elif view_status.lower() == "unlisted":
+            view_status = 2
+        else:
+            raise ValueError(
+                "Invalid view status. Use 'GLOBAL', 'FRIENDS' or 'UNLISTED' instead."
+            )
+
+        if coins < 0 or coins > 3:
+            raise ValueError("Invalid coins number")
+
+        if total_objects < 0:
+            raise ValueError("Invalid objects number")
+
+        if password is not None and (len(password) < 0 or len(password) > 6):
+            raise ValueError("Invalid password")
+
+        if not songs:
+            songs = [song]
+
+        data = {
+            "secret": SECRET,
+            "accountID": self.account.account_id,
+            "gjp2": self.account.gjp2,
+            "userName": self.account.name,
+            "uuid": self.account.player_id,
+            "udid": self.udid, 
+            "levelString": level_string,
+            "levelName": name,
+            "levelDesc": base64_urlsafe_encode(description),
+            "levelLength": length.value,
+            "levelVersion": version,
+            "levelInfo": "",
+            "ldm": int(has_ldm),
+            "audioTrack": song.value if isinstance(song, OfficialSong) else 0,
+            "songID": song if isinstance(song, CustomSongId) else 0,
+            "songIDs": ",".join(str(item) for item in songs) if songs else None,
+            "sfxIDs": ",".join(str(item) for item in sound_effects) if sound_effects else None,
+            "unlisted": view_status,
+            "twoPlayer": int(has_two_player),
+            "coins": int(coins),
+            "auto": 0,
+            "objects": total_objects,
+            "original": original_level_id if original_level_id else 0,
+            "levelID": level_id if level_id else 0,
+            "requestedStars": requested_stars,
+            "wt": time_spent_editor,
+            "wt2": time_spent_previous_copy,
+            "gameVersion": 22,
+            "binaryVersion": 45,
+            "seed": generate_rs(),
+            "seed2": generate_chk(
+                [gzip_compress(level_string)[:51]], XorKey.UPLOAD_LEVEL, Salt.LEVEL
+            ),
+            "password": password if password else 0,
+            "ts": verification_time,
+        }
+
+        response = await send_post_request(
+            url="http://www.boomlings.com/database/uploadGJLevel21.php", data=data
+        )
+        response = response.text
+        check_response_errors(
+            response,
+            LoadError,
+            "Unable to upload level.",
+            crash_values=("-1",),
+        )
+
+        return int(response)

@@ -9,9 +9,9 @@ from io import BytesIO
 
 import attr
 
-from gd.parse import parse_song_data
+from gd.str_helpers import parse_song_data
 from gd.type_hints import (
-    SongId,
+    CustomSongId,
     SoundEffectId,
     MusicLibrarySongId,
     MusicLibraryArtistId,
@@ -169,7 +169,7 @@ class MusicLibrary:
                 link=f"https://geometrydashfiles.b-cdn.net/music/{parsed[0]}.ogg",
                 external_link=f"https://{unquote(parsed[8])}",
             )
-        
+
         async def buffer(self) -> BytesIO:
             """
             Gets the song content and returns it as a BytesIO object.
@@ -503,7 +503,7 @@ class SoundEffect(Downloadable):
             link=f"https://geometrydashfiles.b-cdn.net/sfx/s{parsed[0]}.ogg",
             duration_seconds=int(parsed[5]) / 100,
         )
-    
+
     async def buffer(self) -> BytesIO:
         """
         Gets the sound effect content and returns it as a BytesIO object.
@@ -547,7 +547,7 @@ class Song(Downloadable):
         If the song belongs to the music library.
     """
 
-    id: SongId
+    id: CustomSongId
     name: str
     artist_id: Optional[ArtistId]
     artist_name: Optional[str]
@@ -601,7 +601,7 @@ class Song(Downloadable):
             is_ncs=parsed.get("11") == 1,
             is_in_library=int(parsed.get("1")) >= 10000000,
         )
-    
+
     async def buffer(self) -> BytesIO:
         """
         Gets the song content and returns it as a BytesIO object.

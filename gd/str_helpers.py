@@ -179,43 +179,46 @@ def parse_song_data(song: str) -> dict[str, any]:
 
 
 # * Unfinished function
-# def gamesave_to_dict(xml: str) -> dict:
-#     """
-#     Parse the XML string and return a dictionary.
+def _gamesave_to_dict(xml: str) -> dict:
+    """
+    (WILL BE IMPLEMENTED LATER)
 
-#     :param xml: The XML string containing game save data.
-#     :type xml: str
-#     :return: A dictionary containing parsed game save data.
-#     :rtype: dict
-#     """
-#     root = etree.fromstring(xml)  # Parse XML string
-#     dictionary = root.find("dict")  # Locate the <dict> element
+    Parse the XML string and return a dictionary.
 
-#     if dictionary is None:
-#         return {}  # Return an empty dictionary if <dict> is not found
+    :param xml: The XML string containing game save data.
+    :type xml: str
+    :return: A dictionary containing parsed game save data.
+    :rtype: dict
+    """
+    etree = None
+    root = etree.fromstring(xml)  # Parse XML string
+    dictionary = root.find("dict")  # Locate the <dict> element
 
-#     def parse_element(element):
-#         data = {}
-#         for child in element:
-#             if child.tag == "k":
-#                 key = child.text
-#                 value_elem = child.getnext()
-#                 if value_elem is not None:
-#                     if value_elem.tag == "r":
-#                         data[key] = float(value_elem.text)
-#                     elif value_elem.tag == "s":
-#                         data[key] = value_elem.text
-#                     elif value_elem.tag == "i":
-#                         data[key] = int(value_elem.text)
-#                     elif value_elem.tag == "t":
-#                         data[key] = True
-#                     elif value_elem.tag == "d":
-#                         data[key] = parse_element(
-#                             value_elem
-#                         )  # Recursive call for nested <d>
-#         return data
+    if dictionary is None:
+        return {}  # Return an empty dictionary if <dict> is not found
 
-#     return parse_element(dictionary)
+    def parse_element(element):
+        data = {}
+        for child in element:
+            if child.tag == "k":
+                key = child.text
+                value_elem = child.getnext()
+                if value_elem is not None:
+                    if value_elem.tag == "r":
+                        data[key] = float(value_elem.text)
+                    elif value_elem.tag == "s":
+                        data[key] = value_elem.text
+                    elif value_elem.tag == "i":
+                        data[key] = int(value_elem.text)
+                    elif value_elem.tag == "t":
+                        data[key] = True
+                    elif value_elem.tag == "d":
+                        data[key] = parse_element(
+                            value_elem
+                        )  # Recursive call for nested <d>
+        return data
+
+    return parse_element(dictionary)
 
 
 # Difficulty Determinatiom

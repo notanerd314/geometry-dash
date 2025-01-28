@@ -4,45 +4,45 @@ __doc__ = """
 A module containing user type hints for the module.
 """
 
-from typing import Union, Any
+from typing import Any
 
-PlayerId = Union[int, str]
+PlayerId = int
 """Type hint for Player ID."""
 
-AccountId = Union[int, str]
+AccountId = int
 """Type hint for Account ID."""
 
-LevelId = Union[int, str]
+LevelId = int
 """Type hint for Level ID."""
 
-LevelOrListId = Union[int, str]
+LevelOrListId = int
 """Type hint for Level or List ID. (List ID is negative)"""
 
-ListId = Union[int, str]
+ListId = int
 """Type hint for List ID."""
 
-AccountCommentId = Union[int, str]
+AccountCommentId = int
 """Type hint for Post ID."""
 
-CommentId = Union[int, str]
+CommentId = int
 """Type hint for Comment ID."""
 
-SongId = Union[int, str]
+CustomSongId = int
 """Type hint for Song ID."""
 
-ArtistId = Union[int, str]
+ArtistId = int
 """Type hint for Song Artist ID."""
 
-MusicLibrarySongId = Union[int, str]
+MusicLibrarySongId = int
 """Type hint for Music Library Song ID."""
 
-MusicLibraryArtistId = Union[int, str]
+MusicLibraryArtistId = int
 """Type hint for Music Library Artist ID."""
 
-SoundEffectFolderId = Union[int, str]
+SoundEffectFolderId = int
 """Type hint for Sound Effect Folder ID."""
 
-SoundEffectId = Union[int, str]
+SoundEffectId = int
 """Type hint for Sound Effect ID."""
 
 ColorHex = int

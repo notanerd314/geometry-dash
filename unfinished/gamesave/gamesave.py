@@ -15,7 +15,7 @@ from gd.cryptography import (
     XorKey,
     generate_udid,
 )
-from gd.parse import gamesave_to_dict
+from gd.str_helpers import _gamesave_to_dict
 from gd.type_hints import (
     Udid,
     IconDeathEffectId,
@@ -24,9 +24,9 @@ from gd.type_hints import (
     IconId,
     ColorId,
 )
-from gd.entities.cosmetics import IconSet
-from gd.entities.enums import Gamemode
-from gd.entities.user import Account
+from gd.cosmetics import IconSet
+from gd.enums import Gamemode
+from gd.user import Account
 from unfinished.gamesave.helpers import filter_valuekeeper_keys_by_type
 
 # Boilerplates
@@ -153,7 +153,7 @@ class Gamesave:
         """
         decoded = singular_xor(gamesave, int(XorKey.GAMESAVE))
         decompressed = base64_urlsafe_gzip_decompress(decoded)
-        gamesave = gamesave_to_dict(decompressed)
+        gamesave = _gamesave_to_dict(decompressed)
         valuekeeper = gamesave.get("valueKeeper")
 
         return Gamesave(

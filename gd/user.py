@@ -7,7 +7,7 @@ from typing import Optional, Literal, NamedTuple
 
 import attr
 
-from gd.parse import (
+from gd.str_helpers import (
     parse_key_value_pairs,
     parse_comma_separated_int_list,
     string_to_seconds,
@@ -417,15 +417,15 @@ class Quest:
     Attributes
     ==========
     name: str
-        The name of the quest
+        The name of the quest.
     requirement_value: int
-        The number value of the requirement
+        The number value of the requirement.
     requirement_type: Literal[Item.STARS, Item.ORBS, Item.COIN]
-        The type of requirement
+        The type of requirement.
     diamonds_reward: int
-        The total of diamonds get if completed
+        The total of diamonds get if completed.
     time_left: int
-        Seconds left until next quest is chosen
+        Seconds left until next quest is chosen.
     """
 
     name: str
